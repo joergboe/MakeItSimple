@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Generated executables
+/OneToOne/m1
+/OneToOne/m2
