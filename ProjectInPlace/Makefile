@@ -1,29 +1,31 @@
-define helpstring :=
-  Build executables from each found %.cpp source file.
+define helpstring =
+  Build one executable $(target) from all %.cpp source files in a project directory.
 
     make [makeoptions] [BUILD_MODE=debug|run] [goal ...]
 
   Goals:
-    all    Build an executable with every *.cpp file in the current directory - default target.
+    all    Build the target executable - default target.
     clean  Clean all previousely build executables.
     help   Print this help text.
-    %      Build this target file if a coresponding %.cpp exists.
+    %.o    Build this object file if a coresponding %.cpp exists.
 
   useful makeoptions:
     -h, --help          Display help.
     -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
     -B, --always-make   Unconditionally make all targets.
 
-  The executables are build with debug information included.
+  The executable is build with debug information included.
   With variable
     BUILD_MODE=run
-  optimized executables without debug information are built.
+  an optimized executable without debug information is built.
   The default warning level is '-Wall'. Variable 'CXXWARNINGS' changes the warning level.
   More copiler options can be given with variables CXXFLAGS, CPPFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 endef
 
-cppsources = $(wildcard *.cpp)
-targets = $(cppsources:.cpp=)
+target := program
+cppsources := $(wildcard *.cpp)
+objects := $(cppsources:.cpp=.o)
+deps := $(cppsources:.cpp=.d)
 
 BUILD_MODE ?= debug
 ifeq ($(BUILD_MODE),run)
@@ -44,28 +46,38 @@ $(info )
 
 CXXWARNINGS ?= -Wall
 ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CPPFLAGS)
+ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
-.PHONY: all clean help echotargets
+.PHONY: all clean help echoobjects
 
-all: $(targets)
+all: $(target)
 
-clean: | echotargets
+clean: | echoobjects
 	@echo 'Cleanup'
-	-$(RM) $(targets)
+	-$(RM) $(target) $(objects) $(deps)
 	-@echo ' '
 
 help:
 	$(info $(helpstring))
 	@echo
 
-echotargets:
-	$(info Potential targets detected : $(targets))
+echoobjects:
+	$(info Detected objects: $(objects))
 	$(info )
 
-%: %.cpp | echotargets
+$(target): $(objects) | echoobjects
+	@echo 'Linking target: $@'
+	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o $@
+	@echo 'Finished linking target: $@'
+	@echo ' '
+
+%.o: %.cpp
 	@echo 'Building file: $<'
-	$(CXX) $(ALL_CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
+	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
+
+# include additional rules after default rule!
+-include $(deps)
