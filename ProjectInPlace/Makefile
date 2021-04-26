@@ -54,9 +54,9 @@ ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS)
 
 all: $(target)
 
-clean: | echoobjects
+clean:
 	@echo 'Cleanup'
-	-$(RM) $(target) $(objects) $(deps)
+	-$(RM) $(target) *.o *.d
 	-@echo ' '
 
 help:
@@ -67,13 +67,13 @@ echoobjects:
 	$(info Detected objects: $(objects))
 	$(info )
 
-$(target): $(objects) | echoobjects
+$(target): $(objects)
 	@echo 'Linking target: $@'
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o $@
 	@echo 'Finished linking target: $@'
 	@echo ' '
 
-%.o: %.cpp
+%.o: %.cpp | echoobjects
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo 'Finished building: $<'
