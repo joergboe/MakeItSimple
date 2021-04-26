@@ -1,5 +1,5 @@
-define helpstring =
-  Build one executable $(target) from all %.cpp source files in a project directory.
+define HELPSTRING =
+  Build one executable $(TARGET) from all %.cpp source files in a project source directories.
 
     make [makeoptions] [BUILD_MODE=debug|run] [goal ...]
 
@@ -22,62 +22,85 @@ define helpstring =
   More copiler options can be given with variables CXXFLAGS, CPPFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 endef
 
-target := program
-cppsources := $(wildcard *.cpp)
-objects := $(cppsources:.cpp=.o)
-deps := $(cppsources:.cpp=.d)
+TARGET := program
+SRCDIRS := . src
+INCDIRS := include
+BUILDDIR := build
+BINDIR := bin
+
+BUILDDIRS = $(addprefix $(BUILDDIR)/,$(SRCDIRS))
+$(info $(BUILDDIRS))
+
+CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
+OBJS := $(CPPSOURCES:.cpp=.o)
+$(info $(OBJS))
+OBJECTS := $(addprefix $(BUILDDIR)/,$(OBJS))
+$(info $(OBJECTS))
+
+DEP := $(CPPSOURCES:.cpp=.d)
+DEPS := $(addprefix $(BUILDDIR)/,$(DEP))
+$(info $(DEPS))
 
 BUILD_MODE ?= debug
 ifeq ($(BUILD_MODE),run)
   CXXOPT := -O3
-  infostring := Building optimized release version $(CXXOPT)
+  INFOSTRING := Building optimized release version $(CXXOPT)
 else ifeq ($(BUILD_MODE),debug)
   CXXOPT := -O0 -g3
-  infostring := Building with debug information $(CXXOPT)
+  INFOSTRING := Building with debug information $(CXXOPT)
 else
   $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
 endif
 
-noprint := $(or $(findstring clean,$(MAKECMDGOALS)),$(findstring help,$(MAKECMDGOALS)))
-ifndef noprint
-  $(info $(infostring))
+NOPRINT := $(or $(findstring clean,$(MAKECMDGOALS)),$(findstring help,$(MAKECMDGOALS)))
+ifndef NOPRINT
+  $(info $(INFOSTRING))
 endif
 $(info )
 
 CXXWARNINGS ?= -Wall
+INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
 ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
-ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS)
+ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
-.PHONY: all clean help echoobjects
+.PHONY: all clean help echoinfo
 
-all: $(target)
+all: $(BINDIR)/$(TARGET)
 
 clean:
 	@echo 'Cleanup'
-	-$(RM) $(target) *.o *.d
+	-$(RM) $(BINDIR)/$(TARGET)
+	-$(RM) -r $(BUILDDIR)
 	-@echo ' '
 
 help:
-	$(info $(helpstring))
+	$(info $(HELPSTRING))
 	@echo
 
-echoobjects:
-	$(info Detected objects: $(objects))
+echoinfo:
+	$(info Build directories: $(BUILDDIRS))
+	$(info Detected objects: $(OBJECTS))
 	$(info )
 
-$(target): $(objects)
+$(BUILDDIRS):
+	mkdir -p '$@'
+
+$(BINDIR):
+	mkdir -p '$@'
+
+$(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
 	@echo 'Linking target: $@'
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo 'Finished linking target: $@'
 	@echo ' '
 
-%.o: %.cpp | echoobjects
+$(BUILDDIR)/%.o: %.cpp | echoinfo $(BUILDDIRS)
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
 # include additional rules after default rule!
--include $(deps)
+-include $(DEPS)

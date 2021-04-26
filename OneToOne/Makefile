@@ -43,7 +43,7 @@ endif
 $(info )
 
 CXXWARNINGS ?= -Wall
-ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CPPFLAGS)
+ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
