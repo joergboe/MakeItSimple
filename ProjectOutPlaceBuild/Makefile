@@ -4,7 +4,7 @@ define HELPSTRING =
     make [makeoptions] [BUILD_MODE=debug|run] [more variables] [goal ...]
 
   Goals:
-    all    Build the target executable - default target.
+    all    Build the target executable - default goal.
     clean  Clean all previousely build executables.
     help   Print this help text.
 
@@ -35,7 +35,7 @@ SRCDIRS := . src
 INCDIRS := include
 BUILDDIR := build
 BINDIR := bin
-CXXWARNINGS ?= -Wall
+CXXWARNINGS := -Wall
 
 # search source files and make dependent variables
 BUILDDIRS = $(addprefix $(BUILDDIR)/,$(SRCDIRS))
