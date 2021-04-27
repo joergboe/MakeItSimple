@@ -1,13 +1,12 @@
 define HELPSTRING =
-  Build one executable $(TARGET) from all %.cpp source files in a project source directories.
+  Build one executable $(BINDIR)/$(TARGET) from all %.cpp source files in a project source directories.
 
-    make [makeoptions] [BUILD_MODE=debug|run] [goal ...]
+    make [makeoptions] [BUILD_MODE=debug|run] [more variables] [goal ...]
 
   Goals:
     all    Build the target executable - default target.
     clean  Clean all previousely build executables.
     help   Print this help text.
-    %.o    Build this object file if a coresponding %.cpp exists.
 
   useful makeoptions:
     -h, --help          Display help.
@@ -19,27 +18,30 @@ define HELPSTRING =
     BUILD_MODE=run
   an optimized executable without debug information is built.
   The default warning level is '-Wall'. Variable 'CXXWARNINGS' changes the warning level.
-  More copiler options can be given with variables CXXFLAGS, CPPFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
+  More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS.
+
+  Variables:
+    BUILD_MODE:   Build mode set to 'run' or 'debug'.
+    INCLUDE_DIRS: Space separated list of external include directories (-I).
+    CPPFLAGS:     Extra compiler preprocessor options.
+    CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
+    LDFLAGS:      Extra linker options, SUCH AS -L.
+    LDLIBS:       Extra library flags given to the linker.
 endef
 
+# Project specific settings
 TARGET := program
 SRCDIRS := . src
 INCDIRS := include
 BUILDDIR := build
 BINDIR := bin
+CXXWARNINGS ?= -Wall
 
+# search source files and make dependent variables
 BUILDDIRS = $(addprefix $(BUILDDIR)/,$(SRCDIRS))
-$(info $(BUILDDIRS))
-
 CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
-OBJS := $(CPPSOURCES:.cpp=.o)
-$(info $(OBJS))
-OBJECTS := $(addprefix $(BUILDDIR)/,$(OBJS))
-$(info $(OBJECTS))
-
-DEP := $(CPPSOURCES:.cpp=.d)
-DEPS := $(addprefix $(BUILDDIR)/,$(DEP))
-$(info $(DEPS))
+OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
+DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
 
 BUILD_MODE ?= debug
 ifeq ($(BUILD_MODE),run)
@@ -58,7 +60,6 @@ ifndef NOPRINT
 endif
 $(info )
 
-CXXWARNINGS ?= -Wall
 INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
 ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
 ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
@@ -73,7 +74,7 @@ clean:
 	@echo 'Cleanup'
 	-$(RM) $(BINDIR)/$(TARGET)
 	-$(RM) -r $(BUILDDIR)
-	-@echo ' '
+	-@echo
 
 help:
 	$(info $(HELPSTRING))
@@ -93,14 +94,12 @@ $(BINDIR):
 $(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
 	@echo 'Linking target: $@'
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
-	@echo 'Finished linking target: $@'
-	@echo ' '
+	@echo -e 'Finished linking target: $@\n'
 
 $(BUILDDIR)/%.o: %.cpp | echoinfo $(BUILDDIRS)
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo 'Finished building: $<'
-	@echo ' '
+	@echo -e 'Finished building: $<\n'
 
 # include additional rules after default rule!
 -include $(DEPS)
