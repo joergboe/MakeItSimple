@@ -33,6 +33,8 @@ endef
 TARGET := program
 SRCDIRS := . src
 INCDIRS := include
+# with this code the include directories are automatically detected
+#INCDIRS := $(shell find $(SRCDIRS) -type d)
 BUILDDIR := build
 BINDIR := bin
 CXXWARNINGS := -Wall
@@ -40,6 +42,8 @@ CXXWARNINGS := -Wall
 # search source files and make dependent variables
 BUILDDIRS = $(addprefix $(BUILDDIR)/,$(SRCDIRS))
 CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
+# with this code the cpp files are automatically detected
+#CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
 OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
 DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
 
