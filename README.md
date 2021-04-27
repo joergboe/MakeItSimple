@@ -79,4 +79,4 @@ All makefiles support the following goals:
 In the rare case that a source file has been deleted and nothing else has changed, the incremental build 
 will not be triggered correctly. In such a case, you should clean the workspace.
 
-`make clean; make all`
+`make clean; make all -j ncores`
