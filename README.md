@@ -7,7 +7,7 @@ c++ projects. The makefiles are designed to use only functions that are shipped 
 
 **Features**
 
-* The makefile in this project builds one executable from cpp source- and header-files in the projects source- and include-directories.
+* The [Makefile](ProjectOutPlaceBuild/Makefile) builds one executable from cpp source- and header-files in the projects source- and include-directories.
 * The generated files are placed in separate directories.
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
@@ -41,7 +41,7 @@ You may use the following line to detect the list of the project internal includ
 
 **Features**
 
-* The makefile in this project builds one executable from cpp source- and header-files in the project directory.
+* The [Makefile](ProjectInPlaceBuild/Makefile) builds one executable from cpp source- and header-files in the project directory.
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
 
@@ -57,7 +57,7 @@ More compiler options can be given during runtime with variables BUILD_MODE, INC
 
 **Features**
 
-* This makefile builds executables from each found cpp source-file.
+* The [Makefile](OneToOne/Makefile) builds executables from each found cpp source-file.
 * The list of source files and dependables is automatically created.
 
 **Configuration**
