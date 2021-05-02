@@ -49,6 +49,7 @@ ifeq ($(MAKELEVEL),0)
   export ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
 
   ifneq ($(MAKECMDGOALS),help)
+    $(info )
     $(info Detected targets : $(TARGETS))
     $(info $(INFOSTRING))
     $(info )
@@ -72,6 +73,7 @@ clean:
 	-@echo ' '
 
 help:
+	$(info )
 	$(info $(HELPSTRING))
 
 %: %.cpp

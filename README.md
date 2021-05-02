@@ -1,7 +1,8 @@
 # MakeItSimple
 
 This repository has a set of simple makefiles that may be useful for small- and medium-sized 
-c++ projects. The makefiles are designed to use only functions that are shipped with GNU make.
+c++ projects. The makefiles are designed to use only functions that are shipped with GNU make. 
+All make scripts support parallel build and ensure that the first level goals are executed in the designated order.
 
 ## Project Out Place Build
 
@@ -11,6 +12,7 @@ c++ projects. The makefiles are designed to use only functions that are shipped 
 * The generated files are placed in separate directories.
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
+* The command line goals are executed in the designated order.
 
 **Configuration**
 
@@ -44,6 +46,7 @@ You may use the following line to detect the list of the project internal includ
 * The [Makefile](ProjectInPlaceBuild/Makefile) builds one executable from cpp source- and header-files in the project directory.
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
+* The command line goals are executed in the designated order.
 
 **Configuration**
 
@@ -59,6 +62,7 @@ More compiler options can be given during runtime with variables BUILD_MODE, INC
 
 * The [Makefile](OneToOne/Makefile) builds executables from each found cpp source-file.
 * The list of source files and dependables is automatically created.
+* The command line goals are executed in the designated order.
 
 **Configuration**
 
@@ -74,9 +78,13 @@ All makefiles support the following goals:
 * clean: remove all generated artifacts
 * help: print an descriptive help test
 
+The command line goals are executed in the designated order. This is also ensured when the parallel build 
+(make option: -j, --jobs ) is enabled. This is especially useful for a fresh build when the goals `clean` and `all` 
+are used in one make run.
+
 ## Known Problems
 
 In the rare case that a source file has been deleted and nothing else has changed, the incremental build 
 will not be triggered correctly. In such a case, you should clean the workspace.
 
-`make clean; make all -j ncores`
+`make clean all -j ncores`

@@ -51,6 +51,7 @@ ifeq ($(MAKELEVEL),0)
   endif
 
   ifneq ($(MAKECMDGOALS),help)
+    $(info )
     $(info Detected objects: $(OBJECTS))
     $(info $(INFOSTRING))
     $(info )
@@ -78,6 +79,7 @@ clean:
 	-@echo ' '
 
 help:
+	$(info )
 	$(info $(HELPSTRING))
 
 $(TARGET): $(OBJECTS)

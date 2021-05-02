@@ -60,6 +60,9 @@ ifeq ($(MAKELEVEL),0)
   endif
 
   ifneq ($(MAKECMDGOALS),help)
+    $(info )
+    $(info Build target $(BINDIR)/$(TARGET) from *.cpp sourcefiles in source directories: $(SRCDIRS))
+    $(info All include directories: $(INCDIRS) $(INCLUDE_DIRS))
     $(info Detected objects: $(OBJECTS))
     $(info $(INFOSTRING))
     $(info )
@@ -88,6 +91,7 @@ clean:
 	-@echo
 
 help:
+	$(info )
 	$(info $(HELPSTRING))
 
 $(BUILDDIRS):
