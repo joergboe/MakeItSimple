@@ -63,9 +63,6 @@ ifeq ($(MAKELEVEL),0)
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
-  export CPPSOURCES = $(wildcard *.cpp)
-  export TARGETS = $(CPPSOURCES:.cpp=)
-
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     CXXOPT := -O3
@@ -78,6 +75,9 @@ ifeq ($(MAKELEVEL),0)
   endif
 
   export ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
+
+  export CPPSOURCES = $(wildcard *.cpp)
+  export TARGETS = $(CPPSOURCES:.cpp=)
 
   ifneq ($(MAKECMDGOALS),help)
     $(info )

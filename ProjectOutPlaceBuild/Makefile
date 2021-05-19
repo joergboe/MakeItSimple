@@ -50,6 +50,17 @@ ifeq ($(MAKELEVEL),0)
       $(CXXWARN3)
   endef
 
+  # Project specific settings
+  export TARGET := program
+  export SRCDIRS := . src
+  export INCDIRS := include
+  # with this code the include directories are automatically detected
+  #INCDIRS := $(shell find $(SRCDIRS) -type d)
+  export BUILDDIR := build
+  export BINDIR := bin
+
+  export INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
+
   WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
     export CXXWARNINGS := $(CXXWARN0)
@@ -63,23 +74,6 @@ ifeq ($(MAKELEVEL),0)
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
-  # Project specific settings
-  export TARGET := program
-  export SRCDIRS := . src
-  export INCDIRS := include
-  # with this code the include directories are automatically detected
-  #INCDIRS := $(shell find $(SRCDIRS) -type d)
-  export BUILDDIR := build
-  export BINDIR := bin
-
-  # search source files and make dependent variables
-  export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
-  export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
-  # with this code the cpp files are automatically detected
-  #CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
-  export OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
-  export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
-
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     CXXOPT := -O3
@@ -90,6 +84,14 @@ ifeq ($(MAKELEVEL),0)
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
+
+  # search source files and make dependent variables
+  export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
+  export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
+  # with this code the cpp files are automatically and recursively detected
+  #CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
+  export OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
+  export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
 
   ifneq ($(MAKECMDGOALS),help)
     $(info )
@@ -102,8 +104,6 @@ ifeq ($(MAKELEVEL),0)
     $(info $(CXXWARNINGS))
     $(info )
   endif
-
-  export INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
 
 .NOTPARALLEL:
 endif

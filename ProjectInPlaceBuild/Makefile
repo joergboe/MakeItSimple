@@ -51,6 +51,9 @@ ifeq ($(MAKELEVEL),0)
       $(CXXWARN3)
   endef
 
+  # Project specific settings
+  export TARGET := program
+
   WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
     export CXXWARNINGS := $(CXXWARN0)
@@ -64,13 +67,6 @@ ifeq ($(MAKELEVEL),0)
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
-  # Project specific settings
-  export TARGET := program
-
-  export CPPSOURCES := $(wildcard *.cpp)
-  export OBJECTS := $(CPPSOURCES:.cpp=.o)
-  export DEPS := $(CPPSOURCES:.cpp=.d)
-
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     CXXOPT := -O3
@@ -82,6 +78,12 @@ ifeq ($(MAKELEVEL),0)
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
+  export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
+
+  export CPPSOURCES := $(wildcard *.cpp)
+  export OBJECTS := $(CPPSOURCES:.cpp=.o)
+  export DEPS := $(CPPSOURCES:.cpp=.d)
+
   ifneq ($(MAKECMDGOALS),help)
     $(info )
     $(info Detected objects: $(OBJECTS))
@@ -91,8 +93,6 @@ ifeq ($(MAKELEVEL),0)
     $(info $(CXXWARNINGS))
     $(info )
   endif
-
-  export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
 .NOTPARALLEL:
 endif
