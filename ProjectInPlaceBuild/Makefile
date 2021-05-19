@@ -1,8 +1,17 @@
 ifeq ($(MAKELEVEL),0)
+  CXXWARN0 = -ftabstop=4
+  CXXWARN1 = -pedantic -Wall -Wextra
+  CXXWARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
+  -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
+  -Wsign-conversion -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+  -Wuseless-cast -Wstrict-overflow=4 -Wattribute-alias -Wduplicated-branches -Wduplicated-cond -Wdate-time -Wextra-semi \
+  -Wnull-dereference -Wno-aggressive-loop-optimizations -Wdisabled-optimization
+  CXXWARN3 = -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
+
   define HELPSTRING =
     Build one executable $(TARGET) from all %.cpp source files in a project directory.
 
-      make [makeoptions] [BUILD_MODE=debug|run] [more variables] [goal ...]
+      make [makeoptions] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [more variables] [goal ...]
 
     Goals:
       all    Build the target executable - default goal.
@@ -19,21 +28,44 @@ ifeq ($(MAKELEVEL),0)
     With variable
       BUILD_MODE=run
     an optimized executable without debug information is built.
-    The default warning level is '-Wall'. Variable 'CXXWARNINGS' changes the warning level.
+    The variable WARN_LEVEL can assign warning levels from 0 .. 3.
+    The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
     More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 
     Variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
+      WARN_LEVEL:   Warning level set 0 .. 3.
       INCLUDE_DIRS: Space separated list of external include directories (-I).
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
+
+    Compiler flags warning level 1 includes:
+      $(CXXWARN1)
+
+    Warning levels 2 additionally includes:
+      $(CXXWARN2)
+
+    Warning levels 3 additionally includes:
+      $(CXXWARN3)
   endef
+
+  WARN_LEVEL ?= 2
+  ifeq ($(WARN_LEVEL),0)
+    export CXXWARNINGS := $(CXXWARN0)
+  else ifeq ($(WARN_LEVEL),1)
+    export CXXWARNINGS := $(CXXWARN1) $(CXXWARN0)
+  else ifeq ($(WARN_LEVEL),2)
+    export CXXWARNINGS := $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+  else ifeq ($(WARN_LEVEL),3)
+    export CXXWARNINGS := $(CXXWARN3) $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+  else
+    $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
+  endif
 
   # Project specific settings
   export TARGET := program
-  export CXXWARNINGS := -Wall
 
   export CPPSOURCES := $(wildcard *.cpp)
   export OBJECTS := $(CPPSOURCES:.cpp=.o)
@@ -54,6 +86,9 @@ ifeq ($(MAKELEVEL),0)
     $(info )
     $(info Detected objects: $(OBJECTS))
     $(info $(INFOSTRING))
+    $(info )
+    $(info  Building with WARN_LEVEL=$(WARN_LEVEL) included flags:)
+    $(info $(CXXWARNINGS))
     $(info )
   endif
 
@@ -81,6 +116,7 @@ clean:
 help:
 	$(info )
 	$(info $(HELPSTRING))
+	$(info )
 
 $(TARGET): $(OBJECTS)
 	@echo 'Linking target: $@'
