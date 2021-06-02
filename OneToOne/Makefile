@@ -1,14 +1,5 @@
-ifeq ($(MAKELEVEL),0)
-  CXXWARN0 = -ftabstop=4
-  CXXWARN1 = -pedantic -Wall -Wextra
-  CXXWARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
-  -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
-  -Wsign-conversion -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
-  -Wuseless-cast -Wstrict-overflow=4 -Wattribute-alias -Wduplicated-branches -Wduplicated-cond -Wdate-time -Wextra-semi \
-  -Wnull-dereference -Wno-aggressive-loop-optimizations -Wdisabled-optimization
-  CXXWARN3 = -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
-
-  define HELPSTRING :=
+ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
+  define HELPSTRING =
     Build executables from each found %.cpp source file.
 
       make [makeoptions] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
@@ -50,15 +41,28 @@ ifeq ($(MAKELEVEL),0)
       $(CXXWARN3)
   endef
 
+  # determine all required objects
+  export CPPSOURCES := $(wildcard *.cpp)
+  export TARGETS := $(CPPSOURCES:.cpp=)
+
+  CXXWARN0 := -ftabstop=4
+  CXXWARN1 := -pedantic -Wall -Wextra
+  CXXWARN2 := -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
+  -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
+  -Wsign-conversion -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+  -Wuseless-cast -Wstrict-overflow=4 -Wattribute-alias -Wduplicated-branches -Wduplicated-cond -Wdate-time -Wextra-semi \
+  -Wnull-dereference -Wno-aggressive-loop-optimizations -Wdisabled-optimization
+  CXXWARN3 := -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
+
   WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
-    export CXXWARNINGS := $(CXXWARN0)
+    CXXWARNINGS := $(CXXWARN0)
   else ifeq ($(WARN_LEVEL),1)
-    export CXXWARNINGS := $(CXXWARN1) $(CXXWARN0)
+    CXXWARNINGS := $(CXXWARN1) $(CXXWARN0)
   else ifeq ($(WARN_LEVEL),2)
-    export CXXWARNINGS := $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+    CXXWARNINGS := $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
   else ifeq ($(WARN_LEVEL),3)
-    export CXXWARNINGS := $(CXXWARN3) $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+    CXXWARNINGS := $(CXXWARN3) $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
   else
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
@@ -74,11 +78,6 @@ ifeq ($(MAKELEVEL),0)
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  export ALL_CXXFLAGS = -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
-
-  export CPPSOURCES = $(wildcard *.cpp)
-  export TARGETS = $(CPPSOURCES:.cpp=)
-
   ifneq ($(MAKECMDGOALS),help)
     $(info )
     $(info Detected targets : $(TARGETS))
@@ -89,6 +88,9 @@ ifeq ($(MAKELEVEL),0)
     $(info )
   endif
 
+  export ALL_CXXFLAGS := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
+  THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+
 .NOTPARALLEL:
 endif
 
@@ -97,7 +99,7 @@ endif
 .PHONY: all clean help recursion
 
 all:
-	@$(MAKE) -f $(lastword $(MAKEFILE_LIST)) recursion
+	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(THIS_MAKEFILE) recursion
 
 recursion: $(TARGETS)
 
