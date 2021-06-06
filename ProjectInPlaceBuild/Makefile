@@ -95,14 +95,14 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
     $(info )
   endif
 
-  export ALL_CXXFLAGS := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS) $(INC_FLAGS)
+  export ALL_CXXFLAGS := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
   THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 
 .NOTPARALLEL:
 endif
 
 # cpp-flags require recursive variable flavor
-ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS)
+ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:

@@ -21,11 +21,12 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
     optimized executables without debug information are built.
     The variable WARN_LEVEL can assign warning levels from 0 .. 3.
     The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
-    More copiler options can be given with variables CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
+    More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 
     Variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
       WARN_LEVEL:   Warning level set 0 .. 3.
+      INCLUDE_DIRS: Space separated list of external include directories (-I).
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       LDFLAGS:      Extra linker options, SUCH AS -L.
@@ -44,6 +45,8 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
   export TARGETS := $(CPPSOURCES:.cpp=)
+
+  export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
   CXXWARN0 := -ftabstop=4
   CXXWARN1 := -pedantic -Wall -Wextra
@@ -94,6 +97,9 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 .NOTPARALLEL:
 endif
 
+# cpp-flags require recursive variable flavor in some other makefile variants
+ALL_CPPFLAGS = $(CPPFLAGS) $(INC_FLAGS)
+
 .SUFFIXES:
 .DELETE_ON_ERROR:
 .PHONY: all clean help recursion
@@ -115,6 +121,6 @@ help:
 
 %: %.cpp
 	@echo 'Building file: $<'
-	$(CXX) $(ALL_CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
+	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
