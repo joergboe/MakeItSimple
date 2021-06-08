@@ -2,7 +2,12 @@
 
 This repository has a set of simple makefiles that may be useful for small- and medium-sized 
 c++ projects. The makefiles are designed to use only functions that are shipped with GNU make. 
-All make scripts support parallel build and ensure that the first level goals are executed in the designated order.
+All make scripts support parallel build and ensure that the first level goals are executed in the designated order. 
+The scripts come with a comprehensive set of warning compiler options for the GNU c++ compiler (g++). These options can be 
+controlled in 4 levels. 
+All make files support 2 build modes 'run' and 'debug'. In build mode 'run' an optimized executable without debug 
+information is built. In build mode 'debug' the executable contains debug information. All compiler options are valid 
+for GNU c++ compiler, if you use an alternative compiler adapt the options and warning flags accordingly.
 
 ## Project Out Place Build
 
@@ -13,15 +18,18 @@ All make scripts support parallel build and ensure that the first level goals ar
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
 * The command line goals are executed in the designated order.
+* support of build modes 'run' and 'debug',
+* support of 4 warning levels
 
 **Configuration**
 
-* Change the target by changing variables BINDIR and TARGET
-* The source directories of the project are stored in variable SRCDIRS
+* Change the target by changing variables BINDIR and TARGET.
+* The source directories of the project are stored in variable SRCDIRS.
 * The include directories of the project are stored in variable INCDIRS
-* The warning level of the compiler is stored in CXXWARNINGS
+* The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
-More compiler options can be given during runtime with variables BUILD_MODE, INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS. 
+The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
+More compiler options can be given during invocation with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, LDLIBS,  TARGET_ARCH and LOADLIBES.
 (see help goal)
 
 **Source Detection**
@@ -47,13 +55,17 @@ You may use the following line to detect the list of the project internal includ
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
 * The command line goals are executed in the designated order.
+* support of build modes 'run' and 'debug',
+* support of 4 warning levels
 
 **Configuration**
 
 * Change the target by changing variable TARGET
-* The warning level of the compiler is stored in CXXWARNINGS
+* The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
-More compiler options can be given during runtime with variables BUILD_MODE, INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS. 
+The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
+More compiler options can be given during invocation with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, LDLIBS, 
+TARGET_ARCH and LOADLIBES.
 (see help goal)
 
 ## One To One
@@ -63,12 +75,16 @@ More compiler options can be given during runtime with variables BUILD_MODE, INC
 * The [Makefile](OneToOne/Makefile) builds executables from each found cpp source-file.
 * The list of source files and dependables is automatically created.
 * The command line goals are executed in the designated order.
+* support of build modes 'run' and 'debug',
+* support of 4 warning levels
 
 **Configuration**
 
-* The warning level of the compiler is stored in CXXWARNINGS
+* The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
-More compiler options can be given during runtime with variables BUILD_MODE, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS. 
+The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
+More compiler options can be given during invocation with variables CPPFLAGS, CXXFLAGS, LDFLAGS, LDLIBS, 
+TARGET_ARCH and LOADLIBES.
 (see help goal)
 
 ## Make Goals
@@ -87,4 +103,4 @@ are used in one make run.
 In the rare case that a source file has been deleted and nothing else has changed, the incremental build 
 will not be triggered correctly. In such a case, you should clean the workspace.
 
-`make clean all -j ncores`
+`make -j ncores clean all`
