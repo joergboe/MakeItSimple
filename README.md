@@ -18,6 +18,7 @@ for GNU c++ compiler, if you use an alternative compiler adapt the options and w
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
 * The command line goals are executed in the designated order.
+* incremental build support.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
 * configurable project settings and warning options
@@ -59,6 +60,7 @@ You may use the following line to detect the list of the project internal includ
 * Automatic header dependencies are created.
 * The list of source files and dependables is automatically created.
 * The command line goals are executed in the designated order.
+* incremental build support.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
 * configurable project settings and warning options
@@ -110,7 +112,12 @@ are used in one make run.
 
 ## Known Problems
 
-In the rare case that a source file has been deleted and nothing else has changed, the incremental build 
-will not be triggered correctly. In such a case, you should clean the workspace.
+* In the rare case that a source file has been deleted and nothing else has changed, the incremental build 
+will not be triggered correctly.
+* If a Makefile or a 'makefile.def' was changed, a cleanup is required.
+* If the BUILD_MODE is changed, a cleanup is required.
+* If one ore more of the dependency files (*.d) was manually changed, a cleanup is required.
 
-`make -j ncores clean all`
+You can make a cleanup of the workspace with:
+
+`make [-j ncores] clean all`

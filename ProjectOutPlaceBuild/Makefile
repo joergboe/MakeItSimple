@@ -140,7 +140,7 @@ $(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
-$(BUILDDIR)/%.o: %.cpp | $(BUILDDIRS)
+$(OBJECTS): $(BUILDDIR)/%.o: %.cpp | $(BUILDDIRS)
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'

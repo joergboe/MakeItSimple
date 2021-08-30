@@ -124,7 +124,7 @@ help:
 	$(info $(HELPSTRING))
 	$(info )
 
-%: %.cpp
+$(TARGETS): %: %.cpp
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo 'Finished building: $<'

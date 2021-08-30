@@ -130,11 +130,14 @@ $(TARGET): $(OBJECTS)
 	@echo 'Finished linking target: $@'
 	@echo ' '
 
-%.o: %.cpp
+$(OBJECTS): %.o: %.cpp
 	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
+
+# delete object files
+.INTERMEDIATE: $(OBJECTS)
 
 # include additional rules after default rule!
 -include $(DEPS)
