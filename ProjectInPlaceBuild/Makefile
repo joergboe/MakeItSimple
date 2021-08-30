@@ -42,8 +42,13 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       $(CXXWARN3)
   endef
 
-  # Project specific settings
-  export TARGET := program
+  THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+
+  # include project specific definitions
+  include makefile.def
+  export TARGET
+  # include warning definitions if defaults are not sufficient
+  -include makefile.warn
 
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
@@ -52,14 +57,13 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
 
   export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
-  CXXWARN0 := -ftabstop=4
-  CXXWARN1 := -pedantic -Wall -Wextra
-  CXXWARN2 := -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
-  -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
-  -Wsign-conversion -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
-  -Wuseless-cast -Wstrict-overflow=4 -Wattribute-alias -Wduplicated-branches -Wduplicated-cond -Wdate-time -Wextra-semi \
-  -Wnull-dereference -Wno-aggressive-loop-optimizations -Wdisabled-optimization
-  CXXWARN3 := -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
+  CXXWARN0 ?= -ftabstop=4
+  CXXWARN1 ?= -pedantic -Wall -Wextra
+  CXXWARN2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
+  -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
+  -Wsign-conversion -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+  -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
+  CXXWARN3 ?= -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
 
   WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
@@ -96,7 +100,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
   endif
 
   export ALL_CXXFLAGS := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
-  THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 
 .NOTPARALLEL:
 endif
@@ -134,5 +137,4 @@ $(TARGET): $(OBJECTS)
 	@echo ' '
 
 # include additional rules after default rule!
-# this line changes MAKEFILE_LIST !
 -include $(DEPS)

@@ -20,12 +20,16 @@ for GNU c++ compiler, if you use an alternative compiler adapt the options and w
 * The command line goals are executed in the designated order.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
+* configurable project settings and warning options
 
 **Configuration**
 
+Project settings are stored in a separate file 'makefile.def':
 * Change the target by changing variables BINDIR and TARGET.
 * The source directories of the project are stored in variable SRCDIRS.
 * The include directories of the project are stored in variable INCDIRS
+
+Default warning options are overwritten with file 'makefile.warn':
 * The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
 The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
@@ -57,10 +61,14 @@ You may use the following line to detect the list of the project internal includ
 * The command line goals are executed in the designated order.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
+* configurable project settings and warning options
 
 **Configuration**
 
+Project settings are stored in a separate file 'makefile.def':
 * Change the target by changing variable TARGET
+
+Default warning options are overwritten with file 'makefile.warn':
 * The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
 The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
@@ -77,9 +85,11 @@ TARGET_ARCH and LOADLIBES.
 * The command line goals are executed in the designated order.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
+* configurable warning options
 
 **Configuration**
 
+Default warning options are overwritten with file 'makefile.warn':
 * The warning flags for compiler are stored in CXXWARN1, CXXWARN2 and CXXWARN3.
 
 The variables BUILD_MODE and WARN_LEVEL control the build mode and the warning level. 
