@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   define HELPSTRING =
     Build one executable defined through $$(BINDIR)/$$(TARGET) = $(BINDIR)/$(TARGET) from all %.cpp source files in a project source directories.
@@ -9,10 +11,13 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       clean  Clean all previousely build executables.
       help   Print this help text.
 
-    useful makeoptions:
+    some useful make-options:
       -h, --help          Display help.
       -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
       -B, --always-make   Unconditionally make all targets.
+      -s, --silent, --quiet       Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]
+                              Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     The executable is build with debug information included.
     With variable
@@ -136,12 +141,10 @@ $(BINDIR):
 	mkdir -p '$@'
 
 $(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
-	@echo 'Linking target: $@'
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTS): $(BUILDDIR)/%.o: %.cpp | $(BUILDDIRS)
-	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
 

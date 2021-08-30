@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   define HELPSTRING =
     Build executables from each found %.cpp source file.
@@ -10,10 +12,13 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       help   Print this help text.
       %      Build this target file if a coresponding %.cpp exists.
 
-    useful makeoptions:
+    some useful make-options:
       -h, --help          Display help.
       -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
       -B, --always-make   Unconditionally make all targets.
+      -s, --silent, --quiet       Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]
+                              Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     The executables are build with debug information included.
     With variable
@@ -117,7 +122,7 @@ recursion: $(TARGETS)
 clean:
 	@echo 'Cleanup'
 	-$(RM) $(TARGETS)
-	-@echo ' '
+	-@echo
 
 help:
 	$(info )
@@ -125,7 +130,5 @@ help:
 	$(info )
 
 $(TARGETS): %: %.cpp
-	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
-	@echo 'Finished building: $<'
-	@echo ' '
+	@echo -e 'Finished building: $<\n'

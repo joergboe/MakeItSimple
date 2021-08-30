@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
   define HELPSTRING =
     Build one executable defined in variable $$(TARGET)=$(TARGET) from all %.cpp source files in a project directory.
@@ -10,10 +12,13 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       help   Print this help text.
       %.o    Build this object file if a coresponding %.cpp exists.
 
-    useful makeoptions:
+    some useful make-options:
       -h, --help          Display help.
       -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
       -B, --always-make   Unconditionally make all targets.
+      -s, --silent, --quiet       Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]
+                              Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     The executable is build with debug information included.
     With variable
@@ -117,7 +122,7 @@ all:
 clean:
 	@echo 'Cleanup'
 	-$(RM) $(TARGET) *.o *.d
-	-@echo ' '
+	-@echo
 
 help:
 	$(info )
@@ -125,16 +130,12 @@ help:
 	$(info )
 
 $(TARGET): $(OBJECTS)
-	@echo 'Linking target: $@'
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
-	@echo 'Finished linking target: $@'
-	@echo ' '
+	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTS): %.o: %.cpp
-	@echo 'Building file: $<'
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo 'Finished building: $<'
-	@echo ' '
+	@echo -e 'Finished building: $<\n'
 
 # delete object files
 .INTERMEDIATE: $(OBJECTS)
