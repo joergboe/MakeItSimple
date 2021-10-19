@@ -2,31 +2,33 @@ SHELL = /bin/bash
 
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
   define HELPSTRING =
-    Build one executable defined in variable $$(TARGET)=$(TARGET) from all %.cpp source files in a project directory.
+    This make script builds one executable defined in variable $$(TARGET)=$(TARGET) from all %.cpp source files in the 
+    current/project directory.
 
-      make [makeoptions] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [more variables] [goal ...]
+    Synopsis
+        make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
+      or
+        [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
 
     Goals:
       all    Build the target executable - default goal.
-      clean  Clean all previousely build executables.
+      clean  Clean up the target executable and all build artefacts.
       help   Print this help text.
       %.o    Build this object file if a coresponding %.cpp exists.
 
-    some useful make-options:
-      -h, --help          Display help.
-      -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
-      -B, --always-make   Unconditionally make all targets.
-      -s, --silent, --quiet       Don't echo recipes.
-      -O[TYPE], --output-sync[=TYPE]
-                              Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+    Files:
+      Makefile       This make script
+      makefile.def   This required script contains the project specific definitions.
+      makefile.warn  If the default warning options are not sufficient, this optional file can be used to define
+                     specific warning options and will be included from Makefile.
 
-    The executable is build with debug information included.
-    With variable
-      BUILD_MODE=run
-    an optimized executable without debug information is built.
-    The variable WARN_LEVEL can assign warning levels from 0 .. 3.
-    The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
-    More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
+    Some useful make-options:
+      -h, --help                      Display help.
+      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
+      -k, --keep-going                Continue as much as possible after an error.
+      -B, --always-make               Unconditionally make all targets.
+      -s, --silent, --quiet           Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     Variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
@@ -36,6 +38,15 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
+
+    Description:
+      This make script builds one executable defined in variable $$(TARGET)=$(TARGET) from all %.cpp source files in the 
+      current/project directory.
+      If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
+      If variable BUILD_MODE=run optimized executables without debug information are built.
+      The variable WARN_LEVEL can assign warning levels from 0 .. 3.
+      The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
+      More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 
     Compiler flags warning level 1 includes:
       $(CXXWARN1)
@@ -47,7 +58,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       $(CXXWARN3)
   endef
 
-  THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+  export THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 
   # include project specific definitions
   include makefile.def
@@ -133,12 +144,9 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
-$(OBJECTS): %.o: %.cpp
+$(OBJECTS): %.o: %.cpp $(THIS_MAKEFILE) makefile.def
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
-
-# delete object files
-.INTERMEDIATE: $(OBJECTS)
 
 # include additional rules after default rule!
 -include $(DEPS)

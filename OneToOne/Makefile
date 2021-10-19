@@ -2,31 +2,32 @@ SHELL = /bin/bash
 
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   define HELPSTRING =
-    Build executables from each found %.cpp source file.
+    This make script builds executables from each %.cpp source file found in the current directory.
 
-      make [makeoptions] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
+    Synopsis
+        make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
+      or
+        [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
 
     Goals:
       all    Build an executable with every *.cpp file in the current directory - default goal.
-      clean  Clean all previousely build executables.
+      clean  Clean up all generated executables.
       help   Print this help text.
       %      Build this target file if a coresponding %.cpp exists.
 
-    some useful make-options:
-      -h, --help          Display help.
-      -j [N], --jobs[=N]  Allow N jobs at once; infinite jobs with no arg.
-      -B, --always-make   Unconditionally make all targets.
-      -s, --silent, --quiet       Don't echo recipes.
-      -O[TYPE], --output-sync[=TYPE]
-                              Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+    Files:
+      Makefile       This make script
+      makefile.warn  If the default warning options are not sufficient, this optional file can be used to define
+                     specific warning options and will be included from Makefile.
+      makefile.def   Define further project definitions and options in this file if required.
 
-    The executables are build with debug information included.
-    With variable
-      BUILD_MODE=run
-    optimized executables without debug information are built.
-    The variable WARN_LEVEL can assign warning levels from 0 .. 3.
-    The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
-    More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
+    Some useful make-options:
+      -h, --help                      Display help.
+      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
+      -k, --keep-going                Continue as much as possible after an error.
+      -B, --always-make               Unconditionally make all targets.
+      -s, --silent, --quiet           Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     Variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
@@ -36,6 +37,18 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
+
+    Description:
+      This make script builds executables from each %.cpp source file found in the current directory.
+      If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
+      If variable BUILD_MODE=run optimized executables without debug information are built.
+
+      The variable WARN_LEVEL can assign warning levels from 0 .. 3.
+      The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
+      More compiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
+
+      This script ensures that the first level goals (clean, all) are executed in the designated order
+      if the script is invoked for parallel execution (make options --jobs or --load-average)
 
     Compiler flags warning level 1 includes:
       $(CXXWARN1)
@@ -47,7 +60,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       $(CXXWARN3)
   endef
 
-  THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+  export THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 
   # include project specific definitions if any
   -include makefile.def
@@ -112,12 +125,12 @@ ALL_CPPFLAGS = $(CPPFLAGS) $(INC_FLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
-.PHONY: all clean help recursion
+.PHONY: all clean help all_targets
 
 all:
-	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(THIS_MAKEFILE) recursion
+	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(THIS_MAKEFILE) all_targets
 
-recursion: $(TARGETS)
+all_targets: $(TARGETS)
 
 clean:
 	@echo 'Cleanup'
@@ -129,6 +142,6 @@ help:
 	$(info $(HELPSTRING))
 	$(info )
 
-$(TARGETS): %: %.cpp
+$(TARGETS): %: %.cpp $(THIS_MAKEFILE)
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo -e 'Finished building: $<\n'
