@@ -1,6 +1,6 @@
 # This file contains the compiler warning definitions tailored for g++ version 7 or higher
 # Copy this file to the project directory an re-name to makefile.warn
-# or provide a link makefile.warn pointing to this file : ln -s ../CommonDefinitions/makefile.warn.g++7 makefile.warn
+# or provide a link makefile.warn pointing to this file : ln -s ../CommonDefinitions/warnings.g++7.mk warnings.mk
 
 CXXWARN2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
 -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \

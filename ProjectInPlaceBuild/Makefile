@@ -1,5 +1,12 @@
 SHELL = /bin/bash
 
+MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
+MAKEFILE_DEFS := definitions.mk
+MAKEFILE_WARN := warnings.mk
+
+# include required project specific definitions
+include $(MAKEFILE_DEFS)
+
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
   define HELPSTRING =
     This make script builds one executable defined in variable $$(TARGET)=$(TARGET) from all %.cpp source files in the 
@@ -17,10 +24,10 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       %.o    Build this object file if a coresponding %.cpp exists.
 
     Files:
-      Makefile       This make script
-      makefile.def   This required script contains the project specific definitions.
-      makefile.warn  If the default warning options are not sufficient, this optional file can be used to define
-                     specific warning options and will be included from Makefile.
+      Makefile        This make script
+      $(MAKEFILE_DEFS)  This required script contains the project specific definitions.
+      $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
+                      specific warning options and will be included from Makefile.
 
     Some useful make-options:
       -h, --help                      Display help.
@@ -58,13 +65,8 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
       $(CXXWARN3)
   endef
 
-  export THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
-
-  # include project specific definitions
-  include makefile.def
-  export TARGET
   # include warning definitions if defaults are not sufficient
-  -include makefile.warn
+  -include $(MAKEFILE_WARN)
 
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
@@ -128,7 +130,7 @@ ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
 .PHONY: all clean help
 
 all:
-	@$(MAKE) MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD=1 -f $(THIS_MAKEFILE) $(TARGET)
+	@$(MAKE) MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD=1 -f $(MAKEFILE_THIS) $(TARGET)
 
 clean:
 	@echo 'Cleanup'
@@ -144,7 +146,7 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
-$(OBJECTS): %.o: %.cpp $(THIS_MAKEFILE) makefile.def
+$(OBJECTS): %.o: %.cpp $(MAKEFILE_THIS) $(MAKEFILE_DEFS)
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
 

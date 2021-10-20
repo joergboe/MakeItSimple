@@ -1,5 +1,12 @@
 SHELL = /bin/bash
 
+MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
+MAKEFILE_DEFS := definitions.mk
+MAKEFILE_WARN := warnings.mk
+
+# include required project specific definitions
+include $(MAKEFILE_DEFS)
+
 ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   define HELPSTRING =
     This make script builds one executable defined through $$(BINDIR)/$$(TARGET) = $(BINDIR)/$(TARGET) from all %.cpp source
@@ -16,10 +23,10 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       help   Print this help text.
 
     Files:
-      Makefile       This make script
-      makefile.def   This required script contains the project specific definitions.
-      makefile.warn  If the default warning options are not sufficient, this optional file can be used to define
-                     specific warning options and will be included from Makefile.
+      Makefile        This make script
+      $(MAKEFILE_DEFS)  This required script contains the project specific definitions.
+      $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
+                      specific warning options and will be included from Makefile.
 
     Some useful make-options:
       -h, --help                      Display help.
@@ -57,13 +64,8 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       $(CXXWARN3)
   endef
 
-  export THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
-
-  # include project specific definitions
-  include makefile.def
-  export TARGET SRCDIRS INCDIRS BUILDDIR BINDIR
   # include warning definitions if defaults are not sufficient
-  -include makefile.warn
+  -include $(MAKEFILE_WARN)
 
   export INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
 
@@ -132,7 +134,7 @@ ALL_CPPFLAGS = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
 .PHONY: all clean help
 
 all:
-	@$(MAKE) MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD=1 -f $(THIS_MAKEFILE) $(BINDIR)/$(TARGET)
+	@$(MAKE) MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD=1 -f $(MAKEFILE_THIS) $(BINDIR)/$(TARGET)
 
 clean:
 	@echo 'Cleanup'
@@ -155,7 +157,7 @@ $(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
 	$(CXX) $(ALL_CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
-$(OBJECTS): $(BUILDDIR)/%.o: %.cpp $(THIS_MAKEFILE) makefile.def | $(BUILDDIRS)
+$(OBJECTS): $(BUILDDIR)/%.o: %.cpp $(MAKEFILE_THIS) $(MAKEFILE_DEFS) | $(BUILDDIRS)
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
 

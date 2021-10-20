@@ -1,0 +1,1 @@
+../CommonDefinitions/warnings.g++7.mk

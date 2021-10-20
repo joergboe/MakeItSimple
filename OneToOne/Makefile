@@ -1,5 +1,12 @@
 SHELL = /bin/bash
 
+MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
+MAKEFILE_DEFS := definitions.mk
+MAKEFILE_WARN := warnings.mk
+
+# include project specific definitions if any
+-include $(MAKEFILE_DEFS)
+
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   define HELPSTRING =
     This make script builds executables from each %.cpp source file found in the current directory.
@@ -16,10 +23,10 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       %      Build this target file if a coresponding %.cpp exists.
 
     Files:
-      Makefile       This make script
-      makefile.warn  If the default warning options are not sufficient, this optional file can be used to define
-                     specific warning options and will be included from Makefile.
-      makefile.def   Define further project definitions and options in this file if required.
+      Makefile        This make script
+      $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
+                      specific warning options and will be included from Makefile.
+      $(MAKEFILE_DEFS)  Define further project definitions and options in this file if required.
 
     Some useful make-options:
       -h, --help                      Display help.
@@ -60,12 +67,8 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       $(CXXWARN3)
   endef
 
-  export THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
-
-  # include project specific definitions if any
-  -include makefile.def
   # include warning definitions if defaults are not sufficient
-  -include makefile.warn
+  -include $(MAKEFILE_WARN)
 
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
@@ -128,7 +131,7 @@ ALL_CPPFLAGS = $(CPPFLAGS) $(INC_FLAGS)
 .PHONY: all clean help all_targets
 
 all:
-	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(THIS_MAKEFILE) all_targets
+	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(MAKEFILE_THIS) all_targets
 
 all_targets: $(TARGETS)
 
@@ -142,6 +145,6 @@ help:
 	$(info $(HELPSTRING))
 	$(info )
 
-$(TARGETS): %: %.cpp $(THIS_MAKEFILE)
+$(TARGETS): %: %.cpp $(MAKEFILE_THIS)
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo -e 'Finished building: $<\n'
