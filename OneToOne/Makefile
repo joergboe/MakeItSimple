@@ -73,6 +73,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
   export TARGETS := $(CPPSOURCES:.cpp=)
+  export DEPS := $(CPPSOURCES:.cpp=.d)
 
   export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
@@ -124,7 +125,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 endif
 
 # cpp-flags require recursive variable flavor in some other makefile variants
-ALL_CPPFLAGS = $(CPPFLAGS) $(INC_FLAGS)
+ALL_CPPFLAGS = -MMD -MF"$(@:%=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
@@ -137,7 +138,7 @@ all_targets: $(TARGETS)
 
 clean:
 	@echo 'Cleanup'
-	-$(RM) $(TARGETS)
+	-$(RM) $(TARGETS) *.d
 	-@echo
 
 help:
@@ -148,3 +149,6 @@ help:
 $(TARGETS): %: %.cpp $(MAKEFILE_THIS)
 	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo -e 'Finished building: $<\n'
+
+# include additional rules after default rule!
+-include $(DEPS)
