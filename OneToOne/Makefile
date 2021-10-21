@@ -1,7 +1,7 @@
 SHELL = /bin/bash
 
 MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
-MAKEFILE_DEFS := definitions.mk
+MAKEFILE_DEFS := project.mk
 MAKEFILE_WARN := warnings.mk
 
 # include project specific definitions if any
@@ -26,17 +26,9 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       Makefile        This make script
       $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
                       specific warning options and will be included from Makefile.
-      $(MAKEFILE_DEFS)  Define further project definitions and options in this file if required.
+      $(MAKEFILE_DEFS)      This optional file may contains project specific customizations.
 
-    Some useful make-options:
-      -h, --help                      Display help.
-      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
-      -k, --keep-going                Continue as much as possible after an error.
-      -B, --always-make               Unconditionally make all targets.
-      -s, --silent, --quiet           Don't echo recipes.
-      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
-
-    Variables:
+    Optional customization variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
       WARN_LEVEL:   Warning level set 0 .. 3.
       INCLUDE_DIRS: Space separated list of external include directories (-I).
@@ -56,6 +48,14 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 
       This script ensures that the first level goals (clean, all) are executed in the designated order
       if the script is invoked for parallel execution (make options --jobs or --load-average)
+
+    Some useful make-options:
+      -h, --help                      Display help.
+      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
+      -k, --keep-going                Continue as much as possible after an error.
+      -B, --always-make               Unconditionally make all targets.
+      -s, --silent, --quiet           Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     Compiler flags warning level 1 includes:
       $(CXXWARN1)

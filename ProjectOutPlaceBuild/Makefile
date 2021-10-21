@@ -1,7 +1,7 @@
 SHELL = /bin/bash
 
 MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
-MAKEFILE_DEFS := definitions.mk
+MAKEFILE_DEFS := project.mk
 MAKEFILE_WARN := warnings.mk
 
 # include required project specific definitions
@@ -24,21 +24,21 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
 
     Files:
       Makefile        This make script
-      $(MAKEFILE_DEFS)  This required script contains the project specific definitions.
+      $(MAKEFILE_DEFS)      This required script contains the project customizations.
       $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
                       specific warning options and will be included from Makefile.
 
-    Some useful make-options:
-      -h, --help                      Display help.
-      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
-      -k, --keep-going                Continue as much as possible after an error.
-      -B, --always-make               Unconditionally make all targets.
-      -s, --silent, --quiet           Don't echo recipes.
-      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+    Required customization variables:
+      TARGET  Name of the executable to build.
+      SRCDIRS Space separated list of directories with c++ source files (Must contain at least '.')
+      BUILDDIR Directory used for build files (objects-files, dep-files)
+      BINDIR Target directory for the final executable
 
-    Variables:
+    Optional customization variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
       WARN_LEVEL:   Warning level set 0 .. 3.
+      INCDIRS:      Space separated list of project internal include directories for the quote form of the include directive (-iquote)
+                    Omit this variable, if header and source files are placed in the same directory.
       INCLUDE_DIRS: Space separated list of external include directories (-I).
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
@@ -54,6 +54,14 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
       More copiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS.
 
+    Some useful make-options:
+      -h, --help                      Display help.
+      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
+      -k, --keep-going                Continue as much as possible after an error.
+      -B, --always-make               Unconditionally make all targets.
+      -s, --silent, --quiet           Don't echo recipes.
+      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+
     Compiler flags warning level 1 includes:
       $(CXXWARN1)
 
@@ -67,7 +75,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   # include warning definitions if defaults are not sufficient
   -include $(MAKEFILE_WARN)
 
-  export INC_FLAGS := $(addprefix -I,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
+  export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
 
   # search source files and make dependent variables
   export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
