@@ -1,14 +1,28 @@
 SHELL = /bin/bash
 
-MAKEFILE_THIS := $(lastword $(MAKEFILE_LIST))
-MAKEFILE_DEFS := project.mk
-MAKEFILE_WARN := warnings.mk
+makefile_this := $(lastword $(MAKEFILE_LIST))
+makefile_defs := project.mk
+makefile_warn := warnings.mk
+
+# delete the old fashioned suffix rules from database
+.SUFFIXES:
+# instruct make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
+.DELETE_ON_ERROR:
+.PHONY: all clean help recursion_goal
+# ensure that 'all' is the default goal (first target without a dot)
+all:
 
 # include project specific definitions if any
--include $(MAKEFILE_DEFS)
+-include $(makefile_defs)
 
+# initialization block of the initial recursion level
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
-  define HELPSTRING =
+  export MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION = 1
+
+  # parallel execution is disabled in the first level invocation
+  .NOTPARALLEL:
+
+  define helpstring =
     This make script builds executables from each %.cpp source file found in the current directory.
 
     Synopsis
@@ -24,9 +38,9 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 
     Files:
       Makefile        This make script
-      $(MAKEFILE_WARN)     If the default warning options are not sufficient, this optional file can be used to define
+      $(makefile_warn)     If the default warning options are not sufficient, this optional file can be used to define
                       specific warning options and will be included from Makefile.
-      $(MAKEFILE_DEFS)      This optional file may contains project specific customizations.
+      $(makefile_defs)      This optional file may contains project specific customizations.
 
     Optional customization variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
@@ -34,6 +48,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       INCLUDE_DIRS: Space separated list of external include directories (-I).
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
+      TARGET_ARCH   Target specific flags.
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
 
@@ -46,8 +61,8 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       The default warning level is 2 and activates a comprehensive set of warnings (for gcc).
       More compiler options can be given with variables INCLUDE_DIRS, CPPFLAGS, CXXFLAGS, LDFLAGS, TARGET_ARCH, LOADLIBES and LDLIBS
 
-      This script ensures that the first level goals (clean, all) are executed in the designated order
-      if the script is invoked for parallel execution (make options --jobs or --load-average)
+      If parallel execution is requested, the script executes the command line goals in the designated order and switches 
+      for goal 'all' to parallel execution mode in recursion level 1.
 
     Some useful make-options:
       -h, --help                      Display help.
@@ -58,17 +73,14 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     Compiler flags warning level 1 includes:
-      $(CXXWARN1)
+      $(cxxwarn1)
 
     Warning levels 2 additionally includes:
-      $(CXXWARN2)
+      $(cxxwarn2)
 
     Warning levels 3 additionally includes:
-      $(CXXWARN3)
+      $(cxxwarn3)
   endef
-
-  # include warning definitions if defaults are not sufficient
-  -include $(MAKEFILE_WARN)
 
   # determine all required objects
   export CPPSOURCES := $(wildcard *.cpp)
@@ -77,64 +89,65 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 
   export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
-  CXXWARN0 ?= -ftabstop=4
-  CXXWARN1 ?= -pedantic -Wall -Wextra
-  CXXWARN2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
+  # the defaul warnings are:
+  cxxwarn0 = -ftabstop=4
+  cxxwarn1 = -pedantic -Wall -Wextra
+  cxxwarn2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
   -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
-  -Wsign-conversion -Wstrict-overflow=5 -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+  -Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
   -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
-  CXXWARN3 ?= -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros
+  cxxwarn3 = -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros -Wstrict-overflow=5
+  # overwrite warning definitions if defaults are not sufficient
+  -include $(makefile_warn)
 
   WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
-    CXXWARNINGS := $(CXXWARN0)
+    cxxwarnings := $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),1)
-    CXXWARNINGS := $(CXXWARN1) $(CXXWARN0)
+    cxxwarnings := $(cxxwarn1) $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),2)
-    CXXWARNINGS := $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+    cxxwarnings := $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),3)
-    CXXWARNINGS := $(CXXWARN3) $(CXXWARN2) $(CXXWARN1) $(CXXWARN0)
+    cxxwarnings := $(cxxwarn3) $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
   else
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
-    CXXOPT := -O3
-    INFOSTRING := Building optimized release version $(CXXOPT)
+    cxxopt := -O3
+    infostring := Building optimized release version $(cxxopt)
   else ifeq ($(BUILD_MODE),debug)
-    CXXOPT := -O0 -g3
-    INFOSTRING := Building with debug information $(CXXOPT)
+    cxxopt := -O0 -g3
+    infostring := Building with debug information $(cxxopt)
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  ifneq ($(MAKECMDGOALS),help)
-    $(info )
-    $(info Detected targets : $(TARGETS))
-    $(info $(INFOSTRING))
-    $(info )
-    $(info  Building with WARN_LEVEL=$(WARN_LEVEL) included flags:)
-    $(info $(CXXWARNINGS))
-    $(info )
+  # print info only if not silent and not help goal
+  ifeq (,$(findstring s,$(MAKEFLAGS)))
+    ifneq ($(MAKECMDGOALS),help)
+      $(info )
+      $(info Detected targets : $(TARGETS))
+      $(info $(infostring))
+      $(info )
+      $(info  Building with WARN_LEVEL=$(WARN_LEVEL) included flags:)
+      $(info $(cxxwarnings))
+      $(info )
+    endif
   endif
 
-  export ALL_CXXFLAGS := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS) $(CXXFLAGS)
+  export ALL_CXXFLAGS := -fmessage-length=0 $(cxxopt) $(cxxwarnings) $(CXXFLAGS)
 
-.NOTPARALLEL:
 endif
 
-# cpp-flags require recursive variable flavor in some other makefile variants
-ALL_CPPFLAGS = -MMD -MF"$(@:%=%.d)" -MP -MT"$@" $(CPPFLAGS) $(INC_FLAGS)
-
-.SUFFIXES:
-.DELETE_ON_ERROR:
-.PHONY: all clean help all_targets
+# With recursive variables the automatic variables may be expanded during receipt execution.
+all_cppflags = -MMD -MP $(CPPFLAGS) $(INC_FLAGS)
 
 all:
-	@$(MAKE) MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION=1 -f $(MAKEFILE_THIS) all_targets
+	@$(MAKE) -f $(makefile_this) recursion_goal
 
-all_targets: $(TARGETS)
+recursion_goal: $(TARGETS)
 
 clean:
 	@echo 'Cleanup'
@@ -143,11 +156,11 @@ clean:
 
 help:
 	$(info )
-	$(info $(HELPSTRING))
+	$(info $(helpstring))
 	$(info )
 
-$(TARGETS): %: %.cpp $(MAKEFILE_THIS)
-	$(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
+$(TARGETS): %: %.cpp $(makefile_this)
+	$(CXX) $(ALL_CXXFLAGS) $(all_cppflags) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo -e 'Finished building: $<\n'
 
 # include additional rules after default rule!
