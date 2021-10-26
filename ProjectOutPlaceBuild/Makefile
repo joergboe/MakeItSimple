@@ -43,10 +43,10 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
                       specific warning options and will be included from Makefile.
 
     Required customization variables:
-      TARGET  Name of the executable to build.
-      SRCDIRS Space separated list of directories with c++ source files (Must contain at least '.')
-      BUILDDIR Directory used for build files (objects-files, dep-files)
-      BINDIR Target directory for the final executable
+      TARGET    Name of the executable to build.
+      SRCDIRS   Space separated list of directories with c++ source files (Must contain at least '.')
+      BUILDDIR  Directory used for build files (objects-files, dep-files)
+      BINDIR    Target directory for the final executable
 
     Optional customization variables:
       BUILD_MODE:   Build mode set to 'run' or 'debug'.
