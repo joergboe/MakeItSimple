@@ -1,7 +1,7 @@
 # MakeItSimple
 
-This repository has a set of simple makefiles that may be useful for small- and medium-sized 
-c++ projects. The makefiles are designed to use only functions that are shipped with GNU make. 
+This repository has a set of simple makefiles that may be useful for small- or experimental 
+c++ projects without any further build system. The makefiles are designed to use only functions that are shipped with GNU make. 
 All make scripts support parallel build and ensure that the first level goals are executed in the designated order. 
 The scripts come with a comprehensive set of warning compiler options for the GNU c++ compiler (g++). These options can be 
 controlled in 4 levels. 
@@ -16,7 +16,7 @@ for GNU c++ compiler, if you use an alternative compiler adapt the options and w
 * The [Makefile](ProjectOutPlaceBuild/Makefile) builds one executable from cpp source- and header-files in the projects source- and include-directories.
 * The generated files are placed in separate directories.
 * Automatic header dependencies are created.
-* The list of source files and dependables is automatically created.
+* The list of source- and dependable files is automatically created.
 * The command line goals are executed in the designated order.
 * incremental build support.
 * support of build modes 'run' and 'debug',
@@ -58,7 +58,7 @@ You may use the following line to detect the list of the project internal includ
 
 * The [Makefile](ProjectInPlaceBuild/Makefile) builds one executable from cpp source- and header-files in the project directory.
 * Automatic header dependencies are created.
-* The list of source files and dependables is automatically created.
+* The list of source- and dependable files is automatically created.
 * The command line goals are executed in the designated order.
 * incremental build support.
 * support of build modes 'run' and 'debug',
@@ -83,7 +83,7 @@ TARGET_ARCH and LOADLIBES.
 **Features**
 
 * The [Makefile](OneToOne/Makefile) builds executables from each found cpp source-file.
-* The list of source files and dependables is automatically created.
+* The list of source- and dependable files is automatically created.
 * The command line goals are executed in the designated order.
 * support of build modes 'run' and 'debug',
 * support of 4 warning levels
