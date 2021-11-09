@@ -53,7 +53,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       WARN_LEVEL:   Warning level set 0 .. 3.
       INCDIRS:      Space separated list of project internal include directories for the quote form of the include directive (-iquote)
                     Omit this variable, if header and source files are placed in the same directory.
-      INCLUDE_DIRS: Space separated list of external include directories (-I).
+      INCLUDE_DIRS: Space separated list of external include directories used with compiler option -I.
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       TARGET_ARCH   Target specific flags.
@@ -96,8 +96,8 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   # search source files and make dependent variables
   export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
   export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
-  # with this code the cpp files are automatically and recursively detected
-  #CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
+  # with this code the cpp files are recursively searched in the source directory list
+  #export CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
   export OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
   export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
 
