@@ -4,22 +4,24 @@ makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 makefile_warn := warnings.mk
 
-# delete the old fashioned suffix rules from database
+# deletes the old fashioned suffix rules from database (speedup)
 .SUFFIXES:
-# instruct make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
+# instructs make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
 .DELETE_ON_ERROR:
+
 .PHONY: all clean help recursion_goal
-# ensure that 'all' is the default goal (first target without a dot)
+# ensures that 'all' is the default (first target without a dot) goal
 all:
 
 # include project specific definitions if any
 -include $(makefile_defs)
 
-# initialization block of the initial recursion level
+# The following initialization block is active in the initial recursion level only.
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   export MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION = 1
 
-  # parallel execution is disabled in the first level invocation
+  # Since the parallel execution is deactivated in the initial recursion level,
+  # the execution of the command line goals is ensured in the intended order.
   .NOTPARALLEL:
 
   define helpstring =
@@ -82,14 +84,14 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       $(cxxwarn3)
   endef
 
-  # determine all required objects
+  # determines all required objects/flags and exports required values for recursion
   export CPPSOURCES := $(wildcard *.cpp)
   export TARGETS := $(CPPSOURCES:.cpp=)
   export DEPS := $(CPPSOURCES:.cpp=.d)
 
   export INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
-  # the defaul warnings are:
+  # the default warnings are:
   cxxwarn0 = -ftabstop=4
   cxxwarn1 = -pedantic -Wall -Wextra
   cxxwarn2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
@@ -97,7 +99,8 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   -Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
   -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
   cxxwarn3 = -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros -Wstrict-overflow=5
-  # overwrite warning definitions if defaults are not sufficient
+
+  # Overwrite warning definitions in file makefile_warn if defaults are not sufficient!
   -include $(makefile_warn)
 
   WARN_LEVEL ?= 2
@@ -124,7 +127,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # print info only if not silent and not help goal
+  # prints info only if not silent (-s option) and not help goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
     ifneq ($(MAKECMDGOALS),help)
       $(info )
@@ -141,9 +144,10 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
 
 endif
 
-# With recursive variables the automatic variables may be expanded during receipt execution.
+# With recursive variables the automatic variables are expanded during receipt execution.
 all_cppflags = -MMD -MP $(CPPFLAGS) $(INC_FLAGS)
 
+# rules:
 all:
 	@$(MAKE) -f $(makefile_this) recursion_goal
 
@@ -163,5 +167,5 @@ $(TARGETS): %: %.cpp $(makefile_this)
 	$(CXX) $(ALL_CXXFLAGS) $(all_cppflags) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LOADLIBES) $(LDLIBS) "$<"
 	@echo -e 'Finished building: $<\n'
 
-# include additional rules after default rule!
+# includes additional rules after default rule
 -include $(DEPS)
