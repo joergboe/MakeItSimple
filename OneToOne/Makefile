@@ -9,7 +9,7 @@ makefile_warn := warnings.mk
 # instructs make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
 .DELETE_ON_ERROR:
 
-.PHONY: all clean help recursion_goal
+.PHONY: all clean info help recursion_goal
 # ensures that 'all' is the default (first target without a dot) goal
 all:
 
@@ -35,6 +35,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
     Goals:
       all    Build an executable with every *.cpp file in the current directory - default goal.
       clean  Clean up all generated executables.
+      info   Print project info.
       help   Print this help text.
       %      Build this target file if a coresponding %.cpp exists.
 
@@ -50,7 +51,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       INCLUDE_DIRS: Space separated list of external include directories (-I).
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
-      TARGET_ARCH   Target specific flags.
+      TARGET_ARCH:  Target specific flags.
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
 
@@ -119,23 +120,19 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     cxxopt := -O3
-    infostring := Building optimized release version $(cxxopt)
+    modeinfostring := Building optimized release version
   else ifeq ($(BUILD_MODE),debug)
     cxxopt := -O0 -g3
-    infostring := Building with debug information $(cxxopt)
+    modeinfostring := Building with debug information
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # prints info only if not silent (-s option) and not help goal
+  # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
-    ifneq ($(MAKECMDGOALS),help)
+    ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
       $(info )
       $(info Detected targets : $(TARGETS))
-      $(info $(infostring))
-      $(info )
-      $(info  Building with WARN_LEVEL=$(WARN_LEVEL) included flags:)
-      $(info $(cxxwarnings))
       $(info )
     endif
   endif
@@ -157,6 +154,15 @@ clean:
 	@echo 'Cleanup'
 	-$(RM) $(TARGETS) *.d
 	-@echo
+
+info:
+	$(info )
+	$(info Detected targets : $(TARGETS))
+	$(info )
+	$(info $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(cxxopt))
+	$(info )
+	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings))
+	$(info )
 
 help:
 	$(info )

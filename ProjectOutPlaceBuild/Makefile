@@ -9,7 +9,7 @@ makefile_warn := warnings.mk
 # instructs make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
 .DELETE_ON_ERROR:
 
-.PHONY: all clean help recursion_goal
+.PHONY: all clean info help recursion_goal
 # ensures that 'all' is the default (first target without a dot) goal
 all:
 
@@ -36,6 +36,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
     Goals:
       all    Build the target executable - default goal.
       clean  Clean up the target executable and all build artefacts.
+      info   Print project info.
       help   Print this help text.
 
     Files:
@@ -58,7 +59,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       INCLUDE_DIRS: Space separated list of external include directories used with compiler option -I.
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
-      TARGET_ARCH   Target specific flags.
+      TARGET_ARCH:  Target specific flags.
       LDFLAGS:      Extra linker options, SUCH AS -L.
       LDLIBS:       Extra library flags given to the linker.
 
@@ -132,25 +133,23 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     cxxopt := -O3
-    infostring := Building optimized release version $(cxxopt)
+    modeinfostring := Building optimized release version
   else ifeq ($(BUILD_MODE),debug)
     cxxopt := -O0 -g3
-    infostring := Building with debug information $(cxxopt)
+    modeinfostring := Building with debug information
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # prints info only if not silent (-s option) and not help goal
+  # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
-    ifneq ($(MAKECMDGOALS),help)
+    ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
       $(info )
-      $(info Build target $(BINDIR)/$(TARGET) from *.cpp sourcefiles in source directories: $(SRCDIRS))
-      $(info All include directories: $(INCDIRS) $(INCLUDE_DIRS))
-      $(info Detected objects: $(OBJECTS))
-      $(info $(infostring))
+      $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp sourcefiles in source directories : $(SRCDIRS))
       $(info )
-      $(info  Building with WARN_LEVEL=$(WARN_LEVEL) included flags:)
-      $(info $(cxxwarnings))
+      $(info All include directories : $(INCDIRS) $(INCLUDE_DIRS))
+      $(info )
+      $(info Detected objects : $(OBJECTS))
       $(info )
     endif
   endif
@@ -171,6 +170,19 @@ clean:
 	-$(RM) $(BINDIR)/$(TARGET)
 	-$(RM) -r $(BUILDDIR)
 	-@echo
+
+info:
+	$(info )
+	$(info Build target '$(BINDIR)/$(TARGET)' from *.cpp sourcefiles in source directories : $(SRCDIRS))
+	$(info )
+	$(info All include directories : $(INCDIRS) $(INCLUDE_DIRS))
+	$(info )
+	$(info Detected objects : $(OBJECTS))
+	$(info )
+	$(info $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(cxxopt))
+	$(info )
+	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings))
+	$(info )
 
 help:
 	$(info )
