@@ -15,6 +15,12 @@ all:
 
 # include required project specific definitions
 include $(makefile_defs)
+# add the defaults
+WARN_LEVEL ?= 2
+BUILD_MODE ?= debug
+SRCDIRS ?= src
+BUILDDIR ?= $(BUILD_MODE)/build
+BINDIR ?= $(BUILD_MODE)
 
 # The following initialization block is active in the initial recursion level only.
 ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
@@ -25,7 +31,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   .NOTPARALLEL:
 
   define helpstring =
-    This make script builds one executable defined through $$(BINDIR)/$$(TARGET) = $(BINDIR)/$(TARGET) from all %.cpp source
+    This make script builds one executable defined through $$(BINDIR)/$$(TARGET) from all %.cpp source
     files in all project source directories.
 
     Synopsis
@@ -47,16 +53,16 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
 
     Required customization variables:
       TARGET    Name of the executable to build.
-      SRCDIRS   Space separated list of directories with c++ source files (Must contain at least '.')
-      BUILDDIR  Directory used for build files (objects-files, dep-files)
-      BINDIR    Target directory for the final executable
 
     Optional customization variables:
-      BUILD_MODE:   Build mode set to 'run' or 'debug'.
-      WARN_LEVEL:   Warning level set 0 .. 3.
+      BUILD_MODE:   Build mode set to 'run' or 'debug'. Default: 'debug'
+      WARN_LEVEL:   Warning level set 0 .. 3. Default: 2
+      SRCDIRS       Space separated list of directories with c++ source files (Must contain at least '.'). Default: 'src'
       INCDIRS:      Space separated list of project internal include directories for the quote form of the include directive (-iquote)
                     Omit this variable, if header and source files are placed in the same directory.
       INCLUDE_DIRS: Space separated list of external include directories used with compiler option -I.
+      BUILDDIR      Directory used for build files (objects-files, dep-files). Default: 'run|debug/build'
+      BINDIR        Target directory for the final executable. Default: run|debug
       CPPFLAGS:     Extra compiler preprocessor options.
       CXXFLAGS:     Extra c++ compiler options (use for linker and compiler).
       TARGET_ARCH:  Target specific flags.
@@ -94,17 +100,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
       $(cxxwarn3)
   endef
 
-  # determines all required objects/flags and exports required values for recursion
-  export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
-
-  # search source files and make dependent variables
-  export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
-  export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
-  # with this code the cpp files are recursively searched in the source directory list
-  #export CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
-  export OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
-  export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
-
   # the default warnings are:
   cxxwarn0 = -ftabstop=4
   cxxwarn1 = -pedantic -Wall -Wextra
@@ -117,7 +112,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   # Overwrite warning definitions in file makefile_warn if defaults are not sufficient!
   -include $(makefile_warn)
 
-  WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
     cxxwarnings := $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),1)
@@ -130,7 +124,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
-  BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     cxxopt := -O3
     modeinfostring := Building optimized release version
@@ -140,6 +133,19 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
+
+  # prepares variables for build directories and exports required values for recursion
+  export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
+
+  # determines all required objects/flags
+  export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCLUDE_DIRS))
+
+  # search source files and make dependent variables
+  export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
+  # with this code the cpp files are recursively searched in the source directory list
+  #export CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
+  export OBJECTS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
+  export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d))
 
   # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))

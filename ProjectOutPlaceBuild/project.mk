@@ -9,12 +9,6 @@ SRCDIRS := . src
 #SRCDIR := .
 #SRCDIRS := $(shell find $(SRCDIR) -type d)
 
-# Directory used for build files (objects-files, dep-files)
-BUILDDIR := build
-
-# Target directory for the final executable
-BINDIR := bin
-
 # Optional: Space separated list of project internal include directories
 INCDIRS := include
 

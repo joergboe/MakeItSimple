@@ -15,6 +15,9 @@ all:
 
 # include required project specific definitions
 include $(makefile_defs)
+# add the defaults
+WARN_LEVEL ?= 2
+BUILD_MODE ?= debug
 
 # The following initialization block is active in the initial recursion level only.
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
@@ -109,7 +112,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
   # Overwrite warning definitions in file makefile_warn if defaults are not sufficient!
   -include $(makefile_warn)
 
-  WARN_LEVEL ?= 2
   ifeq ($(WARN_LEVEL),0)
     cxxwarnings := $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),1)
@@ -122,7 +124,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
-  BUILD_MODE ?= debug
   ifeq ($(BUILD_MODE),run)
     cxxopt := -O3
     modeinfostring := Building optimized release version
