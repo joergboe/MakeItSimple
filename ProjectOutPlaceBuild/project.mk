@@ -1,7 +1,4 @@
-# provide the project specific settings here
-
-# Name of the executable
-TARGET := program
+# Provide the optional project specific settings here.
 
 # Space separated list of directories with c++ source files
 SRCDIRS := . src
@@ -10,6 +7,7 @@ SRCDIRS := . src
 #SRCDIRS := $(shell find $(SRCDIR) -type d)
 
 # Optional: Space separated list of project internal include directories
-INCDIRS := include
+#INCDIRS =
 
 # Add optional variables here if necessary.
+#TARGET := program

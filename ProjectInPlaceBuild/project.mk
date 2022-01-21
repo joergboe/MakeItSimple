@@ -1,6 +1,4 @@
-# Required project specific settings
+# Provide the optional project specific settings here.
 
 # Name of the executable
-TARGET := program
-
-# Add optional variables here if necessary.
+#TARGET := program
