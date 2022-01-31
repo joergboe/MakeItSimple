@@ -142,9 +142,9 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   ifeq (,$(findstring s,$(MAKEFLAGS)))
     ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
       $(info )
-      $(info Detected targets : $(TARGETSCPP) $(TARGETSCC))
+      $(info Sources found : $(CPPSOURCES) $(CCSOURCES))
       $(info )
-      $(info All include directories : $(INCSYSDIRS))
+      $(info All include (system) directories : $(INCSYSDIRS))
       $(info )
     endif
   endif
@@ -167,7 +167,9 @@ clean:
 
 info:
 	$(info )
-	$(info Detected targets : $(TARGETSCPP) $(TARGETSCC))
+	$(info Sources found : $(CPPSOURCES) $(CCSOURCES))
+	$(info )
+	$(info Targets to build : $(TARGETSCPP) $(TARGETSCC))
 	$(info )
 	$(info All include (system) directories : $(INCSYSDIRS))
 	$(info )

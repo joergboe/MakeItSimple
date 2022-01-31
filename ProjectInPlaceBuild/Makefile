@@ -149,9 +149,9 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
       $(info )
       $(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
       $(info )
-      $(info Detected objects : $(OBJECTSCPP) $(OBJECTSCC))
+      $(info Sources found : $(CPPSOURCES) $(CCSOURCES))
       $(info )
-      $(info All include directories : $(INCSYSDIRS))
+      $(info All include (system) directories : $(INCSYSDIRS))
       $(info )
     endif
   endif
@@ -174,7 +174,9 @@ info:
 	$(info )
 	$(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
 	$(info )
-	$(info Detected objects :$(OBJECTSCPP) $(OBJECTSCC))
+	$(info Sources found : $(CPPSOURCES) $(CCSOURCES))
+	$(info )
+	$(info Objects to build : $(OBJECTSCPP) $(OBJECTSCC))
 	$(info )
 	$(info All include (system) directories : $(INCSYSDIRS))
 	$(info )
