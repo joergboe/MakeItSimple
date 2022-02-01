@@ -45,3 +45,8 @@
 .cproject
 .settings/
 
+# test artifacts
+/Test/scripts/
+/Test/testframeInstaller_*.sh
+/Test/workdir/
+
