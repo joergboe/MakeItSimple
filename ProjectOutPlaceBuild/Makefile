@@ -120,13 +120,13 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   .NOTPARALLEL:
 
   # include warning definitions in file makefile_warn and complement default values
-  -include $(makefile_warn)
+  -include $(MAKEFILE_WARN)
   cxxwarn0 ?= -ftabstop=4
   cxxwarn1 ?= -pedantic -Wall -Wextra
   cxxwarn2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
-  -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
-  -Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
-  -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
+-Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
+-Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+-Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
   cxxwarn3 ?= -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros -Wstrict-overflow=5
 
   ifeq ($(WARN_LEVEL),0)

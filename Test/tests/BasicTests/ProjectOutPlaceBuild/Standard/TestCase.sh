@@ -39,7 +39,8 @@ case ${TTRO_variantCase} in
 esac
 
 PREPS=(
-	'copyOnly'
+	'cp -r "${TTRO_inputDirSuite}/../ProjectOutPlaceBuildTestProject/include" .'
+	'cp -r "${TTRO_inputDirSuite}/../ProjectOutPlaceBuildTestProject/src" .'
 	'cp "${TTRO_installDir}/ProjectOutPlaceBuild/Makefile" .'
 )
 
