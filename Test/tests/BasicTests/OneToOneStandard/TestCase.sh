@@ -2,14 +2,10 @@
 
 OPTIONS=
 case ${TTRO_variantCase} in
-	default)
-		BINDIR='debug';;
 	run*)
-		OPTIONS='BUILD_MODE=run'
-		BINDIR='run';;
+		OPTIONS='BUILD_MODE=run';;
 	debug*)
-		OPTIONS='BUILD_MODE=debug'
-		BINDIR='debug';;
+		OPTIONS='BUILD_MODE=debug';;
 esac
 
 VERBOSE=
@@ -39,8 +35,8 @@ case ${TTRO_variantCase} in
 esac
 
 PREPS=(
-	'cp ${TTRO_inputDirSuite}/../ProjectInPlaceBuildTestProject/* .'
-	'cp "${TTRO_installDir}/ProjectInPlaceBuild/Makefile" .'
+	'cp ${TTRO_inputDirSuite}/../OneToOneTestProject/* .'
+	'cp "${TTRO_installDir}/OneToOne/Makefile" .'
 	'ls'
 )
 
@@ -48,7 +44,8 @@ PREPS=(
 if [[ -n $CLEANUP ]]; then
 	STEPS=(
 		'echoAndExecute make $OPTIONS all'
-		'echoAndExecute ./${TTRO_variantCase}'
+		'echoAndExecute ./m1'
+		'echoAndExecute ./m2'
 	)
 fi
 # The main test run
@@ -56,14 +53,16 @@ STEPS+=('executeLogAndSuccess make $OPTIONS $GOALS')
 # Test the for empty bin dir in case of cleanup test
 if [[ -n $CLEANUP ]]; then
 	STEPS+=(
-		'if [[ -e ${TTRO_variantCase} ]]; then setFailure "File ${TTRO_variantCase} exists!"; fi'
+		'if [[ -e m1 ]]; then setFailure "File m1 exists!"; fi'
+		'if [[ -e m2 ]]; then setFailure "File m2 exists!"; fi'
 		'THEFILES=$(echo *.o *.d)'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory is not empty: $THEFILES"; fi'
 	)
 # Test of all empty bin dirs in nobuild cases
 elif [[ -n $NOBUILD ]]; then
 	STEPS+=(
-		'if [[ -e ${TTRO_variantCase} ]]; then setFailure "File ${TTRO_variantCase} exists!"; fi'
+		'if [[ -e m1 ]]; then setFailure "File m1 exists!"; fi'
+		'if [[ -e m2 ]]; then setFailure "File m2 exists!"; fi'
 		'THEFILES=$(echo *.o *.d)'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory is not empty: $THEFILES"; fi'
 		'checkNoBuildOutput'
@@ -71,7 +70,8 @@ elif [[ -n $NOBUILD ]]; then
 # Execute the program in all build cases
 else
 	STEPS+=(
-		'echoAndExecute ./${TTRO_variantCase}'
+		'echoAndExecute ./m1'
+		'echoAndExecute ./m2'
 		'checkBuildOutput'
 	)
 fi
@@ -79,8 +79,7 @@ fi
 checkBuildOutput() {
 	linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 		'Finished building: m1.cpp' \
-		'Finished building: m2.cc' \
-		"Finished linking target: ${TTRO_variantCase}"
+		'Finished building: m2.cc'
 
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		case ${TTRO_variantCase} in
@@ -89,8 +88,7 @@ checkBuildOutput() {
 		esac
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 			"*${CXXOPTIONTOFIND}*\"m1.cpp\"" \
-			"*${CXXOPTIONTOFIND}*\"m2.cc\"" \
-			"*-o \"${TTRO_variantCase}\""
+			"*${CXXOPTIONTOFIND}*\"m2.cc\""
 	fi
 }
 
@@ -98,10 +96,9 @@ checkNoBuildOutput() {
 	case ${TTRO_variantCase} in
 		*Info)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-					"Build target '${TTRO_variantCase}'*" \
 					'Sources found : m1.cpp m2.cc'
 			;;
 		helpGoal)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds one executable*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds executables from each*';;
 	esac
 }
