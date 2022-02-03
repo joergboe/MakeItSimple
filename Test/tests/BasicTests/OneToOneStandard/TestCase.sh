@@ -37,7 +37,6 @@ esac
 PREPS=(
 	'cp ${TTRO_inputDirSuite}/../OneToOneTestProject/* .'
 	'cp "${TTRO_installDir}/OneToOne/Makefile" .'
-	'ls'
 )
 
 # Make the project before cleanup tests

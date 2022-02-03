@@ -37,7 +37,6 @@ esac
 PREPS=(
 	'cp ${TTRO_inputDirSuite}/../ProjectInPlaceBuildTestProject/* .'
 	'cp "${TTRO_installDir}/ProjectInPlaceBuild/Makefile" .'
-	'ls'
 )
 
 # Make the project before cleanup tests
