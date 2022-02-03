@@ -1,4 +1,4 @@
-#–exclusive=true
+#--exclusive=true
 #--variantList='default parallel parallelAllClean fail failKeepGoing parallelFail parallelFailKeepGoing'
 
 readonly NO_CPUS=$(cat /proc/cpuinfo | grep processor | wc -l)
