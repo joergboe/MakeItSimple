@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Installation script for testframework
+
+source settings.sh
+
+echo
+echo "Install the test framework!"
+echo "${TESTFRAMEWORK_INSTALL_SCRIPT}"
+echo "All content of the scripts directory will be removed!"
+echo
+
+while read -p "Continue (y) or exit(e): y/e "; do
+	if [[ $REPLY == "y" || $REPLY == "Y" ]]; then
+		break
+	elif [[ $REPLY == "e" || $REPLY == "E" ]]; then
+		exit 2
+	fi
+done
+
+rm -rfv scripts
+rm -rfv testframeInstaller_*.sh
+
+wget "${TESTFRAMEWORK_SOURCE}"
+chmod +x "${TESTFRAMEWORK_INSTALL_SCRIPT}"
+"./${TESTFRAMEWORK_INSTALL_SCRIPT}" "$(realpath scripts)"
+
+echo "DONE"
+exit 0

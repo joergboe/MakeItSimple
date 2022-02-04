@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# run all tests
+
+if ! [[ -x scripts/bin/runbtf ]]; then
+	echo -e "\033[31mNo test framework installed! Use the script 'install' to install the test framework.\033[0m" >&2
+	exit 2
+fi
+scripts/bin/runbtf --directory tests --no-prompt
