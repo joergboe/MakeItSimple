@@ -2,7 +2,7 @@
 
 To execute the tests you need an copy of the [testframework](https://github.com/joergboe/runbtf).
 
-The `install` script installs a the testframework into the local directory `scripts`.
+The `installtestframework` script installs a the testframework into the local directory `scripts`.
 
 The script `runtest` starts the test execution.
 

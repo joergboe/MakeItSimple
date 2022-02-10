@@ -33,16 +33,21 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       TARGET_ARCH:    Target specific flags.
       LDFLAGS:        Extra linker options, SUCH AS -L.
       LDLIBS:         Extra library flags given to the linker.
+      CXX             The compiler command to be used. Default: 'g++'
       VERBOSE:        Set this variable to a non-empty value to generate verbose output.
 
     Description:
       This make script builds executables from each %.cpp and %.cc source file found in the current directory.
 
       If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
-      If variable BUILD_MODE=run optimized executables without debug information are built.
+      If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
       The variable WARN_LEVEL can assign warning levels from 0 .. 3.
       The default warning level is 2 and activates a comprehensive set of warnings (for gcc and clang).
+
+      By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
+
+      Use the CXXFLAGS variable to change the c++ language standard. E.g. 'CXXFLAGS=-std=c++11'.
 
       If parallel execution is requested, the script executes the command line goals in the designated order and switches 
       for goal 'all' to parallel execution mode in recursion level 1.
@@ -175,18 +180,25 @@ info:
 	$(info )
 	$(info $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(CXXOPT))
 	$(info )
+	$(info Compiler command : $(CXX))
+	$(info )
+	$(info Custom compiler options: $(CXXFLAGS))
+	$(info )
 	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(CXXWARNINGS))
 	$(info )
-	$(info Compiler flags warning level 1 includes : $(cxxwarn1))
+ifdef VERBOSE
+	$(info Warning level 1 includes : $(cxxwarn1))
 	$(info )
-	$(info Warning levels 2 additionally includes : $(cxxwarn2))
+	$(info Warning level 2 adds : $(cxxwarn2))
 	$(info )
-	$(info Warning levels 3 additionally includes : $(cxxwarn3))
+	$(info Warning level 3 adds : $(cxxwarn3))
 	$(info )
 	$(info The active warning include file is: $(MAKEFILE_WARN))
 	$(info )
 	$(info All generated dependecies: $(DEPS))
 	$(info )
+	@$(CXX) --version
+endif
 
 help:
 	$(info )

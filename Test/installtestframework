@@ -7,7 +7,8 @@ source settings.sh
 echo
 echo "Install the test framework!"
 echo "${TESTFRAMEWORK_INSTALL_SCRIPT}"
-echo "All content of the scripts directory will be removed!"
+echo "into directory 'scripts'"
+echo "All content of the directory 'scripts' will be removed!"
 echo
 
 while read -p "Continue (y) or exit(e): y/e "; do
