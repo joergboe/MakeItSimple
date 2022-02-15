@@ -36,9 +36,10 @@
 /OneToOne/m2
 /ProjectInPlaceBuild/program
 /ProjectInPlaceBuild/ProjectInPlaceBuild
-/ProjectOutPlaceBuild/bin/program
 /ProjectOutPlaceBuild/debug/
 /ProjectOutPlaceBuild/run/
+/ProjectOutPlaceBuild2/debug/
+/ProjectOutPlaceBuild2/run/
 
 # eclipse generated files
 .project
