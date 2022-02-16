@@ -218,7 +218,7 @@ clean:
 
 info:
 	$(info )
-	$(info Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))
+	$(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc and *.c sourcefiles in source directories : $(SRCDIRS))
 	$(info )
 	$(info Sources found : $(CPPSOURCES) $(CCSOURCES) $(CSOURCES))
 	$(info )
@@ -240,7 +240,7 @@ info:
 	$(info )
 	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(CXXWARNINGS))
 	$(info )
-	$(info C-Warning flags : $(CWARNINGS)
+	$(info C-Warning flags : $(CWARNINGS))
 	$(info )
 ifdef VERBOSE
 	$(info Warning level 1 includes : $(cxxwarn1))

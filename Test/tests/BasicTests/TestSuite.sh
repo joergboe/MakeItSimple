@@ -7,6 +7,10 @@ else
 	# All other variants get the category 'extended'
 	setCategory 'extended'
 	export CXX="${TTRO_variantSuite}"
+	case "${TTRO_variantSuite}" in
+		g++*) export CC="${TTRO_variantSuite/g++/gcc}";;
+		clang*) export CC="${TTRO_variantSuite/clang++/clang}";;
+	esac
 fi
 
 if isExisting 'CXX'; then
