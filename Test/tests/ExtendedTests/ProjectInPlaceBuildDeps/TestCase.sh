@@ -52,7 +52,7 @@ changeAFile() {
 	echo "searchPattern=$2"
 	echo "replace=$3"
 	mv "${filename}" "temp.xx"
-	while read; do
+	while read -r; do
 		echo "${REPLY/$2/$3}" >> "${filename}"
 	done < "temp.xx"
 }

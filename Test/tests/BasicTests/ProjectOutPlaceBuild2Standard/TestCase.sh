@@ -78,6 +78,7 @@ checkBuildOutput() {
 	linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 		'Finished building: src/m1.cpp' \
 		'Finished building: src/m2.c' \
+		'Finished building: src/hello.s' \
 		"Finished linking target: ${BINDIR}/${TTRO_variantCase}"
 
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
@@ -97,7 +98,7 @@ checkNoBuildOutput() {
 		*Info)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 					"Build target '${BINDIR}/${TTRO_variantCase}'*" \
-					'Sources found : src/m1.cpp* src/m2.c'
+					'Sources found : src/m1.cpp* src/m2.c src/hello.s'
 			;;
 		help)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds one executable*';;

@@ -1,7 +1,7 @@
 # defines this help text string in the initial recursion level only
 ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   define helpstring =
-    This make script builds one executable from all %.cpp, %.cc and %.c source files in all project source directories.
+    This make script builds one executable from all C++, C and assembler source files (%.cpp, %.cc, %.c and %.s) in all project source directories.
 
     Synopsis
         make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
@@ -38,15 +38,17 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
       CPPFLAGS:       Extra compiler preprocessor options.
       CXXFLAGS:       Extra c++ compiler options (use for linker and compiler).
       CFLAGS:         Extra c compiler options (use for linker and compiler).
+      ASFLAGS:        Extra assembler options (use for linker and compiler).
       TARGET_ARCH:    Target specific flags.
       LDFLAGS:        Extra linker options, SUCH AS -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The c++ compiler command to be used. Default: 'g++'
       CC              The c compiler command to be used. Default: 'gcc'
+      AS              The assembler command to be used. Default: 'as'
       VERBOSE:        Set this variable to a non-empty value to generate verbose output.
 
     Description:
-      This make script builds one executable from all %.cpp, %.cc and %.c source files in all project source directories. The name of
+      This make script builds one executable from all %.cpp, %.cc, %.c and %.s source files in all project source directories. The name of
       the executable is defined through variable TARGET and the default is the last component of the directory which contains
       this Makefile.
       The project may have a separate header file directory. If the include directory differs from 'include' or 'inc', set the
@@ -182,9 +184,11 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   #export CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
   export CCSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cc))
   export CSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
+  export ASMSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.s))
   export OBJECTSCPP := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.o))
   export OBJECTSCC := $(addprefix $(BUILDDIR)/,$(CCSOURCES:.cc=.o))
   export OBJECTSC := $(addprefix $(BUILDDIR)/,$(CSOURCES:.c=.o))
+  export OBJECTSASM := $(addprefix $(BUILDDIR)/,$(ASMSOURCES:.s=.o))
   export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d)) $(addprefix $(BUILDDIR)/,$(CCSOURCES:.cc=.d)) $(addprefix $(BUILDDIR)/,$(CSOURCES:.c=.d))
 
   # prints info only if not silent (-s option) and not help goal or info goal
@@ -193,7 +197,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
       $(info )
       $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc and *.c sourcefiles in source directories : $(SRCDIRS))
       $(info )
-      $(info Sources found : $(CPPSOURCES) $(CCSOURCES) $(CSOURCES))
+      $(info Sources found : $(CPPSOURCES) $(CCSOURCES) $(CSOURCES) $(ASMSOURCES))
       $(info )
       $(info All include directories : $(INCDIRS) $(INCSYSDIRS))
       $(info )
@@ -218,11 +222,11 @@ clean:
 
 info:
 	$(info )
-	$(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc and *.c sourcefiles in source directories : $(SRCDIRS))
+	$(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS))
 	$(info )
-	$(info Sources found : $(CPPSOURCES) $(CCSOURCES) $(CSOURCES))
+	$(info Sources found : $(CPPSOURCES) $(CCSOURCES) $(CSOURCES) $(ASMSOURCES))
 	$(info )
-	$(info Objects to build : $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC))
+	$(info Objects to build : $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) $(OBJECTSASM))
 	$(info )
 	$(info All include directories (-iquote): $(INCDIRS))
 	$(info )
@@ -237,6 +241,10 @@ info:
 	$(info C Compiler command : $(CC))
 	$(info )
 	$(info Custom C compiler options: $(CFLAGS))
+	$(info )
+	$(info Assembler command : $(AS))
+	$(info )
+	$(info Assembler options: $(ASFLAGS))
 	$(info )
 	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(CXXWARNINGS))
 	$(info )
@@ -258,6 +266,7 @@ ifdef VERBOSE
 	$(info )
 	@$(CXX) --version
 	@$(CC) --version
+	@$(AS) --version
 endif
 
 help:
@@ -271,8 +280,8 @@ $(BUILDDIRS):
 $(BINDIR):
 	$(MKDIR) '$@'
 
-$(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) | $(BINDIR)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+$(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) $(OBJECTSASM)| $(BINDIR)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTSCPP): $(BUILDDIR)/%.o: %.cpp $(makefile_this) | $(BUILDDIRS)
@@ -285,6 +294,10 @@ $(OBJECTSCC): $(BUILDDIR)/%.o: %.cc $(makefile_this) | $(BUILDDIRS)
 
 $(OBJECTSC): $(BUILDDIR)/%.o: %.c $(makefile_this) | $(BUILDDIRS)
 	$(CC) $(my_cflags) $(CFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(OBJECTSASM): $(BUILDDIR)/%.o: %.s $(makefile_this) | $(BUILDDIRS)
+	$(AS) $(ASFLAGS) $(TARGET_MACH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
 
 # includes additional rules after default rule

@@ -7,6 +7,7 @@
 void hellom2() {
 	for (int i = 0; i < maxcount; ++i) {
 		puts("Hello World Program m2 !!!");
+		fflush(stdout);
 	}
 	return;
 }
