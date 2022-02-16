@@ -10,12 +10,12 @@ The variant `ProjectOutPlaceBuild2` allows the linkage of C and assembler module
 
 For maximum performance, all make scripts support parallel build and ensure that the first level goals are executed in the designated order.
 
-The scripts come with a comprehensive set of warning compiler options for the GNU C++ compiler (g++). These options can be controlled in 4 levels.
+The scripts come with a comprehensive set of warning compiler options for the GNU C++ compiler and clang. These options can be controlled in 4 levels.
 
 All make files support 2 build modes run and debug. In build mode run an optimized executable without debug information is built. In build mode debug the executable contains debug information.
 
 All compiler options are valid for GNU C++ compiler and clang, if you use an alternative compiler adapt the options and warning flags accordingly.
 
-If you have any suggestions or bug reports please write a Github Issue or join the discussion.
+If you have any suggestions or bug reports please write a Github Issue.
 
 Learn more about MakeItSimple [here](https://www.joergboe.de/makeitsimple.html).
