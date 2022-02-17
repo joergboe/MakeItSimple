@@ -1,18 +1,18 @@
 #--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal'
 
-OPTIONS=
+OPTIONS='-s'
 case ${TTRO_variantCase} in
 	run*)
-		OPTIONS='BUILD_MODE=run';;
+		OPTIONS+=' BUILD_MODE=run';;
 	debug*)
-		OPTIONS='BUILD_MODE=debug';;
+		OPTIONS+=' BUILD_MODE=debug';;
 esac
 
 VERBOSE=
 case ${TTRO_variantCase} in
 	*Verbose)
 	VERBOSE='true'
-	OPTIONS+=' VERBOSE=1';;
+	OPTIONS="${OPTIONS//-s}";;
 esac
 
 GOALS=

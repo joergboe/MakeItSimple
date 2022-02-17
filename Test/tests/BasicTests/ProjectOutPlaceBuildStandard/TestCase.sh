@@ -1,14 +1,14 @@
-#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo help'
+#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runClean2 debugClean2 runInfo debugInfo help'
 
-OPTIONS=
+OPTIONS='-s'
 case ${TTRO_variantCase} in
 	default)
 		BINDIR='debug';;
 	run*)
-		OPTIONS='BUILD_MODE=run'
+		OPTIONS+=' BUILD_MODE=run'
 		BINDIR='run';;
 	debug*)
-		OPTIONS='BUILD_MODE=debug'
+		OPTIONS+=' BUILD_MODE=debug'
 		BINDIR='debug';;
 esac
 
@@ -16,11 +16,12 @@ VERBOSE=
 case ${TTRO_variantCase} in
 	*Verbose)
 	VERBOSE='true'
-	OPTIONS+=' VERBOSE=1';;
+	OPTIONS="${OPTIONS//-s}";;
 esac
 
 GOALS=
 CLEANUP=
+CLEANUP2=
 NOBUILD=
 case ${TTRO_variantCase} in
 	*CleanAll)
@@ -30,6 +31,9 @@ case ${TTRO_variantCase} in
 	*Clean)
 		GOALS=clean
 		CLEANUP='true';;
+	*Clean2)
+		GOALS=clean_all
+		CLEANUP2='true';;
 	*Info)
 		GOALS=info
 		NOBUILD='true';;
@@ -58,6 +62,12 @@ if [[ -n $CLEANUP ]]; then
 	STEPS+=(
 		'THEFILES=$(ls ${BINDIR})'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory $BINDIR is not empty: $THEFILES"; fi'
+	)
+# Test the for deleted build dir
+elif [[ -n $CLEANUP2 ]]; then
+	STEPS+=(
+		'if [[ -e run ]]; then setFailure "The directory/file run exists!"; fi'
+		'if [[ -e debug ]]; then setFailure "The directory/file debug exists!"; fi'
 	)
 # Test of all empty bin dirs in nobuild cases
 elif [[ -n $NOBUILD ]]; then

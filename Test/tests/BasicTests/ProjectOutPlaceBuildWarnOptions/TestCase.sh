@@ -1,6 +1,6 @@
 #--variantList='check default warn0 warn1 warn2 warn3 info help'
 
-OPTIONS='VERBOSE=true'
+OPTIONS=''
 BINDIR='debug'
 GOALS=
 NOBUILD=

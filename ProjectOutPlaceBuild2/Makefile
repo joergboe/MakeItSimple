@@ -46,7 +46,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
       CXX             The c++ compiler command to be used. Default: 'g++'
       CC              The c compiler command to be used. Default: 'gcc'
       AS              The assembler command to be used. Default: 'as'
-      VERBOSE:        Set this variable to a non-empty value to generate verbose output.
 
     Description:
       This make script builds one executable from all %.cpp, %.cc, %.c and %.s source files in all project source directories. The name of
@@ -98,8 +97,6 @@ makefile_defs := project.mk
 .PHONY: all clean clean_all info help
 # ensures that 'all' is the default (first target without a dot) goal
 all:
-# do not print rules if VERBOSE is unset
-$(VERBOSE).SILENT:
 
 # include optional project specific definitions
 -include $(makefile_defs)
@@ -281,7 +278,6 @@ info:
 	$(info )
 	$(info C-Warning flags : $(CWARNINGS))
 	$(info )
-ifdef VERBOSE
 	$(info Warning level 1 includes : $(cxxwarn1))
 	$(info C-Warning flags : $(cwarn1))
 	$(info )
@@ -296,9 +292,13 @@ ifdef VERBOSE
 	$(info All generated dependecies: $(DEPS))
 	$(info )
 	@$(CXX) --version
+ifdef CSOURCES
 	@$(CC) --version
+endif
+ifdef ASMSOURCES
 	@$(AS) --version
 endif
+	@echo -e '*********************************************\n'
 
 help:
 	$(info )

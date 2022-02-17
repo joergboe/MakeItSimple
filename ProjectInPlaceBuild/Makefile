@@ -35,7 +35,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
       LDFLAGS:        Extra linker options, such as -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The compiler command to be used. Default: 'g++'
-      VERBOSE:        Set this variable to a non-empty value to generate verbose output.
 
     Description:
       This make script builds one executable from all %.cpp and %.cc source files in the current project directory. The name of
@@ -81,8 +80,6 @@ makefile_defs := project.mk
 .PHONY: all clean info help
 # ensures that 'all' is the default (first target without a dot) goal
 all:
-# do not print rules if VERBOSE is unset
-$(VERBOSE).SILENT:
 
 # include optional project specific definitions
 -include $(makefile_defs)
@@ -207,7 +204,6 @@ info:
 	$(info )
 	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(CXXWARNINGS))
 	$(info )
-ifdef VERBOSE
 	$(info Warning level 1 includes : $(cxxwarn1))
 	$(info )
 	$(info Warning level 2 adds : $(cxxwarn2))
@@ -219,7 +215,7 @@ ifdef VERBOSE
 	$(info All generated dependecies: $(DEPS))
 	$(info )
 	@$(CXX) --version
-endif
+	@echo -e '*********************************************\n'
 
 help:
 	$(info )

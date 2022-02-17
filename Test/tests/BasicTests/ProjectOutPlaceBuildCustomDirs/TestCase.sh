@@ -1,12 +1,12 @@
 #--variantList='run debug runClean debugClean runInfo debugInfo runTarget debugTarget runTargetClean debugTargetClean'
 
-OPTIONS=
+OPTIONS='-s'
 case ${TTRO_variantCase} in
 	run*)
-		OPTIONS='BUILD_MODE=run'
+		OPTIONS+=' BUILD_MODE=run'
 		BINDIR='run';;
 	debug*)
-		OPTIONS='BUILD_MODE=debug'
+		OPTIONS+=' BUILD_MODE=debug'
 		BINDIR='debug';;
 esac
 

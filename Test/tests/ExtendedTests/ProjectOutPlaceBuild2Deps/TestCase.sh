@@ -14,7 +14,7 @@ PREPS=(
 
 # The main test run
 STEPS=(
-	'executeLogAndSuccess make VERBOSE=1'
+	'executeLogAndSuccess make'
 	'ls --full-time ${BINDIR}'
 	'checkOutput'
 	"${BINDIR}/${TTRO_variantCase}"

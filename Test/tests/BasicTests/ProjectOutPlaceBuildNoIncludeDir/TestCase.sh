@@ -1,7 +1,7 @@
 #--variantList='default info help clean verbose'
 
 BINDIR='debug'
-OPTIONS=
+OPTIONS='-s'
 
 GOALS=
 CLEANUP=
@@ -19,7 +19,7 @@ case ${TTRO_variantCase} in
 		NOBUILD='true';;
 	verbose)
 		GOALS=all
-		OPTIONS='VERBOSE=1'
+		OPTIONS="${OPTIONS//-s}"
 		VERBOSE='true';;
 esac
 

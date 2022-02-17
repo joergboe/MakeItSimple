@@ -3,7 +3,7 @@
 
 readonly NO_CPUS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-OPTIONS=
+OPTIONS='-s'
 GOALS=
 RUN_RESULT='true'
 EXPECT_FAILURE=
@@ -11,9 +11,9 @@ BINDIR='debug'
 
 case ${TTRO_variantCase} in
 	parallel)
-		OPTIONS="-j ${NO_CPUS}";;
+		OPTIONS+=" -j ${NO_CPUS}";;
 	parallelAllClean)
-		OPTIONS="-j ${NO_CPUS}"
+		OPTIONS+=" -j ${NO_CPUS}"
 		GOALS='all clean'
 		RUN_RESULT=;;
 	fail)
@@ -21,14 +21,14 @@ case ${TTRO_variantCase} in
 		RUN_RESULT=;;
 	failKeepGoing)
 		EXPECT_FAILURE='true'
-		OPTIONS="--keep-going"
+		OPTIONS+=" --keep-going"
 		RUN_RESULT=;;
 	parallelFail)
-		OPTIONS="-j ${NO_CPUS}"
+		OPTIONS+=" -j ${NO_CPUS}"
 		EXPECT_FAILURE='true'
 		RUN_RESULT=;;
 	parallelFailKeepGoing)
-		OPTIONS="-j ${NO_CPUS} --keep-going"
+		OPTIONS+=" -j ${NO_CPUS} --keep-going"
 		EXPECT_FAILURE='true'
 		RUN_RESULT=;;
 esac

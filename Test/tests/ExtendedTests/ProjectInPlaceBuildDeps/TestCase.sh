@@ -11,7 +11,7 @@ PREPS=(
 
 # The main test run
 STEPS=(
-	'executeLogAndSuccess make VERBOSE=1'
+	'executeLogAndSuccess make'
 	'ls --full-time buildartefact1 ${TTRO_variantCase}'
 	'checkOutput'
 	"./${TTRO_variantCase}"
