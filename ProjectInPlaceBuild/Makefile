@@ -32,7 +32,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
       CPPFLAGS:       Extra compiler preprocessor options.
       CXXFLAGS:       Extra c++ compiler options (use for linker and compiler).
       TARGET_ARCH:    Target specific flags.
-      LDFLAGS:        Extra linker options, SUCH AS -L.
+      LDFLAGS:        Extra linker options, such as -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The compiler command to be used. Default: 'g++'
       VERBOSE:        Set this variable to a non-empty value to generate verbose output.
@@ -139,18 +139,17 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # determines all required objects/flags and exports required values for recursion
+  # determines all sources, objects, dependecies, required flags and exports values for recursion
   export CPPSOURCES := $(wildcard *.cpp)
   export CCSOURCES := $(wildcard *.cc)
   export OBJECTSCPP := $(CPPSOURCES:.cpp=.o)
   export OBJECTSCC := $(CCSOURCES:.cc=.o)
   export DEPS := $(CPPSOURCES:.cpp=.d) $(CCSOURCES:.cc=.d)
-
   export INC_FLAGS := $(addprefix -I,$(INCSYSDIRS))
 
   # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
-    ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
+    ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
       $(info )
@@ -169,6 +168,21 @@ my_cppflags = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(INC_FLAGS)
 # rules:
 all:
 	@$(MAKE) -f $(makefile_this) $(TARGET)
+
+$(TARGET): $(OBJECTSCPP) $(OBJECTSCC)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	@echo -e 'Finished linking target: $@\n'
+
+$(OBJECTSCPP): %.o: %.cpp $(makefile_this)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(OBJECTSCC): %.o: %.cc $(makefile_this)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+# includes additional rules after default rule
+-include $(DEPS)
 
 clean:
 	@echo 'Cleanup'
@@ -211,18 +225,3 @@ help:
 	$(info )
 	$(info $(helpstring))
 	$(info )
-
-$(TARGET): $(OBJECTSCPP) $(OBJECTSCC)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
-	@echo -e 'Finished linking target: $@\n'
-
-$(OBJECTSCPP): %.o: %.cpp $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-$(OBJECTSCC): %.o: %.cc $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-# includes additional rules after default rule
--include $(DEPS)

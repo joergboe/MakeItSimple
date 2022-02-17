@@ -9,10 +9,11 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
         [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
 
     Goals:
-      all    Build the target executable - default goal.
-      clean  Clean up the target executable and all build artefacts.
-      info   Print project info.
-      help   Print this help text.
+      all       Build the target executable - default goal.
+      clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
+      clean_all Complete removal of all build- and bin-directories.
+      info      Print project info.
+      help      Print this help text.
 
     Files:
       Makefile        This make script
@@ -40,7 +41,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
       CFLAGS:         Extra c compiler options (use for linker and compiler).
       ASFLAGS:        Extra assembler options (use for linker and compiler).
       TARGET_ARCH:    Target specific flags.
-      LDFLAGS:        Extra linker options, SUCH AS -L.
+      LDFLAGS:        Extra linker options, such as -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The c++ compiler command to be used. Default: 'g++'
       CC              The c compiler command to be used. Default: 'gcc'
@@ -94,7 +95,7 @@ makefile_defs := project.mk
 # instructs make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
 .DELETE_ON_ERROR:
 
-.PHONY: all clean info help
+.PHONY: all clean clean_all info help
 # ensures that 'all' is the default (first target without a dot) goal
 all:
 # do not print rules if VERBOSE is unset
@@ -172,13 +173,8 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # prepares variables for build directories and exports required values for recursion
+  # determines all directories, sources, objects, dependecies, required flags and exports values for recursion
   export BUILDDIRS := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
-
-  # determines all required objects/flags
-  export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
-
-  # search source files and make dependent variables
   export CPPSOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
   # with this code the cpp files are recursively searched in the source directory list
   #export CPPSOURCES := $(shell find $(SRCDIRS) -name '*.cpp')
@@ -190,10 +186,11 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   export OBJECTSC := $(addprefix $(BUILDDIR)/,$(CSOURCES:.c=.o))
   export OBJECTSASM := $(addprefix $(BUILDDIR)/,$(ASMSOURCES:.s=.o))
   export DEPS := $(addprefix $(BUILDDIR)/,$(CPPSOURCES:.cpp=.d)) $(addprefix $(BUILDDIR)/,$(CCSOURCES:.cc=.d)) $(addprefix $(BUILDDIR)/,$(CSOURCES:.c=.d))
+  export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 
   # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
-    ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
+    ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc and *.c sourcefiles in source directories : $(SRCDIRS))
       $(info )
@@ -214,10 +211,44 @@ my_cppflags = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(INC_FLAGS)
 all:
 	@$(MAKE) -f $(makefile_this) $(BINDIR)/$(TARGET)
 
+$(BUILDDIRS):
+	$(MKDIR) '$@'
+
+$(BINDIR):
+	$(MKDIR) '$@'
+
+$(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) $(OBJECTSASM)| $(BINDIR)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	@echo -e 'Finished linking target: $@\n'
+
+$(OBJECTSCPP): $(BUILDDIR)/%.o: %.cpp $(makefile_this) | $(BUILDDIRS)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(OBJECTSCC): $(BUILDDIR)/%.o: %.cc $(makefile_this) | $(BUILDDIRS)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(OBJECTSC): $(BUILDDIR)/%.o: %.c $(makefile_this) | $(BUILDDIRS)
+	$(CC) $(my_cflags) $(CFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(OBJECTSASM): $(BUILDDIR)/%.o: %.s $(makefile_this) | $(BUILDDIRS)
+	$(AS) $(ASFLAGS) $(TARGET_MACH) -c -o "$@" "$<"
+	@echo -e 'Finished building: $<\n'
+
+# includes additional rules after default rule
+-include $(DEPS)
+
 clean:
 	@echo 'Cleanup'
 	-$(RM) $(BINDIR)/$(TARGET)
 	-$(RMDIR) $(BUILDDIR)
+	-@echo
+
+clean_all:
+	@echo 'Remove all build dirs'
+	-$(RMDIR) $(BUILDDIR) $(BINDIR) debug run
 	-@echo
 
 info:
@@ -273,32 +304,3 @@ help:
 	$(info )
 	$(info $(helpstring))
 	$(info )
-
-$(BUILDDIRS):
-	$(MKDIR) '$@'
-
-$(BINDIR):
-	$(MKDIR) '$@'
-
-$(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) $(OBJECTSASM)| $(BINDIR)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
-	@echo -e 'Finished linking target: $@\n'
-
-$(OBJECTSCPP): $(BUILDDIR)/%.o: %.cpp $(makefile_this) | $(BUILDDIRS)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-$(OBJECTSCC): $(BUILDDIR)/%.o: %.cc $(makefile_this) | $(BUILDDIRS)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-$(OBJECTSC): $(BUILDDIR)/%.o: %.c $(makefile_this) | $(BUILDDIRS)
-	$(CC) $(my_cflags) $(CFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-$(OBJECTSASM): $(BUILDDIR)/%.o: %.s $(makefile_this) | $(BUILDDIRS)
-	$(AS) $(ASFLAGS) $(TARGET_MACH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
-
-# includes additional rules after default rule
--include $(DEPS)

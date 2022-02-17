@@ -31,7 +31,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
       CPPFLAGS:       Extra compiler preprocessor options.
       CXXFLAGS:       Extra c++ compiler options (use for linker and compiler).
       TARGET_ARCH:    Target specific flags.
-      LDFLAGS:        Extra linker options, SUCH AS -L.
+      LDFLAGS:        Extra linker options, such as -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The compiler command to be used. Default: 'g++'
       VERBOSE:        Set this variable to a non-empty value to generate verbose output.
@@ -134,18 +134,17 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
-  # determines all required objects/flags and exports required values for recursion
+  # determines all sources, objects, required flags and exports values for recursion
   export CPPSOURCES := $(wildcard *.cpp)
   export CCSOURCES := $(wildcard *.cc)
   export TARGETSCPP := $(CPPSOURCES:.cpp=)
   export TARGETSCC := $(CCSOURCES:.cc=)
   export DEPS := $(CPPSOURCES:.cpp=.d) $(CCSOURCES:.cc=.d)
-
   export INC_FLAGS := $(addprefix -I,$(INCSYSDIRS))
 
   # prints info only if not silent (-s option) and not help goal or info goal
   ifeq (,$(findstring s,$(MAKEFLAGS)))
-    ifeq (,$(or $(findstring help,($(MAKECMDGOALS))),$(findstring info,($(MAKECMDGOALS)))))
+    ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Sources found : $(CPPSOURCES) $(CCSOURCES))
       $(info )
@@ -164,6 +163,17 @@ all:
 	@$(MAKE) -f $(makefile_this) recursion_goal
 
 recursion_goal: $(TARGETSCPP) $(TARGETSCC)
+
+$(TARGETSCPP): %: %.cpp $(makefile_this)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LDLIBS) "$<"
+	@echo -e 'Finished building: $<\n'
+
+$(TARGETSCC): %: %.cc $(makefile_this)
+	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LDLIBS) "$<"
+	@echo -e 'Finished building: $<\n'
+
+# includes additional rules after default rule
+-include $(DEPS)
 
 clean:
 	@echo 'Cleanup'
@@ -199,19 +209,9 @@ ifdef VERBOSE
 	$(info )
 	@$(CXX) --version
 endif
+	@echo -e '*********************************************\n'
 
 help:
 	$(info )
 	$(info $(helpstring))
 	$(info )
-
-$(TARGETSCPP): %: %.cpp $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LDLIBS) "$<"
-	@echo -e 'Finished building: $<\n'
-
-$(TARGETSCC): %: %.cc $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o "$@" $(LDLIBS) "$<"
-	@echo -e 'Finished building: $<\n'
-
-# includes additional rules after default rule
--include $(DEPS)
