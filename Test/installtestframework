@@ -11,13 +11,15 @@ echo "into directory 'scripts'"
 echo "All content of the directory 'scripts' will be removed!"
 echo
 
-while read -p "Continue (y) or exit(e): y/e "; do
-	if [[ $REPLY == "y" || $REPLY == "Y" ]]; then
-		break
-	elif [[ $REPLY == "e" || $REPLY == "E" ]]; then
-		exit 2
-	fi
-done
+if [[ $1 != '--no-prompt' ]]; then
+	while read -p "Continue (y) or exit(e): y/e "; do
+		if [[ $REPLY == "y" || $REPLY == "Y" ]]; then
+			break
+		elif [[ $REPLY == "e" || $REPLY == "E" ]]; then
+			exit 2
+		fi
+	done
+fi
 
 rm -rfv scripts
 rm -rfv testframeInstaller_*.sh
