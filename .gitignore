@@ -41,13 +41,21 @@
 /ProjectOutPlaceBuild2/debug/
 /ProjectOutPlaceBuild2/run/
 
+# test artifacts
+/Test/scripts/
+/Test/testframeInstaller_*.sh
+/Test/workdir/
+
 # eclipse generated files
 .project
 .cproject
 .settings/
 
-# test artifacts
-/Test/scripts/
-/Test/testframeInstaller_*.sh
-/Test/workdir/
+# codeblocks artifacts
+*.cbp
+*.layout
+*.save
+
+# KDevelop artifacts
+*.kdev4
 
