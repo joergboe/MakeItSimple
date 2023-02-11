@@ -153,7 +153,7 @@ endif
 
 my_cxxflags := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS)
 # With recursive variables the automatic variables are expanded during receipt execution.
-my_cppflags = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(INC_FLAGS)
+my_cppflags = -MMD -MF"$(@:%=%.d)" -MP -MT"$@" $(INC_FLAGS)
 
 # rules:
 all:
