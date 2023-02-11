@@ -1,3 +1,4 @@
+#.section	.note.GNU-stack,"",@progbits
 .section .data
 	s: .ascii "Hello asm World!\n"
 .section .text
