@@ -58,4 +58,4 @@
 
 # KDevelop artifacts
 *.kdev4
-
+.kdev4/
