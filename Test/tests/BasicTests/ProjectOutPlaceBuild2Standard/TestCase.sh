@@ -1,6 +1,6 @@
 #--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runClean2 debugClean2 runInfo debugInfo help'
 
-OPTIONS='-s'
+OPTIONS='CXXFLAGS=-std=c++11'
 case ${TTRO_variantCase} in
 	default)
 		BINDIR='debug';;
@@ -15,8 +15,9 @@ esac
 VERBOSE=
 case ${TTRO_variantCase} in
 	*Verbose)
-	VERBOSE='true'
-	OPTIONS="${OPTIONS//-s}";;
+	VERBOSE='true';;
+	*)
+	OPTIONS+=" -s";;
 esac
 
 GOALS=
@@ -101,6 +102,13 @@ checkBuildOutput() {
 			"*${CXXOPTIONTOFIND}*\"src/m2.c\"" \
 			"*-o \"${BINDIR}/${TTRO_variantCase}\""
 	fi
+	case ${TTRO_variantCase} in
+		*Verbose)
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+					"Build target '${BINDIR}/${TTRO_variantCase}'*" \
+					'Sources found : src/m1.cpp* src/m2.c src/hello.s'
+			;;
+	esac
 }
 
 checkNoBuildOutput() {

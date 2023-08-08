@@ -166,7 +166,7 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   export INC_FLAGS := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 
   # prints info only if not silent (-s option) and not help goal or info goal
-  ifeq (,$(findstring s,$(MAKEFLAGS)))
+  ifeq (,$(findstring s,$(MFLAGS)))
     ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))

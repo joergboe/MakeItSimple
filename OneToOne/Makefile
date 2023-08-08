@@ -140,7 +140,7 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   export INC_FLAGS := $(addprefix -I,$(INCSYSDIRS))
 
   # prints info only if not silent (-s option) and not help goal or info goal
-  ifeq (,$(findstring s,$(MAKEFLAGS)))
+  ifeq (,$(findstring s,$(MFLAGS)))
     ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Sources found : $(CPPSOURCES) $(CCSOURCES))
