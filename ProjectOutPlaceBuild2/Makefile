@@ -40,7 +40,8 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
       CXXFLAGS:       Extra c++ compiler options (use for linker and compiler).
       CFLAGS:         Extra c compiler options (use for linker and compiler).
       ASFLAGS:        Extra assembler options (use for linker and compiler).
-      TARGET_ARCH:    Target specific flags.
+      TARGET_ARCH:    Target specific flags for the c-, c++-compiler and linker.
+      TARGET_MACH:    Target specific flags for the assembler.
       LDFLAGS:        Extra linker options, such as -L.
       LDLIBS:         Extra library flags given to the linker.
       CXX             The c++ compiler command to be used. Default: 'g++'
@@ -78,7 +79,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   endef
 endif
 
-# TODO: do we need this?
 SHELL = /bin/bash
 .SHELLFLAGS := -c
 
@@ -115,6 +115,8 @@ ifeq (,$(findstring clang,$(CXX)))
 else
   COMP_OPT_DEBUG ?= -Og -gline-tables-only
 endif
+AS_OPT_RUN ?= -O2
+AS_OPT_DEBUG ?= -g
 BUILDDIR ?= $(BUILD_MODE)/build
 BINDIR ?= $(BUILD_MODE)
 
@@ -162,9 +164,11 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
 
   ifeq ($(BUILD_MODE),run)
     export CXXOPT := $(COMP_OPT_RUN)
+    export ASOPT := $(AS_OPT_RUN)
     modeinfostring := Building optimized release version
   else ifeq ($(BUILD_MODE),debug)
     export CXXOPT := $(COMP_OPT_DEBUG)
+    export ASOPT := $(AS_OPT_DEBUG)
     modeinfostring := Building with debug information
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
@@ -203,6 +207,7 @@ my_cxxflags := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS)
 my_cflags := -fmessage-length=0 $(CXXOPT) $(CWARNINGS)
 # With recursive variables the automatic variables are expanded during receipt execution.
 my_cppflags = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(INC_FLAGS)
+my_asflags = -asli="$(@:%.o=%.lst)" $(ASOPT)
 
 # rules:
 all:
@@ -215,7 +220,7 @@ $(BINDIR):
 	$(MKDIR) '$@'
 
 $(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) $(OBJECTSC) $(OBJECTSASM)| $(BINDIR)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTSCPP): $(BUILDDIR)/%.o: %.cpp $(makefile_this) | $(BUILDDIRS)
@@ -231,7 +236,7 @@ $(OBJECTSC): $(BUILDDIR)/%.o: %.c $(makefile_this) | $(BUILDDIRS)
 	@echo -e 'Finished building: $<\n'
 
 $(OBJECTSASM): $(BUILDDIR)/%.o: %.s $(makefile_this) | $(BUILDDIRS)
-	$(AS) $(ASFLAGS) $(TARGET_MACH) -c -o "$@" "$<"
+	$(AS) $(my_asflags) $(ASFLAGS) $(TARGET_MACH) -c -o "$@" "$<"
 	@echo -e 'Finished building: $<\n'
 
 # includes additional rules after default rule

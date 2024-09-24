@@ -47,16 +47,16 @@ checkBuildOutput() {
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 				'*-ftabstop=4 -Wextra -MMD*"src/m1.cpp"' \
 				'*-ftabstop=4 -Wextra -MMD*"src/m2.cc"' \
-				"*-ftabstop=4 -Wextra*-o \"${BINDIR}/${TTRO_variantCase}\"";;
+				"*m1.o*m2.o*-o \"${BINDIR}/${TTRO_variantCase}\"";;
 		cppFlages)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 				'*-DMY_MACRO=11*"src/m1.cpp"' \
 				'*-DMY_MACRO=11*"src/m2.cc"' \
-				"*-ftabstop=4*-o \"${BINDIR}/${TTRO_variantCase}\"";;
+				"*m1.o*m2.o*-o \"${BINDIR}/${TTRO_variantCase}\"";;
 		incsysdir)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 				'*-I/dir1/dir2*"src/m1.cpp"' \
 				'*-I/dir1/dir2*"src/m2.cc"' \
-				"*-ftabstop=4*-o \"${BINDIR}/${TTRO_variantCase}\"";;
+				"*m1.o*m2.o*-o \"${BINDIR}/${TTRO_variantCase}\"";;
 	esac
 }

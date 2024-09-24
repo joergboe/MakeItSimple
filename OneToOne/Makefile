@@ -62,7 +62,6 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   endef
 endif
 
-# TODO: do we need this?
 SHELL = /bin/bash
 .SHELLFLAGS := -c
 

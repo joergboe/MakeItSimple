@@ -74,7 +74,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_OUT_PLACE_BUILD_RECURSION
   endef
 endif
 
-# TODO: do we need this?
 SHELL = /bin/bash
 .SHELLFLAGS := -c
 
@@ -194,7 +193,7 @@ $(BINDIR):
 	$(MKDIR) '$@'
 
 $(BINDIR)/$(TARGET): $(OBJECTSCPP) $(OBJECTSCC) | $(BINDIR)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTSCPP): $(BUILDDIR)/%.o: %.cpp $(makefile_this) | $(BUILDDIRS)

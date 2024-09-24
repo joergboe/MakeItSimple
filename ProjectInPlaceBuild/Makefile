@@ -65,7 +65,6 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
   endef
 endif
 
-# TODO: do we need this?
 SHELL = /bin/bash
 .SHELLFLAGS := -c
 
@@ -167,7 +166,7 @@ all:
 	@$(MAKE) -f $(makefile_this) $(TARGET)
 
 $(TARGET): $(OBJECTSCPP) $(OBJECTSCC)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
 	@echo -e 'Finished linking target: $@\n'
 
 $(OBJECTSCPP): %.o: %.cpp $(makefile_this)

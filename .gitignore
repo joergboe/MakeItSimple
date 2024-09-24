@@ -59,3 +59,6 @@
 # KDevelop artifacts
 *.kdev4
 .kdev4/
+
+# VSCode artifacts
+.vscode/
