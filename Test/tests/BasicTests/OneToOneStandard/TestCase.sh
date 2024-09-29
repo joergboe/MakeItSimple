@@ -1,4 +1,4 @@
-#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal'
+#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal Clean_All Clean_AllAll'
 
 OPTIONS='CXXFLAGS=-std=c++11'
 case ${TTRO_variantCase} in
@@ -19,9 +19,16 @@ esac
 GOALS=
 CLEANUP=
 NOBUILD=
+HASCOMPDB='true'
 case ${TTRO_variantCase} in
 	*CleanAll)
 		GOALS='clean all';;
+	*Clean_All)
+		GOALS='clean_all'
+		CLEANUP='true'
+		HASCOMPDB='';;
+	*Clean_AllAll)
+		GOALS='clean_all all';;
 	*All)
 		GOALS='all';;
 	*Clean)
@@ -75,12 +82,24 @@ else
 		'checkBuildOutput'
 	)
 fi
+if [[ -n $HASCOMPDB ]]; then
+	STEPS+=(
+	'if [[ -e compile_commands.json ]]; then : else setFailure "compile_commands.json not found!"; fi'
+	)
+else
+	STEPS+=(
+	'if [[ -e compile_commands.json ]]; then setFailure "compile_commands.json exists!"; fi'
+	)
+fi
 
 checkBuildOutput() {
 	if [[ -n $VERBOSE ]]; then
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 			'Finished building: m1.cpp' \
 			'Finished building: m2.cc'
+		if [[ -n $HASCOMPDB ]]; then
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Write Compile Database*'
+		fi
 	fi
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		case ${TTRO_variantCase} in
