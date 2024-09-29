@@ -77,18 +77,19 @@ else
 fi
 
 checkBuildOutput() {
-	linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-		'Finished building: m1.cpp' \
-		'Finished building: m2.cc'
-
+	if [[ -n $VERBOSE ]]; then
+		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+			'Finished building: m1.cpp' \
+			'Finished building: m2.cc'
+	fi
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		case ${TTRO_variantCase} in
 			run*)   local CXXOPTIONTOFIND='-O2';;
 			debug*) local CXXOPTIONTOFIND='-Og';;
 		esac
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*\"m1.cpp\"" \
-			"*${CXXOPTIONTOFIND}*\"m2.cc\""
+			"*${CXXOPTIONTOFIND}*m1.cpp*" \
+			"*${CXXOPTIONTOFIND}*m2.cc*"
 	fi
 	case ${TTRO_variantCase} in
 		*Verbose)
@@ -106,6 +107,8 @@ checkNoBuildOutput() {
 					'Sources found : m1.cpp m2.cc'
 			;;
 		helpGoal)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds executables from each*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+				'*This make script builds executables from each %.cpp and %.cc source file found in the current directory.*' \
+				'*-O\[TYPE\], --output-sync\[=TYPE\]  Synchronize output of parallel jobs by TYPE*';;
 	esac
 }

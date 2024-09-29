@@ -6,8 +6,8 @@ PREPS=(
 	'make'
 	"cp -p m1 buildartefact1"
 	"cp -p m2 buildartefact2"
+	'sleep 2'
 	'changeFile'
-	'sleep 1'
 )
 
 # The main test run
