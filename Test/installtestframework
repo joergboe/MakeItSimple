@@ -22,10 +22,11 @@ if [[ $1 != '--no-prompt' ]]; then
 fi
 
 rm -rfv scripts
-rm -rfv testframeInstaller_*.sh
+rm -rfv testframeInstaller_*
 
 wget "${TESTFRAMEWORK_SOURCE}"
-chmod +x "${TESTFRAMEWORK_INSTALL_SCRIPT}"
+gunzip -v "${TESTFRAMEWORK_INSTALL_DOWNLOAD}"
+chmod -v +x "${TESTFRAMEWORK_INSTALL_SCRIPT}"
 "./${TESTFRAMEWORK_INSTALL_SCRIPT}" "$(realpath scripts)"
 
 echo "DONE"
