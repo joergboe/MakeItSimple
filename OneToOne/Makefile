@@ -45,8 +45,10 @@ Optional customization variables:
 Description:
   This make script builds executables from each %.cpp and %.cc source file found in the current directory.
 
-  The Compilation Database is updated in allmost all goals if variable DISABLE_COMPILE_DB is unset. The only
-  exception to this rule is if the target 'clean_all' is the last or only command-line target.
+  The Compilation Database is updated in allmost all cases if variable DISABLE_COMPILE_DB is unset.
+  The exceptions from this rule are:
+    * the goal 'clean_all' is the last or only command-line goal,
+    * the goal 'help' is the only command-line goal.
 
   If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
   If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
@@ -100,6 +102,7 @@ Warning level 3 adds : $(cxxwarn3)
 The active warning include file is: $(MAKEFILE_WARN)
 
 All generated dependecies: $(DEPS)
+
     endef
     export infostring
   endif
@@ -214,11 +217,10 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   export ALLSTATFLAGS := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0 $(LDFLAGS) $(libflags) $(TARGET_ARCH)
 
   # compiler database functions
-  #make the compile database option for clang: -MJ$@.jj
   actiongoals = $(filter-out help info,$(MAKECMDGOALS))
   ifeq (clean_all,$(lastword $(actiongoals)))
     finally_delete_database = 1
-  else
+  else ifneq (help,$(MAKECMDGOALS))
     ifndef DISABLE_COMPILE_DB
       source_list_tail := $(lastword $(all_sources))
       source_list_head := $(filter-out $(source_list_tail),$(all_sources))
@@ -302,9 +304,9 @@ ifdef finally_delete_database
 endif
 
 info:
-	@echo "$${infostring}"
+	$(info $(infostring))
 	@$(CXX) --version
 	@echo
 
 help:
-	@echo "$${helpstring}"
+	$(info $(helpstring))
