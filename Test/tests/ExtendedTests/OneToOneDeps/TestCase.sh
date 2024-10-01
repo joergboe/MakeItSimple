@@ -14,7 +14,7 @@ esac
 PREPS=(
 	'cp ${TTRO_inputDirSuite}/../OneToOneTestProject/* .'
 	'cp "${TTRO_installDir}/OneToOne/Makefile" .'
-	'make ${OPTIONS} ${GOALS}'
+	'echoAndExecute make ${OPTIONS} all'
 	"cp -p m1 buildartefact1"
 	"cp -p m2 buildartefact2"
 	'sleep 2'

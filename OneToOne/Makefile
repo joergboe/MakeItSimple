@@ -73,7 +73,6 @@ Some useful make-options:
   -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
 
     endef
-    export helpstring
   endif
   # Prepare the info string if required
   ifneq (,$(findstring info,$(MAKECMDGOALS)))
@@ -104,7 +103,6 @@ The active warning include file is: $(MAKEFILE_WARN)
 All generated dependecies: $(DEPS)
 
     endef
-    export infostring
   endif
 endif
 
@@ -123,6 +121,9 @@ SHELL = /bin/bash
 all:
 
 makefile_this := $(lastword $(MAKEFILE_LIST))
+makefile_defs := project.mk
+# include project specific definitions if any
+-include $(makefile_defs)
 
 compile_database_name := compile_commands.json
 ifndef DISABLE_COMPILE_DB
@@ -137,10 +138,6 @@ define new_line :=
 
 
 endef
-
-# include project specific definitions if any
-makefile_defs := project.mk
--include $(makefile_defs)
 
 # The following initialization block is active in the initial recursion level only.
 ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
@@ -217,6 +214,11 @@ ifndef MAKE_IT_SIMPLE_ONE_TO_ONE_RECURSION
   export ALLSTATFLAGS := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0 $(LDFLAGS) $(libflags) $(TARGET_ARCH)
 
   # compiler database functions
+  # The db is generated if: ifndef DISABLE_COMPILE_DB and help is not the only goal
+  # The db is deleted if: ifdef DISABLE_COMPILE_DB and clean_all is not the last action goal and rule clean_all runs
+  ifdef DISABLE_COMPILE_DB
+    finally_delete_database = 1
+  endif
   actiongoals = $(filter-out help info,$(MAKECMDGOALS))
   ifeq (clean_all,$(lastword $(actiongoals)))
     finally_delete_database = 1
