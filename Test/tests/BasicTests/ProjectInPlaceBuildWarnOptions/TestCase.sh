@@ -71,17 +71,32 @@ getWarnString() {
 
 # Scan file $1 and put the variable definition cxxwarn[0..3] in variables cxxwarn[0..3]
 scanFile() {
-	printInfo "$FUNCNAME $1"
-	while read; do
-		local i
-		local x=''
-		for i in 0 1 2 3; do
-			if [[ $REPLY =~ cxxwarn${i}[[:blank:]]*\??=[[:blank:]](.*) ]]; then
-				x="${BASH_REMATCH[1]}"
-				eval "cxxwarn${i}"=\"\$x\"
-				eval echo "\"cxxwarn${i}=\$cxxwarn${i}\""
-			fi
-		done
+	printInfo "${FUNCNAME[0]} $1"
+	local continuation=''
+	local buffer=''
+	# special handling of continuation lines due to posix compatibility of the make file
+	# posix make inserts one space for a backslash new-line, but bash doesn't
+	while read -r; do
+		if [[ ${continuation} ]]; then
+			buffer="${buffer} ${REPLY}"   # insert a single space in a continued line
+		else
+			buffer="${REPLY}"
+		fi
+		if [[ $REPLY == *\\ ]]; then
+			buffer=${buffer:0: -1}
+			continuation='true'
+		else
+			continuation=''
+			local i
+			local x=''
+			for i in 0 1 2 3; do
+				if [[ $buffer =~ cxxwarn${i}[[:blank:]]*\??=[[:blank:]](.*) ]]; then
+					x="${BASH_REMATCH[1]}"
+					eval "cxxwarn${i}"=\"\$x\"
+					eval echo "\"cxxwarn${i}=\$cxxwarn${i}\""
+				fi
+			done
+		fi
 	done < "$1"
 }
 
@@ -112,8 +127,8 @@ checkOut() {
 
 checkBuildOutput() {
 	echoAndExecute linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-		"*${myWarningString}*\"m1.cpp\"" \
-		"*${myWarningString}*\"m2.cc\""
+		"*${myWarningString}*m1.cpp*" \
+		"*${myWarningString}*m2.cc*"
 }
 
 checkNoBuildOutput() {

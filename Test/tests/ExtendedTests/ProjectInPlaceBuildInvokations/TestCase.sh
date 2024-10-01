@@ -43,18 +43,18 @@ checkBuildOutput() {
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Build mode 4 is not supported*';;
 		cxxFlags)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-ftabstop=4 -Wextra -MMD*"m1.cpp"'\
-				'*-ftabstop=4 -Wextra -MMD*"m2.cc"'\
-				"*m1.o*m2.*-o \"${TTRO_variantCase}\"";;
+				'*-Wextra*-ftabstop=4*-MMD*m1.cpp*'\
+				'*-Wextra*-ftabstop=4*-MMD*m2.cc*'\
+				"*m1.o*m2.*-o*${TTRO_variantCase}*";;
 		cppFlages)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-DMY_MACRO=11*"m1.cpp"'\
-				'*-DMY_MACRO=11*"m2.cc"'\
-				"*m1.o*m2.o*-o \"${TTRO_variantCase}\"";;
+				'*-DMY_MACRO=11*m1.cpp*'\
+				'*-DMY_MACRO=11*m2.cc*'\
+				"*m1.o*m2.o*-o*${TTRO_variantCase}*";;
 		incsysdir)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-I/dir1/dir2*"m1.cpp"'\
-				'*-I/dir1/dir2*"m2.cc"'\
-				"*m1.o*m2.o*-o \"${TTRO_variantCase}\"";;
+				'*-I/dir1/dir2*m1.cpp*'\
+				'*-I/dir1/dir2*m2.cc*'\
+				"*m1.o*m2.o*-o*${TTRO_variantCase}*";;
 	esac
 }

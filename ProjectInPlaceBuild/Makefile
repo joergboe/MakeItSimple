@@ -1,99 +1,149 @@
 # defines this help text string in the initial recursion level only
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
-  define helpstring =
-    This make script builds one executable from all %.cpp and %.cc source files in the current/project directory.
+  # Prepare the help string if required
+  ifneq (,$(findstring help,$(MAKECMDGOALS)))
+    define helpstring =
 
-    Synopsis
-        make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
-      or
-        [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
+This make script builds one executable from all %.cpp and %.cc source files in the current/project directory
+and maintains a JSON Compilation Database ($(compile_database_name)) for the clang language server.
+The script supports 2 Build Modes (run and debug) and 4 Warning levels.
+The Compilation Database is automatically updated when the configuration has changed.
 
-    Goals:
-      all    Build the target executable - default goal.
-      clean  Clean up the target executable and all build artefacts.
-      info   Print project info.
-      help   Print this help text.
-      %.o    Build this object file if a coresponding source file exists.
+Synopsis
+    make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
+  or
+    [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
 
-    Files:
-      Makefile        This make script
-      $(makefile_defs)      This optional script contains the project customizations.
-      $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
-                      specific warning options and will be included from Makefile.
+Goals:
+  all       Build the target executable - default goal.
+  clean     Clean up the target executable and all build artefacts.
+  clean_all Clean up all generated executables and the Compilation Database.
+  info      Print project info.
+  help      Print this help text.
+  %.o       Build this object file if a coresponding source file exists.
 
-    Optional customization variables:
-      TARGET          Name of the executable to build. Default value is the last path component of this Makefile.
-      INCSYSDIRS:     Space separated list of external include directories used with compiler option -I. Default: empty.
-      WARN_LEVEL:     Warning level set 0 .. 3. Default: 2
-      MAKEFILE_WARN:  The name of the file with specific warning options. Default: 'warnings.mk'
-      BUILD_MODE:     Build mode set to 'run' or 'debug'. Default: 'debug'
-      COMP_OPT_RUN:   Compiler optimization level and debug option with BUILD_MODE = run. Default: -O2 -g1 (clang: -Og -gline-tables-only)
-      COMP_OPT_DEBUG: Compiler optimization level and debug option with BUILD_MODE = debug. Default: -Og -g3
-      CPPFLAGS:       Extra compiler preprocessor options.
-      CXXFLAGS:       Extra c++ compiler options (use for linker and compiler).
-      TARGET_ARCH:    Target specific flags.
-      LDFLAGS:        Extra linker options, such as -L.
-      LDLIBS:         Extra library flags given to the linker.
-      CXX             The compiler command to be used. Default: 'g++'
+Files:
+  Makefile        This make script
+  $(makefile_defs)      This optional script contains the project customizations.
+  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
+                  specific warning options and will be included from Makefile.
 
-    Description:
-      This make script builds one executable from all %.cpp and %.cc source files in the current project directory. The name of
-      the executable is defined through variable TARGET and the default is the last component of the directory which contains
-      this Makefile.
+Optional customization variables:
+  TARGET              Name of the executable to build. Default value is the last path component of this Makefile.
+  INCSYSDIRS:         Space separated list of external include directories used with compiler option -I. Default: empty.
+  WARN_LEVEL:         Warning level set 0 .. 3. Default: 2
+  MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
+  BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
+  COMP_OPT_RUN:       Compiler optimization level and debug option with BUILD_MODE = run. Default: -O2 -g1 (clang: -Og -gline-tables-only)
+  COMP_OPT_DEBUG:     Compiler optimization level and debug option with BUILD_MODE = debug. Default: -Og -g3
+  CPPFLAGS:           Extra compiler preprocessor options.
+  CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
+  TARGET_ARCH:        Target specific flags.
+  LDFLAGS:            Extra linker options, such as -L.
+  LDLIBS:             Space separated list of libraries given to the linker.
+  CXX                 The compiler command to be used. Default: 'g++'
+  DISABLE_COMPILE_DB: If set to anything other than the empty string, the Compilation Database generation is disabled.
 
-      If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
-      If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
+Description:
+  This make script builds one executable from all %.cpp and %.cc source files in the current project directory. The name of
+  the executable is defined through variable TARGET and the default is the last component of the directory which contains
+  this Makefile.
 
-      The variable WARN_LEVEL can assign warning levels from 0 .. 3.
-      The default warning level is 2 and activates a comprehensive set of warnings (for gcc and clang).
+  The Compilation Database is updated in allmost all cases if variable DISABLE_COMPILE_DB is unset.
+  The exceptions from this rule are:
+    * the goal 'clean_all' is the last or only command-line goal,
+    * the goal 'help' is the only command-line goal.
 
-      By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
+  If variable BUILD_MODE is not set or has the value debug, the executables are build with debug information included.
+  If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
-      Use the CXXFLAGS variable to change the c++ language standard. E.g. 'CXXFLAGS=-std=c++11'.
+  The variable WARN_LEVEL can assign warning levels from 0 .. 3.
+  The default warning level is 2 and activates a comprehensive set of warnings (for gcc and clang).
 
-      If parallel execution is requested, the script executes the command line goals in the designated order and switches 
-      for goal 'all' to parallel execution mode in recursion level 1.
+  By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
 
-    Some useful make-options:
-      -h, --help                      Display help.
-      -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
-      -k, --keep-going                Continue as much as possible after an error.
-      -B, --always-make               Unconditionally make all targets.
-      -r, --no-builtin-rules          Disable the built-in implicit rules.
-      -s, --silent, --quiet           Don't echo recipes.
-      -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
-  endef
+  Use the CXXFLAGS variable to change the c++ language standard. E.g. 'CXXFLAGS=-std=c++11'.
+
+  If parallel execution is requested, the script executes the command line goals in the designated order and switches
+  for goal 'all' to parallel execution mode in recursion level 1.
+
+Some useful make-options:
+  -h, --help                      Display help.
+  -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
+  -k, --keep-going                Continue as much as possible after an error.
+  -B, --always-make               Unconditionally make all targets.
+  -r, --no-builtin-rules          Disable the built-in implicit rules.
+  -s, --silent, --quiet           Don't echo recipes.
+  -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+
+    endef
+  endif
+  # Prepare the info string if required
+  ifneq (,$(findstring info,$(MAKECMDGOALS)))
+    define infostring =
+
+Build target '$(TARGET)' from *.cpp and *.cc sourcefiles
+
+Sources found : $(CPPSOURCES) $(CCSOURCES)
+
+Objects to build : $(OBJECTSCPP) $(OBJECTSCC)
+
+All include (system) directories : $(INCSYSDIRS)
+
+$(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(CXXOPT)
+
+Compiler command : $(CXX)
+
+Custom compiler options: $(CXXFLAGS)
+
+Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings)
+
+Warning level 1 includes : $(cxxwarn1)
+
+Warning level 2 adds : $(cxxwarn2)
+
+Warning level 3 adds : $(cxxwarn3)
+
+The active warning include file is: $(MAKEFILE_WARN)
+
+All generated dependecies: $(DEPS)
+
+    endef
+  endif
 endif
 
+# Common initialization for both recursion levels
 SHELL = /bin/bash
 .SHELLFLAGS := -c
 
-makefile_this := $(lastword $(MAKEFILE_LIST))
-makefile_defs := project.mk
-
+.POSIX:
 # deletes the old fashioned suffix rules from database (speedup)
 .SUFFIXES:
 # instructs make to delete the target of a rule if it has changed and its recipe exits with a nonzero exit status
 .DELETE_ON_ERROR:
 
-.PHONY: all clean info help
+.PHONY: all clean clean_all info help
 # ensures that 'all' is the default (first target without a dot) goal
 all:
 
+makefile_this := $(lastword $(MAKEFILE_LIST))
+makefile_defs := project.mk
 # include optional project specific definitions
+
 -include $(makefile_defs)
-# and add the defaults for the unset variables
-# get the last path component from the realpath of this filename as target name
-TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))
-WARN_LEVEL ?= 2
-MAKEFILE_WARN ?= warnings.mk
-BUILD_MODE ?= debug
-COMP_OPT_RUN ?= -O2 -g1
-ifeq (,$(findstring clang,$(CXX)))
-  COMP_OPT_DEBUG ?= -Og -g3
-else
-  COMP_OPT_DEBUG ?= -Og -gline-tables-only
+compile_database_name := compile_commands.json
+ifndef DISABLE_COMPILE_DB
+  compile_database_target := $(compile_database_name)
 endif
+
+ifeq (s,$(findstring s,$(firstword $(MAKEFLAGS))))
+  silent_mode = 1
+endif
+# The new line variable requires 2 empty lines!
+define new_line :=
+
+
+endef
 
 # The following initialization block is active in the initial recursion level only.
 ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
@@ -103,120 +153,176 @@ ifndef MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
   # the execution of the command line goals is ensured in the intended order.
   .NOTPARALLEL:
 
+  # and add the defaults for the unset variables
+  WARN_LEVEL ?= 2
+  MAKEFILE_WARN ?= warnings.mk
+  BUILD_MODE ?= debug
+  COMP_OPT_RUN ?= -O2 -g1
+  ifeq (,$(findstring clang,$(CXX)))
+    COMP_OPT_DEBUG ?= -Og -g3
+  else
+    COMP_OPT_DEBUG ?= -Og -gline-tables-only
+  endif
+
   # include warning definitions in file makefile_warn and complement default values
   -include $(MAKEFILE_WARN)
   cxxwarn0 ?= -ftabstop=4
   cxxwarn1 ?= -pedantic -Wall -Wextra
-  cxxwarn2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations \
--Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion \
--Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant \
+  cxxwarn2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations\
+-Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion\
+-Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant\
 -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
   cxxwarn3 ?= -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch -Wunused-macros -Wstrict-overflow=5
 
   ifeq ($(WARN_LEVEL),0)
-    export CXXWARNINGS := $(cxxwarn0)
+    cxxwarnings := $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),1)
-    export CXXWARNINGS := $(cxxwarn1) $(cxxwarn0)
+    cxxwarnings := $(cxxwarn1) $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),2)
-    export CXXWARNINGS := $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
+    cxxwarnings := $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
   else ifeq ($(WARN_LEVEL),3)
-    export CXXWARNINGS := $(cxxwarn3) $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
+    cxxwarnings := $(cxxwarn3) $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
   else
     $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
   endif
 
   ifeq ($(BUILD_MODE),run)
-    export CXXOPT := $(COMP_OPT_RUN)
+    bmodeflags := $(COMP_OPT_RUN)
     modeinfostring := Building optimized release version
   else ifeq ($(BUILD_MODE),debug)
-    export CXXOPT := $(COMP_OPT_DEBUG)
+    bmodeflags := $(COMP_OPT_DEBUG)
     modeinfostring := Building with debug information
   else
     $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
   endif
 
+  # get the last path component from the realpath of this filename as target name
+  export TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))
   # determines all sources, objects, dependecies, required flags and exports values for recursion
   export CPPSOURCES := $(wildcard *.cpp)
   export CCSOURCES := $(wildcard *.cc)
   export OBJECTSCPP := $(CPPSOURCES:.cpp=.o)
   export OBJECTSCC := $(CCSOURCES:.cc=.o)
   export DEPS := $(CPPSOURCES:.cpp=.d) $(CCSOURCES:.cc=.d)
-  export INC_FLAGS := $(addprefix -I,$(INCSYSDIRS))
+  incflags := $(addprefix -I,$(INCSYSDIRS))
+  libflags := $(addprefix -l,$(LDLIBS))
+  all_sources := $(CPPSOURCES) $(CCSOURCES)
 
   # prints info only if not silent (-s option) and not help goal or info goal
-  ifeq (,$(findstring s,$(MFLAGS)))
+  ifndef silent_mode
     ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
       $(info )
       $(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
       $(info )
-      $(info Sources found : $(CPPSOURCES) $(CCSOURCES))
+      $(info Sources found : $(all_sources))
       $(info )
       $(info All include (system) directories : $(INCSYSDIRS))
       $(info )
     endif
   endif
-endif
 
-my_cxxflags := -fmessage-length=0 $(CXXOPT) $(CXXWARNINGS)
-# With recursive variables the automatic variables are expanded during receipt execution.
-my_cppflags = -MMD -MF"$(@:%.o=%.d)" -MP -MT"$@" $(INC_FLAGS)
+  export ALLSTATFLAGS := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0 $(LDFLAGS) $(libflags) $(TARGET_ARCH) -c
+
+  # compiler database functions
+  # The db is generated if: ifndef DISABLE_COMPILE_DB and help is not the only goal
+  # The db is deleted if: ifdef DISABLE_COMPILE_DB and clean_all is not the last action goal and rule clean_all runs
+  ifdef DISABLE_COMPILE_DB
+    finally_delete_database = 1
+  endif
+  actiongoals = $(filter-out help info,$(MAKECMDGOALS))
+  ifeq (clean_all,$(lastword $(actiongoals)))
+    finally_delete_database = 1
+  else ifneq (help,$(MAKECMDGOALS))
+    ifndef DISABLE_COMPILE_DB
+      source_list_tail := $(lastword $(all_sources))
+      source_list_head := $(filter-out $(source_list_tail),$(all_sources))
+
+      # call file_entry,sourcename
+      define file_entry =
+ {
+    "directory": "$(PWD)",
+    "arguments": [$(foreach var,$(subst ",\",$(CXX) $(ALLSTATFLAGS)),"$(var)",) "-o", "$(1)", "$(basename $(1))"],
+    "file": "$(1)",
+    "output": "$(basename $(1)).o"
+  }
+      endef
+
+      compile_database := [$(new_line)\
+        $(foreach var,$(source_list_head), $(call file_entry,$(var)),$(new_line))\
+        $(call file_entry,$(source_list_tail))$(new_line)]
+
+      compare_database := $(file < $(compile_database_name))
+      prompt := Compile Database is up to date.
+      ifneq ($(compare_database),$(compile_database))
+        prompt := Write Compile Database!
+        $(file > $(compile_database_name),$(compile_database))
+      endif
+      # prints info only if not silent (-s option)
+      ifndef silent_mode
+        $(info $(prompt))
+        $(info )
+      endif
+    endif
+  endif
+endif # MAKE_IT_SIMPLE_PROJECT_IN_PLACE_BUILD_RECURSION
+
+# Define the recursive variable in the actual recursion level!
+# The export seems to be done during recursion invocation.
+DEPFLAGS = -MMD '-MF$(@:%.o=%.d)' -MP '-MT$@'
+OUTPUT_OPTION = -o '$@'
+define conditional_echo =
+ifndef silent_mode
+echo "$(1)"
+endif
+endef
+define compile_source =
+$(CXX) $(ALLSTATFLAGS) $(DEPFLAGS) $(OUTPUT_OPTION) '$<'
+endef
+ifndef silent_mode
+  compile_source += $(new_line)
+  compile_source += @echo -e 'Finished building: $<\n'
+endif
 
 # rules:
 all:
-	@$(MAKE) -f $(makefile_this) $(TARGET)
+	@$(MAKE) -f $(makefile_this) '$(TARGET)'
 
 $(TARGET): $(OBJECTSCPP) $(OBJECTSCC)
-	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o "$@"
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
+ifndef silent_mode
 	@echo -e 'Finished linking target: $@\n'
+endif
 
-$(OBJECTSCPP): %.o: %.cpp $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
+$(OBJECTSCPP): %.o: %.cpp $(makefile_this) $(compile_database_target)
+	$(compile_source)
 
-$(OBJECTSCC): %.o: %.cc $(makefile_this)
-	$(CXX) $(my_cxxflags) $(CXXFLAGS) $(my_cppflags) $(CPPFLAGS) $(TARGET_ARCH) -c -o "$@" "$<"
-	@echo -e 'Finished building: $<\n'
+$(OBJECTSCC): %.o: %.cc $(makefile_this) $(compile_database_target)
+	$(compile_source)
 
 # includes additional rules after default rule
 -include $(DEPS)
 
 clean:
+ifndef silent_mode
 	@echo 'Cleanup'
-	-$(RM) $(TARGET) *.o *.d
+endif
+	-$(RM) $(foreach var,$(TARGET) $(OBJECTSCPP) $(OBJECTSCC) $(DEPS),'$(var)')
+ifndef silent_mode
 	-@echo
+endif
+
+clean_all: clean
+ifdef finally_delete_database
+	-$(RM) '$(compile_database_name)'
+  ifndef silent_mode
+	-@echo
+  endif
+endif
 
 info:
-	$(info )
-	$(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
-	$(info )
-	$(info Sources found : $(CPPSOURCES) $(CCSOURCES))
-	$(info )
-	$(info Objects to build : $(OBJECTSCPP) $(OBJECTSCC))
-	$(info )
-	$(info All include (system) directories : $(INCSYSDIRS))
-	$(info )
-	$(info $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(CXXOPT))
-	$(info )
-	$(info Compiler command : $(CXX))
-	$(info )
-	$(info Custom compiler options: $(CXXFLAGS))
-	$(info )
-	$(info Building with WARN_LEVEL=$(WARN_LEVEL) : $(CXXWARNINGS))
-	$(info )
-	$(info Warning level 1 includes : $(cxxwarn1))
-	$(info )
-	$(info Warning level 2 adds : $(cxxwarn2))
-	$(info )
-	$(info Warning level 3 adds : $(cxxwarn3))
-	$(info )
-	$(info The active warning include file is: $(MAKEFILE_WARN))
-	$(info )
-	$(info All generated dependecies: $(DEPS))
-	$(info )
+	$(info $(infostring))
 	@$(CXX) --version
-	@echo -e '*********************************************\n'
+	@echo
 
 help:
-	$(info )
 	$(info $(helpstring))
-	$(info )

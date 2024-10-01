@@ -1,4 +1,4 @@
-#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal'
+#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal Clean_All Clean_AllAll'
 
 OPTIONS='CXXFLAGS=-std=c++11'
 case ${TTRO_variantCase} in
@@ -19,9 +19,16 @@ esac
 GOALS=
 CLEANUP=
 NOBUILD=
+HASCOMPDB='true'
 case ${TTRO_variantCase} in
 	*CleanAll)
 		GOALS='clean all';;
+	*Clean_All)
+		GOALS='clean_all'
+		CLEANUP='true'
+		HASCOMPDB='';;
+	*Clean_AllAll)
+		GOALS='clean_all all';;
 	*All)
 		GOALS='all';;
 	*Clean)
@@ -72,11 +79,26 @@ else
 	)
 fi
 
+if [[ -n $HASCOMPDB ]]; then
+	STEPS+=(
+	'if [[ -e compile_commands.json ]]; then : else setFailure "compile_commands.json not found!"; fi'
+	)
+else
+	STEPS+=(
+	'if [[ -e compile_commands.json ]]; then setFailure "compile_commands.json exists!"; fi'
+	)
+fi
+
 checkBuildOutput() {
-	linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-		'Finished building: m1.cpp' \
-		'Finished building: m2.cc' \
-		"Finished linking target: ${TTRO_variantCase}"
+	if [[ -n $VERBOSE ]]; then
+		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+			'Finished building: m1.cpp' \
+			'Finished building: m2.cc' \
+			"Finished linking target: ${TTRO_variantCase}"
+		if [[ -n $HASCOMPDB ]]; then
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Write Compile Database*'
+		fi
+	fi
 
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		case ${TTRO_variantCase} in
@@ -84,9 +106,9 @@ checkBuildOutput() {
 			debug*) local CXXOPTIONTOFIND='-Og';;
 		esac
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*\"m1.cpp\"" \
-			"*${CXXOPTIONTOFIND}*\"m2.cc\"" \
-			"*-o \"${TTRO_variantCase}\""
+			"*${CXXOPTIONTOFIND}*m1.cpp*" \
+			"*${CXXOPTIONTOFIND}*m2.cc*" \
+			"*-o*${TTRO_variantCase}*"
 	fi
 	case ${TTRO_variantCase} in
 		*Verbose)
@@ -105,6 +127,9 @@ checkNoBuildOutput() {
 					'Sources found : m1.cpp m2.cc'
 			;;
 		helpGoal)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds one executable*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+					'*This make script builds one executable*' \
+					'*The Compilation Database is updated in allmost all*' \
+					'*-O\[TYPE\], --output-sync\[=TYPE\]  Synchronize output of parallel jobs by TYPE*';;
 	esac
 }
