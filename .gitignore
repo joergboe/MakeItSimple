@@ -31,7 +31,7 @@
 *.out
 *.app
 
-# Generated executables
+# Generated executables and more
 /OneToOne/m1
 /OneToOne/m2
 /ProjectInPlaceBuild/program
@@ -40,6 +40,8 @@
 /ProjectOutPlaceBuild/run/
 /ProjectOutPlaceBuild2/debug/
 /ProjectOutPlaceBuild2/run/
+.last_config_store
+.temp_config_store
 
 # test artifacts
 /Test/scripts/
