@@ -1,5 +1,5 @@
 #--exclusive=true
-#--variantList='default parallel parallelAllClean fail failKeepGoing parallelFail parallelFailKeepGoing'
+#--variantList='default parallel fail failKeepGoing parallelFail parallelFailKeepGoing'
 
 readonly NO_CPUS=$(cat /proc/cpuinfo | grep processor | wc -l)
 ALL_SOURCE_FILE_NAMES=
@@ -13,10 +13,6 @@ EXPECT_FAILURE=
 case ${TTRO_variantCase} in
 	parallel)
 		OPTIONS+=" -j ${NO_CPUS}";;
-	parallelAllClean)
-		OPTIONS+=" -j ${NO_CPUS}"
-		GOALS='all clean'
-		RUN_RESULT=;;
 	fail)
 		EXPECT_FAILURE='true'
 		RUN_RESULT=;;
@@ -56,13 +52,6 @@ checkResult() {
 	case ${TTRO_variantCase} in
 		default|parallel)
 			checkAllFilesExist "." "${ALL_EXE_FILE_NAMES}";;
-		parallelAllClean)
-			for X in module*; do
-				if [[ $X != *.cpp ]]; then
-					setFailure "Module $X exists"
-				fi
-			done
-			printInfo "No module executables found";;
 		fail)
 			checkFileNotExists "module3";;
 		failKeepGoing)

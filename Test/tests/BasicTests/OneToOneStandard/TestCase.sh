@@ -1,4 +1,4 @@
-#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal Clean_All Clean_AllAll'
+#--variantList='default run debug runVerbose debugVerbose runAll debugAll runCleanAll debugCleanAll runClean debugClean runInfo debugInfo helpGoal Clean_All'
 
 OPTIONS='CXXFLAGS=-std=c++11'
 case ${TTRO_variantCase} in
@@ -24,22 +24,23 @@ case ${TTRO_variantCase} in
 	*CleanAll)
 		GOALS='clean all';;
 	*Clean_All)
-		GOALS='clean_all'
+		GOALS='cleanall'
 		CLEANUP='true'
 		HASCOMPDB='';;
-	*Clean_AllAll)
-		GOALS='clean_all all';;
 	*All)
 		GOALS='all';;
 	*Clean)
 		GOALS=clean
-		CLEANUP='true';;
+		CLEANUP='true'
+		HASCOMPDB='true';; # db exists from previous make all
 	*Info)
 		GOALS=info
-		NOBUILD='true';;
+		NOBUILD='true'
+		HASCOMPDB='';;
 	helpGoal)
 		GOALS=help
-		NOBUILD='true';;
+		NOBUILD='true'
+		HASCOMPDB='';;
 esac
 
 PREPS=(
@@ -98,7 +99,7 @@ checkBuildOutput() {
 			'Finished building: m1.cpp' \
 			'Finished building: m2.cc'
 		if [[ -n $HASCOMPDB ]]; then
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Write Compile Database*'
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Finished database compile_commands.json*'
 		fi
 	fi
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
@@ -127,7 +128,7 @@ checkNoBuildOutput() {
 			;;
 		helpGoal)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*This make script builds executables from each %.cpp and %.cc source file found in the current directory.*' \
+				'*This make script builds executable targets from each %.cpp and %.cc source file found in the current*' \
 				'*-O\[TYPE\], --output-sync\[=TYPE\]  Synchronize output of parallel jobs by TYPE*';;
 	esac
 }

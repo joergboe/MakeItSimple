@@ -46,7 +46,7 @@ changeFile() {
 checkOutput() {
 	case ${TTRO_variantCase} in
 		# nothing build
-		default*|config_nodb)
+		default*)
 			if [[ "m1" -nt "buildartefact1" ]]; then
 				setFailure "m1 was build!"
 			else
@@ -82,7 +82,7 @@ checkOutput() {
 				printInfo "m2 was NOT build!"
 			fi;;
 		# all build
-		makefile*|config|config2)
+		makefile*|config|config2|config_nodb)
 			if [[ "m1" -nt "buildartefact1" ]]; then
 				printInfo "m1 was build!"
 			else
