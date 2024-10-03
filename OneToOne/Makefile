@@ -186,15 +186,15 @@ else
   $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
 endif
 
-# determines all sources, objects, required flags and exports values for recursion
+# determines all sources, objects, required flags
 sourcescpp := $(wildcard *.cpp)
 sourcescc := $(wildcard *.cc)
 targetscpp := $(sourcescpp:.cpp=)
 targetscc := $(sourcescc:.cc=)
 depfiles := $(sourcescpp:.cpp=.d) $(sourcescc:.cc=.d)
-#db_fragments := $(sourcescpp:.cpp=.cfg) $(sourcescc:.cc=.cfg)
-dbfragmentscpp := $(addsuffix .cfg,$(sourcescpp))
-dbfragmentscc := $(addsuffix .cfg,$(sourcescc))
+#db_fragments := $(sourcescpp:.cpp=.jj.tmp) $(sourcescc:.cc=.jj.tmp)
+dbfragmentscpp := $(addsuffix .jj.tmp,$(sourcescpp))
+dbfragmentscc := $(addsuffix .jj.tmp,$(sourcescc))
 incflags := $(addprefix -I,$(INCSYSDIRS))
 libflags := $(addprefix -l,$(LDLIBS))
 allsources := $(sourcescpp) $(sourcescc)
@@ -217,7 +217,6 @@ ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
   endif
 endif
 ifeq (cleanall,$(findstring cleanall,$(goals)))
-  $(info $(words $(goals)))
   $(intcmp $(words $(goals)),2,,$(error cleanall must be the only goal!))
 endif
 
@@ -237,10 +236,22 @@ ifndef silent_mode
   endif
 endif
 
-# prepare configuration store
+# call neq,param1,param2
+# Expands to 'true' if param1 and param2 are not equal or to the empty string otherwise
+neq = $(if $(subst $(2),,$(1)),true)
+
+# call tail,separator,wordlist
+# Expands to the rest of the word list that follows the separator word.
+tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
+
+#TODO: warn if CXXFLAGS from environment
 # Special case "CXXFLAGS=-MJ$<.jj"
 # recursive variables are stored unexpanded in MAKEFLAGS
 # recursive variables are expanded form environment
+#TODO : disable config check
+# prepare configuration store
+arg_vars = $(sort $(call tail,--,$(MAKEFLAGS)))
+
 define configuration =
 INCSYSDIRS = $(INCSYSDIRS)
 WARN_LEVEL = $(WARN_LEVEL)
@@ -255,7 +266,7 @@ LDFLAGS = $(LDFLAGS)
 LDLIBS = $(LDLIBS)
 CXX = $(CXX)
 DISABLE_COMPILE_DB = $(DISABLE_COMPILE_DB)
-ARG_VARS = $(filter-out $(firstword $(MAKEFLAGS)),$(MAKEFLAGS))
+ARG_VARS = $(arg_vars)
 cxxwarnings = $(cxxwarnings)
 endef
 
@@ -298,7 +309,7 @@ endif
 # Function to produce one Compilation Database fragment
 # call compdb_file_entry,sourcename,targetname
 compdb_file_entry = {\n\
-   \"directory\": \"$(PWD)\",\n\
+   \"directory\": \"$(CURDIR)\",\n\
    \"file\": \"$(1)\",\n\
    \"arguments\": [$(foreach var,$(subst ",\",$(CXX) $(allflags)),\"$(var)\",) \"-o\", \"$(1)\", \"$(2)\"],\n\
    \"output\": \"$(2)\" }
@@ -310,18 +321,17 @@ compdb: $(compile_database_name)
 
 $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@echo "[" > '$@'
-	@for x in $(foreach var,$(filter-out $(lastword $^),$^),'$(var)'); do \
-	cat "$$x" >> '$@'; echo -n "," >> '$@'; done
-	@cat '$(lastword $^)' >> '$@'
+	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
+	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
 	@echo "]" >> '$@'
 	$(call conditional_echo,'Finished database $@')
 
 $(dbfragmentscpp): $(makefile_this) $(last_config_store_name)
-	@echo -e "$(call compdb_file_entry,$(@:%.cfg=%),$(@:%.cpp.cfg=%))" > '$@'
+	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cpp.jj.tmp=%))" > '$@'
 	$(call conditional_echo,'Finished database fragment $@')
 
 $(dbfragmentscc): $(makefile_this) $(last_config_store_name)
-	@echo -e "$(call compdb_file_entry,$(@:%.cfg=%),$(@:%.cc.cfg=%))" > '$@'
+	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cc.jj.tmp=%))" > '$@'
 	$(call conditional_echo,'Finished database fragment $@')
 
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
