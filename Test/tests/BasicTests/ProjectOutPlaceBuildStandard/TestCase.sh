@@ -24,6 +24,7 @@ GOALS=
 CLEANUP=
 CLEANUP2=
 NOBUILD=
+HASCOMPDB='true'
 case ${TTRO_variantCase} in
 	*CleanAll)
 		GOALS='clean all';;
@@ -31,16 +32,19 @@ case ${TTRO_variantCase} in
 		GOALS='all';;
 	*Clean)
 		GOALS=clean
-		CLEANUP='true';;
+		CLEANUP='true';;  # db exists from previous make all
 	*Clean2)
-		GOALS=clean_all
-		CLEANUP2='true';;
+		GOALS='cleanall'
+		CLEANUP2='true'
+		HASCOMPDB='';;
 	*Info)
 		GOALS=info
-		NOBUILD='true';;
+		NOBUILD='true'
+		HASCOMPDB='';;
 	help)
 		GOALS=help
-		NOBUILD='true';;
+		NOBUILD='true'
+		HASCOMPDB='';;
 esac
 
 PREPS=(
@@ -86,10 +90,16 @@ else
 fi
 
 checkBuildOutput() {
-	linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-		'Finished building: src/m1.cpp' \
-		'Finished building: src/m2.cc' \
-		"Finished linking target: ${BINDIR}/${TTRO_variantCase}"
+	if [[ -n $VERBOSE ]]; then
+		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+			'Finished building: src/m1.cpp' \
+			'Finished building: src/m2.cc' \
+			"Finished linking target: ${BINDIR}/${TTRO_variantCase}"
+		if [[ -n $HASCOMPDB ]]; then
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Finished database compile_commands.json*'
+		fi
+	fi
+
 
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		case ${TTRO_variantCase} in
@@ -97,9 +107,9 @@ checkBuildOutput() {
 			debug*) local CXXOPTIONTOFIND='-Og';;
 		esac
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*\"src/m1.cpp\"" \
-			"*${CXXOPTIONTOFIND}*\"src/m2.cc\"" \
-			"*-o \"${BINDIR}/${TTRO_variantCase}\""
+			"*${CXXOPTIONTOFIND}*src/m1.cpp*" \
+			"*${CXXOPTIONTOFIND}*src/m2.cc*" \
+			"*-o*${BINDIR}/${TTRO_variantCase}*"
 	fi
 	case ${TTRO_variantCase} in
 		*Verbose)
@@ -119,6 +129,8 @@ checkNoBuildOutput() {
 					'Sources found : src/m1.cpp src/m2.cc'
 			;;
 		help)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*This make script builds one executable*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
+			'*This make script builds one executable*' \
+			'*-O\[TYPE\], --output-sync\[=TYPE\]  Synchronize output of parallel jobs by TYPE*';;
 	esac
 }

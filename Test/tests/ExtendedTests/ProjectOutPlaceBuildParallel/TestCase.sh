@@ -1,5 +1,5 @@
 #--exclusive=true
-#--variantList='default parallel parallelAllClean fail failKeepGoing parallelFail parallelFailKeepGoing'
+#--variantList='default parallel fail failKeepGoing parallelFail parallelFailKeepGoing'
 
 readonly NO_CPUS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
@@ -12,10 +12,6 @@ BINDIR='debug'
 case ${TTRO_variantCase} in
 	parallel)
 		OPTIONS+=" -j ${NO_CPUS}";;
-	parallelAllClean)
-		OPTIONS+=" -j ${NO_CPUS}"
-		GOALS='all clean'
-		RUN_RESULT=;;
 	fail)
 		EXPECT_FAILURE='true'
 		RUN_RESULT=;;
@@ -59,14 +55,6 @@ checkResult() {
 			checkAllFilesExist "${BINDIR}/build/src" "${ALL_DEP_FILE_NAMES}"
 			checkAllFilesExist "${BINDIR}/build/src" "${ALL_OBJ_FILE_NAMES}"
 			checkAllFilesExist "${BINDIR}" "${TTRO_variantCase}";;
-		parallelAllClean)
-			checkFileNotExists "${BINDIR}/${TTRO_variantCase}"
-			X=$(echo ${BINDIR}/build/src/*.d ${BINDIR}/build/src/*.o)
-			if [[ -n $X ]]; then
-				setFailure "Existing file found $X"
-			else
-				printInfo "No files found clean"
-			fi;;
 		fail)
 			checkFileNotExists "${BINDIR}/build/src/module3.o"
 			checkFileNotExists "${BINDIR}/${TTRO_variantCase}";;

@@ -1,7 +1,7 @@
-#--variantList='default info help clean verbose'
+#--variantList='default info help clean all'
 
 BINDIR='debug'
-OPTIONS='-s'
+OPTIONS=''
 
 GOALS=
 CLEANUP=
@@ -17,9 +17,8 @@ case ${TTRO_variantCase} in
 	help)
 		GOALS=help
 		NOBUILD='true';;
-	verbose)
+	all)
 		GOALS=all
-		OPTIONS="${OPTIONS//-s}"
 		VERBOSE='true';;
 esac
 
@@ -67,9 +66,9 @@ checkBuildOutput() {
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		local CXXOPTIONTOFIND='-Og'
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*\"src/m1.cpp\"" \
-			"*${CXXOPTIONTOFIND}*\"src/m2.cc\"" \
-			"*-o \"${BINDIR}/${TTRO_variantCase}\""
+			"*${CXXOPTIONTOFIND}*src/m1.cpp*" \
+			"*${CXXOPTIONTOFIND}*src/m2.cc*" \
+			"*-o*${BINDIR}/${TTRO_variantCase}*"
 
 		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'true' '*-iquoteinclude*'
 	fi

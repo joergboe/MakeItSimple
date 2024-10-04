@@ -1,6 +1,6 @@
 #--variantList='run debug runClean debugClean runInfo debugInfo runTarget debugTarget runTargetClean debugTargetClean'
 
-OPTIONS='-s'
+OPTIONS=''
 case ${TTRO_variantCase} in
 	run*)
 		OPTIONS+=' BUILD_MODE=run'
