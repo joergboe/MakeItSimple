@@ -6,7 +6,7 @@ This make script builds executable targets from each %.cpp and %.cc source file 
 directory and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
 server.
 The script supports 2 Build Modes (run and debug) and 4 Warning levels.
-The script keeps track of the last used configuration in a file ()$(last_config_store)).
+The script keeps track of the last used configuration in a file ($(last_config_store_name)).
 
 Synopsis
     make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]

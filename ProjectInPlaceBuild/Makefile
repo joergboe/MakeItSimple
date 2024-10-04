@@ -6,7 +6,7 @@ This make script builds one executable from all %.cpp and %.cc source files in t
 directory and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
 server.
 The script supports 2 Build Modes (run and debug) and 4 Warning levels.
-The script keeps track of the last used configuration in a file ()$(last_config_store)).
+The script keeps track of the last used configuration in a file ($(last_config_store_name)).
 
 Synopsis
     make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
@@ -226,7 +226,7 @@ ifeq (cleanall,$(findstring cleanall,$(goals)))
   $(intcmp $(words $(goals)),2,,$(error cleanall must be the only goal!))
 endif
 
-allflags := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(LDFLAGS) $(libflags) $(TARGET_ARCH) -c
 depflags = -MMD '-MF$(@:%.o=%.d)' -MP '-MT$@'
 OUTPUT_OPTION = -o '$@'
@@ -261,6 +261,7 @@ tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(cal
 arg_vars = $(sort $(call tail,--,$(MAKEFLAGS)))
 
 define configuration =
+TARGET = $(TARGET)
 INCSYSDIRS = $(INCSYSDIRS)
 WARN_LEVEL = $(WARN_LEVEL)
 MAKEFILE_WARN = $(MAKEFILE_WARN)
