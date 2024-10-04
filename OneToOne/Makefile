@@ -10,8 +10,7 @@ The script keeps track of the last used configuration in a file ()$(last_config_
 
 Synopsis
     make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
-  or
-    [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
+
 Goals:
   all       Default goal - Build or update an executable from every *.cpp/*.cc if outdated and
             build or update the JSON compilation database if neccessary.
@@ -293,7 +292,7 @@ define new_line :=
 endef
 # call conditional_echo,string
 ifndef silent_mode
-  conditional_echo = @echo '$(1)'
+  conditional_echo = @echo -e "$(1)"
 else
   conditional_echo =
 endif
@@ -303,7 +302,7 @@ $(CXX) $(allflags) $(depflags) $(OUTPUT_OPTION) '$<'
 endef
 ifndef silent_mode
   compile_source += $(new_line)
-  compile_source += @echo -e 'Finished building: $<\n'
+  compile_source += @echo -e "Finished building: $<\n"
 endif
 
 # Function to produce one Compilation Database fragment
@@ -324,15 +323,15 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
 	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
 	@echo "]" >> '$@'
-	$(call conditional_echo,'Finished database $@')
+	$(call conditional_echo,Finished database $@\n)
 
 $(dbfragmentscpp): $(makefile_this) $(last_config_store_name)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cpp.jj.tmp=%))" > '$@'
-	$(call conditional_echo,'Finished database fragment $@')
+	$(call conditional_echo,Finished database fragment $@)
 
 $(dbfragmentscc): $(makefile_this) $(last_config_store_name)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cc.jj.tmp=%))" > '$@'
-	$(call conditional_echo,'Finished database fragment $@')
+	$(call conditional_echo,Finished database fragment $@)
 
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
 
@@ -352,15 +351,15 @@ $(targetscc): %: %.cc $(makefile_this) $(last_config_store_name)
 -include $(depfiles)
 
 clean:
-	$(call conditional_echo,'Cleanup')
+	$(call conditional_echo,Cleanup)
 	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
-	$(call conditional_echo,'')
+	$(call conditional_echo,)
 
 cleanall: clean
-	$(call conditional_echo,'Cleanup configuration store and compilation database')
+	$(call conditional_echo,Cleanup configuration store and compilation database)
 	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
-	$(call conditional_echo,'')
+	$(call conditional_echo,)
 
 info:
 	$(info $(infostring))
