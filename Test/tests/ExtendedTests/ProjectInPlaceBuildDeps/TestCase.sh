@@ -48,12 +48,12 @@ changeFile() {
 checkOutput() {
 	case ${TTRO_variantCase} in
 		# nothing build
-		default*|config_nodb)
+		default*)
 			buildNotExpected "m1.o" "buildartefact1"
 			buildNotExpected "m2.o" "buildartefact2"
 			buildNotExpected "${TTRO_variantCase}" "buildartefact3";;
 		# all changed
-		mfile|mfile_nodb|config|m2h)
+		mfile|mfile_nodb|config|m2h|config_nodb)
 			buildExpected "m1.o" "buildartefact1"
 			buildExpected "m2.o" "buildartefact2"
 			buildExpected "${TTRO_variantCase}" "buildartefact3";;

@@ -1,8 +1,10 @@
-#--variantList='default invalidWarn invalidBuildMode cxxFlags cppFlages incsysdir'
+#--variantList='default invalidWarn invalidBuildMode cxxFlags cppFlages incsysdir cleanall cleanallall cleanallsilent cleanallallsilent'
 
 OPTIONS=
 EXPECT_FAILURE=
 case ${TTRO_variantCase} in
+	default)
+		: ;;
 	invalidWarn)
 		EXPECT_FAILURE='true'
 		OPTIONS='WARN_LEVEL=4';;
@@ -15,6 +17,20 @@ case ${TTRO_variantCase} in
 		OPTIONS='WARN_LEVEL=0 CPPFLAGS=-DMY_MACRO=11';;
 	incsysdir)
 		OPTIONS='WARN_LEVEL=2 INCSYSDIRS=/dir1/dir2';;
+	cleanallall)
+		OPTIONS='WARN_LEVEL=2 cleanall m1'
+		EXPECT_FAILURE='true';;
+	cleanallallsilent)
+		OPTIONS='WARN_LEVEL=2 -s cleanall m1'
+		EXPECT_FAILURE='true';;
+	cleanall)
+		OPTIONS='WARN_LEVEL=2 -j clean all'
+		EXPECT_FAILURE='true';;
+	cleanallsilent)
+		OPTIONS='WARN_LEVEL=2 -j --silent clean all'
+		EXPECT_FAILURE='true';;
+	*)
+			printErrorAndExit "Program Error variant ${TTRO_variantCase}";;
 esac
 
 PREPS=(
@@ -56,5 +72,11 @@ checkBuildOutput() {
 				'*-I/dir1/dir2*m1.cpp*'\
 				'*-I/dir1/dir2*m2.cc*'\
 				"*m1.o*m2.o*-o*${TTRO_variantCase}*";;
+		cleanallall*)
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*cleanall must be the only goal!*';;
+		cleanall*)
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Cleanup and production is not allowed with parallel make enabled!*';;
+		*)
+			printErrorAndExit "Program Error variant ${TTRO_variantCase}";;
 	esac
 }

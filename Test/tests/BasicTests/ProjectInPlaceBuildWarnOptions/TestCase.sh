@@ -78,7 +78,8 @@ scanFile() {
 	# posix make inserts one space for a backslash new-line, but bash doesn't
 	while read -r; do
 		if [[ ${continuation} ]]; then
-			buffer="${buffer} ${REPLY}"   # insert a single space in a continued line
+			local temp="${REPLY#${REPLY%%[![:space:]]*}}"
+			buffer="${buffer} ${temp}"   # insert a single space in a continued line
 		else
 			buffer="${REPLY}"
 		fi
