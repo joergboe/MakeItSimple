@@ -79,7 +79,6 @@ Some useful make-options:
 
   endef
 endif
-
 # Prepare the info string if required
 ifneq (,$(findstring info,$(MAKECMDGOALS)))
   define infostring =
@@ -125,6 +124,8 @@ $(firstword $(action_goals)): # ensures that 'all' is the default (first target 
 
 SHELL = /bin/bash
 .SHELLFLAGS := -c
+
+# command definitions which are not in the default database
 MV = mv -f
 
 makefile_this := $(lastword $(MAKEFILE_LIST))

@@ -44,12 +44,12 @@ Optional customization variables:
   WARN_LEVEL:         Warning level set 0 .. 3. Default: 2
   MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
-  COMP_OPT_RUN:       Compiler optimization level and debug option with BUILD_MODE = run.
+  COMP_FLAGS_RUN:       Compiler optimization level and debug option with BUILD_MODE = run.
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
-  COMP_OPT_DEBUG:     Compiler optimization level and debug option with BUILD_MODE = debug.
+  COMP_FLAGS_DEBUG:     Compiler optimization level and debug option with BUILD_MODE = debug.
                       Default: -Og -g3
   BUILDDIR            Directory used for build files (objects-files, dep-files).
-                      Default: 'run|debug/build'
+                      Default: 'run/build or debug/build'
   BINDIR              Target directory for the final executable.
                       Default: run or debug
   CPPFLAGS:           Extra compiler preprocessor options.
@@ -65,7 +65,7 @@ Description:
   This make script builds or updates one executable from all %.cpp and %.cc source files in all project
   source directories. The name of the executable is defined through variable TARGET and the default
   is the last component of the directory which contains this Makefile (the project directory).
-  The project may have a separate header file directories. If the include directory differs from
+  The project may have separate header file directories. If the include directory differs from
   'include*' or 'inc*', set the name in variable INCDIRS.
 
   If a 'production goal' (all compdb %.o..) runs and a configuration change has bee detected the
@@ -165,21 +165,15 @@ endif
 # include optional project specific definitions
 -include $(makefile_defs)
 
-# The new line variable requires 2 empty lines!
-define new_line :=
-
-
-endef
-
 # and add the defaults for the unset variables
 WARN_LEVEL ?= 2
 MAKEFILE_WARN ?= warnings.mk
 BUILD_MODE ?= debug
-COMP_OPT_RUN ?= -O2 -g1
+COMP_FLAGS_RUN ?= -O2 -g1
 ifeq (,$(findstring clang,$(CXX)))
-  COMP_OPT_DEBUG ?= -Og -g3
+  COMP_FLAGS_DEBUG ?= -Og -g3
 else
-  COMP_OPT_DEBUG ?= -Og -gline-tables-only
+  COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
 endif
 
 # include warning definitions in file makefile_warn and complement default values
@@ -206,10 +200,10 @@ else
 endif
 
 ifeq ($(BUILD_MODE),run)
-  bmodeflags := $(COMP_OPT_RUN)
+  bmodeflags := $(COMP_FLAGS_RUN)
   modeinfostring := Building optimized release version
 else ifeq ($(BUILD_MODE),debug)
-  bmodeflags := $(COMP_OPT_DEBUG)
+  bmodeflags := $(COMP_FLAGS_DEBUG)
   modeinfostring := Building with debug information
 else
   $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')

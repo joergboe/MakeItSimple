@@ -37,9 +37,9 @@ Optional customization variables:
   WARN_LEVEL:         Warning level set 0 .. 3. Default: 2
   MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
-  COMP_OPT_RUN:       Compiler optimization level and debug option with BUILD_MODE = run.
+  COMP_FLAGS_RUN:     Compiler optimization level and debug option with BUILD_MODE = run.
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
-  COMP_OPT_DEBUG:     Compiler optimization level and debug option with BUILD_MODE = debug.
+  COMP_FLAGS_DEBUG:   Compiler optimization level and debug option with BUILD_MODE = debug.
                       Default: -Og -g3
   CPPFLAGS:           Extra compiler preprocessor options.
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
@@ -83,7 +83,6 @@ Some useful make-options:
 
   endef
 endif
-
 # Prepare the info string if required
 ifneq (,$(findstring info,$(MAKECMDGOALS)))
   define infostring =
@@ -131,6 +130,8 @@ $(firstword $(action_goals)): # ensures that 'all' is the default (first target 
 
 SHELL = /bin/bash
 .SHELLFLAGS := -c
+
+# command definitions which are not in the default database
 MV = mv -f
 
 makefile_this := $(lastword $(MAKEFILE_LIST))
@@ -366,7 +367,7 @@ $(objectscc): %.o: %.cc $(makefile_this) $(last_config_store_name)
 
 clean:
 	$(call conditional_echo,Cleanup)
-	-$(RM) $(foreach var,$(TARGET) $(objectscpp) $(objectscc) $(depfiles),'$(var)')
+	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
 	$(call conditional_echo,)
 
 cleanall: clean
