@@ -10,8 +10,6 @@ The script keeps track of the last used configuration in a file ()$(last_config_
 
 Synopsis
     make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
-  or
-    [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] make [make-options] [goal ...]
 
 Goals:
   all       Default goal - Build or update the target executable if outdated and build or update the
@@ -228,9 +226,9 @@ ifeq (cleanall,$(findstring cleanall,$(goals)))
   $(intcmp $(words $(goals)),2,,$(error cleanall must be the only goal!))
 endif
 
-allflags := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0
+allflags := $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(LDFLAGS) $(libflags) $(TARGET_ARCH) -c
-DEPFLAGS = -MMD '-MF$(@:%.o=%.d)' -MP '-MT$@'
+depflags = -MMD '-MF$(@:%.o=%.d)' -MP '-MT$@'
 OUTPUT_OPTION = -o '$@'
 
 # prints info only if not silent (-s option) and not help goal or info goal
@@ -303,7 +301,7 @@ define new_line :=
 endef
 # call conditional_echo,string
 ifndef silent_mode
-  conditional_echo = @echo '$(1)'
+  conditional_echo = @echo -e "$(1)"
 else
   conditional_echo =
 endif
@@ -313,7 +311,7 @@ $(CXX) $(allflags) $(depflags) $(OUTPUT_OPTION) '$<'
 endef
 ifndef silent_mode
   compile_source += $(new_line)
-  compile_source += @echo -e 'Finished building: $<\n'
+  compile_source += @echo -e "Finished building: $<\n"
 endif
 
 # Function to produce one Compilation Database fragment
@@ -334,15 +332,15 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
 	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
 	@echo "]" >> '$@'
-	$(call conditional_echo,'Finished database $@')
+	$(call conditional_echo,Finished database $@\n)
 
 $(dbfragmentscpp): $(makefile_this) $(last_config_store_name)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cpp.jj.tmp=%.o))" > '$@'
-	$(call conditional_echo,'Finished database fragment $@')
+	$(call conditional_echo,Finished database fragment $@)
 
 $(dbfragmentscc): $(makefile_this) $(last_config_store_name)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cc.jj.tmp=%.o))" > '$@'
-	$(call conditional_echo,'Finished database fragment $@')
+	$(call conditional_echo,Finished database fragment $@)
 
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
 
@@ -354,7 +352,7 @@ build: $(TARGET)
 
 $(TARGET): $(objectscpp) $(objectscc)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
-	$(call conditional_echo,'Finished linking target: $@\n')
+	$(call conditional_echo,Finished linking target: $@\n)
 
 $(objectscpp): %.o: %.cpp $(makefile_this) $(last_config_store_name)
 	$(compile_source)
@@ -366,15 +364,15 @@ $(objectscc): %.o: %.cc $(makefile_this) $(last_config_store_name)
 -include $(depfiles)
 
 clean:
-	$(call conditional_echo,'Cleanup')
+	$(call conditional_echo,Cleanup)
 	-$(RM) $(foreach var,$(TARGET) $(objectscpp) $(objectscc) $(depfiles),'$(var)')
-	$(call conditional_echo,'')
+	$(call conditional_echo,)
 
 cleanall: clean
-	$(call conditional_echo,'Cleanup configuration store and compilation database')
+	$(call conditional_echo,Cleanup configuration store and compilation database)
 	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
-	$(call conditional_echo,'')
+	$(call conditional_echo,)
 
 info:
 	$(info $(infostring))
