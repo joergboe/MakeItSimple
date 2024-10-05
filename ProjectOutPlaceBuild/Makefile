@@ -6,10 +6,16 @@ This make script builds one executable from all %.cpp and %.cc source files in a
 directories and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
 server.
 The script supports 2 Build Modes (run and debug) and 4 Warning levels.
-The script keeps track of the last used configuration in a file ($(last_config_store_name)).
+The script keeps track of the last used configuration in a file ($(last_config_store_name)). During
+startup, the script checks the current build configuration. If a change in the buid configuration
+has been detected, a complete build of all targets is initiated.
 
-Synopsis
-    make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [goal ...]
+
+Synopsis:
+    make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [..] [goal ..]
+  or
+    [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [..] make [make-options] [goal ..]
+
 
 Goals:
   all       Default goal - Build or update the target executable if outdated and build or update the
@@ -58,8 +64,8 @@ Optional customization variables:
   LDFLAGS:            Extra linker options, such as -L.
   LDLIBS:             Space separated list of libraries given to the linker.
   CXX                 The compiler command to be used. Default: 'g++'
-  DISABLE_COMPILE_DB: If set to anything other than the empty string, the Compilation Database
-                      generation is disabled.
+  DISABLE_CONFIG_CHECK: If set to anything other than the empty string, the configuration check is
+                      disabled.
 
 Description:
   This make script builds or updates one executable from all %.cpp and %.cc source files in all project
@@ -136,7 +142,6 @@ cleanup_goals = clean cleanall
 action_goals = $(production_goals) $(cleanup_goals)
 phony_goals = $(action_goals) info help
 
-.POSIX:           # Note: changes handling of continuation lines
 .SUFFIXES:        # deletes the old fashioned suffix rules from database (speedup)
 .DELETE_ON_ERROR: # instructs make to delete the target of a rule if it has changed and its recipe
 # exits with a nonzero status
@@ -144,7 +149,7 @@ phony_goals = $(action_goals) info help
 $(firstword $(action_goals)): # ensures that 'all' is the default (first target without a dot) goal
 
 SHELL = /bin/bash
-.SHELLFLAGS := -c
+.SHELLFLAGS := -ec
 
 # command definitions which are not in the default database
 MV = mv -f
@@ -229,7 +234,6 @@ depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.d)) $(addprefix $(BUILDD
 dbfragmentscpp := $(addprefix $(BUILDDIR)/,$(addsuffix .jj.tmp,$(sourcescpp)))
 dbfragmentscc := $(addprefix $(BUILDDIR)/,$(addsuffix .jj.tmp,$(sourcescc)))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
-libflags := $(addprefix -l,$(LDLIBS))
 allsources := $(sourcescpp) $(sourcescc)
 alltargets := $(objectscpp) $(objectscc) $(TARGET)
 
@@ -253,10 +257,12 @@ ifeq (cleanall,$(findstring cleanall,$(goals)))
   $(intcmp $(words $(goals)),2,,$(error cleanall must be the only goal!))
 endif
 
+# call OUTPUT_OPTION,outfile
+OUTPUT_OPTION = -o $(1)
+# OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
-  $(LDFLAGS) $(libflags) $(TARGET_ARCH) -c
-depflags = -MMD '-MF$(@:%.o=%.d)' -MP '-MT$@'
-OUTPUT_OPTION = -o '$@'
+  $(TARGET_ARCH) -c
+depflags = -MMD -MF$(@:%.o=%.d) -MP -MT$@
 
 # prints info only if not silent (-s option) and not help goal or info goal
 ifndef silent_mode
@@ -279,80 +285,75 @@ neq = $(if $(subst $(2),,$(1)),true)
 # Expands to the rest of the word list that follows the separator word.
 tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
 
-#TODO: warn if CXXFLAGS from environment
-# Special case "CXXFLAGS=-MJ$<.jj"
-# recursive variables are stored unexpanded in MAKEFLAGS
-# recursive variables are expanded form environment
-
 # prepare configuration store
 arg_vars = $(sort $(call tail,--,$(MAKEFLAGS)))
 
 define configuration =
-TARGET = $(TARGET)
-SRCDIRS = $(SRCDIRS)
-INCDIRS = $(INCDIRS)
-INCSYSDIRS = $(INCSYSDIRS)
-WARN_LEVEL = $(WARN_LEVEL)
-MAKEFILE_WARN = $(MAKEFILE_WARN)
-BUILD_MODE = $(BUILD_MODE)
-COMP_FLAGS_RUN = $(COMP_FLAGS_RUN)
-COMP_FLAGS_DEBUG = $(COMP_FLAGS_DEBUG)
-BUILDDIR = $(BUILDDIR)
-BINDIR = $(BINDIR)
-CPPFLAGS = $(CPPFLAGS)
-CXXFLAGS = $(CXXFLAGS)
-TARGET_ARCH = $(TARGET_ARCH)
-LDFLAGS = $(LDFLAGS)
-LDLIBS = $(LDLIBS)
-CXX = $(CXX)
-DISABLE_COMPILE_DB = $(DISABLE_COMPILE_DB)
-ARG_VARS = $(arg_vars)
-cxxwarnings = $(cxxwarnings)
+TARGET=$(value TARGET)
+SRCDIRS=$(value SRCDIRS)
+INCDIRS=$(value INCDIRS)
+INCSYSDIRS=$(value INCSYSDIRS)
+WARN_LEVEL=$(value WARN_LEVEL)
+MAKEFILE_WARN=$(value MAKEFILE_WARN)
+BUILD_MODE=$(value BUILD_MODE)
+COMP_FLAGS_RUN=$(value COMP_FLAGS_RUN)
+COMP_FLAGS_DEBUG=$(value COMP_FLAGS_DEBUG)
+BUILDDIR=$(value BUILDDIR)
+BINDIR=$(value BINDIR)
+CPPFLAGS=$(value CPPFLAGS)
+CXXFLAGS=$(value CXXFLAGS)
+TARGET_ARCH=$(value TARGET_ARCH)
+LDFLAGS=$(value LDFLAGS)
+LDLIBS=$(value LDLIBS)
+CXX=$(value CXX)
+DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
+OUTPUT_OPTION=$(value OUTPUT_OPTION)
+ARG_VARS=$(arg_vars)
+cxxwarnings=$(strip $(cxxwarnings))
 endef
 
-# check for configuration changes only for production goals
-ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-  compare_configuration := $(file < $(last_config_store_name))
-  prompt := No configuration change detected.
-  ifneq ($(compare_configuration),$(configuration))
-    # if configuration has changed: remove the configuration storage and store the temp_config_store
-    prompt := Configuration has changed!
-    $(shell $(RM) '$(last_config_store_name)')
-    $(file > $(temp_config_store_name),$(configuration))
-  endif
-  ifndef silent_mode
-    $(info $(prompt))
-    $(info )
+ifdef DISABLE_CONFIG_CHECK
+  last_config_store_target =
+else
+  last_config_store_target = $(last_config_store_name)
+  # check for configuration changes only for production goals
+  ifneq (,$(or $(current_production_goals),$(current_target_goals)))
+    compare_configuration := $(file < $(last_config_store_name))
+    prompt := No configuration change detected.
+    ifneq ($(compare_configuration),$(configuration))
+      # if configuration has changed: remove the configuration storage and store the temp_config_store
+      prompt := Configuration has changed!
+      $(shell $(RM) '$(last_config_store_name)')
+      $(file > $(temp_config_store_name),$(configuration))
+    endif
+    ifndef silent_mode
+      $(info $(prompt))
+      $(info )
+    endif
   endif
 endif
 
-# The new line variable requires 2 empty lines!
-define new_line :=
-
-
-endef
+empty =
+comma = ,
+space = $(empty) $(empty)
 # call conditional_echo,string
 ifndef silent_mode
   conditional_echo = @echo -e "$(1)"
 else
   conditional_echo =
 endif
-# call compile_source
-define compile_source =
-$(CXX) $(allflags) $(depflags) $(OUTPUT_OPTION) '$<'
-endef
-ifndef silent_mode
-  compile_source += $(new_line)
-  compile_source += @echo -e "Finished building: $<\n"
-endif
+# depflags, output option and source are single quoted
+compile_source = $(CXX) $(allflags) $(foreach var,$(depflags) $(call OUTPUT_OPTION,$@) $<,'$(var)')
 
+# quote double quote
+qdq = $(subst ",\\\",$(1))
 # Function to produce one Compilation Database fragment
 # call compdb_file_entry,sourcename,targetname
 compdb_file_entry = {\n\
-   \"directory\": \"$(CURDIR)\",\n\
-   \"file\": \"$(1)\",\n\
-   \"arguments\": [$(foreach var,$(subst ",\",$(CXX) $(allflags)),\"$(var)\",) \"-o\", \"$(1)\", \"$(2)\"],\n\
-   \"output\": \"$(2)\" }
+  $(space)\"directory\": \"$(call qdq,$(CURDIR))\",\n\
+  $(space)\"file\": \"$(call qdq,$(1:$(BUILDDIR)/%=%))\",\n\
+  $(space)\"arguments\": [$(foreach var,$(CXX) $(allflags) $(call OUTPUT_OPTION,$(2)),\"$(call qdq,$(var))\"$(comma)) \"$(call qdq,$(1:$(BUILDDIR)/%=%))\"],\n\
+  $(space)\"output\": \"$(call qdq,$(2))\" }
 
 # rules:
 all: compdb build
@@ -366,19 +367,21 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@echo "]" >> '$@'
 	$(call conditional_echo,Finished database $@\n)
 
-$(dbfragmentscpp): $(makefile_this) $(last_config_store_name) | $(builddirs)
+$(dbfragmentscpp): $(makefile_this) $(last_config_store_target) | $(builddirs)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cpp.jj.tmp=%.o))" > '$@'
 	$(call conditional_echo,Finished database fragment $@)
 
-$(dbfragmentscc): $(makefile_this) $(last_config_store_name) | $(builddirs)
+$(dbfragmentscc): $(makefile_this) $(last_config_store_target) | $(builddirs)
 	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cc.jj.tmp=%.o))" > '$@'
 	$(call conditional_echo,Finished database fragment $@)
 
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
 
 # when no configuration file exists, this rule and all depending rules are forced to run
-$(last_config_store_name):
+ifndef DISABLE_CONFIG_CHECK
+$(last_config_store_target):
 	@$(MV) '$(temp_config_store_name)' '$@'
+endif
 
 build: $(BINDIR)/$(TARGET)
 
@@ -386,11 +389,13 @@ $(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
-$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(makefile_this) $(last_config_store_name) | $(builddirs)
+$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
+	$(call conditional_echo,Finished building: $<\n)
 
-$(objectscc): $(BUILDDIR)/%.o: %.cc $(makefile_this) $(last_config_store_name) | $(builddirs)
+$(objectscc): $(BUILDDIR)/%.o: %.cc $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
+	$(call conditional_echo,Finished building: $<\n)
 
 $(builddirs):
 	$(MKDIR) '$@'
