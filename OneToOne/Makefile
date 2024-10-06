@@ -249,7 +249,7 @@ neq = $(if $(subst $(2),,$(1)),true)
 # call tail,separator,wordlist
 # Expands to the rest of the word list that follows the separator word.
 tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
-$(info $(MAKEFLAGS))
+
 # prepare configuration store
 arg_vars = $(call tail,--,$(MAKEFLAGS))
 
