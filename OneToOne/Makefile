@@ -249,9 +249,9 @@ neq = $(if $(subst $(2),,$(1)),true)
 # call tail,separator,wordlist
 # Expands to the rest of the word list that follows the separator word.
 tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
-
+$(info $(MAKEFLAGS))
 # prepare configuration store
-arg_vars = $(sort $(call tail,--,$(MAKEFLAGS)))
+arg_vars = $(call tail,--,$(MAKEFLAGS))
 
 define configuration =
 INCSYSDIRS=$(value INCSYSDIRS)
@@ -307,6 +307,7 @@ compile_source = $(CXX) $(allflags) $(foreach var,$(depflags) $(call OUTPUT_OPTI
 
 # quote double quote
 qdq = $(subst ",\\\",$(1))
+#qdq = $(subst ",\",$(subst ','\'',$(1)))
 # Function to produce one Compilation Database fragment
 # call compdb_file_entry,sourcename,targetname
 compdb_file_entry = {\n\
@@ -314,6 +315,12 @@ compdb_file_entry = {\n\
   $(space)\"file\": \"$(call qdq,$(1))\",\n\
   $(space)\"arguments\": [$(foreach var,$(CXX) $(allflags) $(call OUTPUT_OPTION,$(2)),\"$(call qdq,$(var))\"$(comma)) \"$(call qdq,$(1))\"],\n\
   $(space)\"output\": \"$(call qdq,$(2))\" }
+#compdb_file_entry = '{\
+#    "directory": "$(call qdq,$(CURDIR))",\
+#    "file": "$(call qdq,$(1))",\
+#    "arguments": [$(foreach var,$(CXX) $(allflags) $(call OUTPUT_OPTION,$(2)),"$(call qdq,$(var))"$(comma)) "$(call qdq,$(1))"],\
+#    "output": "$(call qdq,$(2))" }'
+
 
 # rules:
 all: compdb build
@@ -338,10 +345,8 @@ $(dbfragmentscc): $(makefile_this) $(last_config_store_target)
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
 
 # when no configuration file exists, this rule and all depending rules are forced to run
-ifndef DISABLE_CONFIG_CHECK
 $(last_config_store_target):
 	@$(MV) '$(temp_config_store_name)' '$@'
-endif
 
 build: $(targetscpp) $(targetscc)
 

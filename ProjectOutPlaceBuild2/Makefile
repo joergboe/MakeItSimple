@@ -336,7 +336,7 @@ neq = $(if $(subst $(2),,$(1)),true)
 tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
 
 # prepare configuration store
-arg_vars = $(sort $(call tail,--,$(MAKEFLAGS)))
+arg_vars = $(call tail,--,$(MAKEFLAGS))
 
 define configuration =
 TARGET=$(value TARGET)
@@ -447,10 +447,8 @@ $(dbfragmentsas): $(makefile_this) $(last_config_store_target) | $(builddirs)
 .INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc) $(dbfragmentsas)
 
 # when no configuration file exists, this rule and all depending rules are forced to run
-ifndef DISABLE_CONFIG_CHECK
 $(last_config_store_target):
 	@$(MV) '$(temp_config_store_name)' '$@'
-endif
 
 build: $(BINDIR)/$(TARGET)
 
