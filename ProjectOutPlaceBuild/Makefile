@@ -23,8 +23,8 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  cleanall  Clean up all generated executable an build artefacts of the current BUILD_MODE and
-            the Compilation Database and the configuration store.
+  cleanall  Clean up executables and all generated build artefacts and the Compilation Database
+            and the configuration store.
   info      Print project info.
   help      Print this help text.
   dir/%.o   Build this object file if a coresponding source file exists.
@@ -50,9 +50,9 @@ Optional customization variables:
   WARN_LEVEL:         Warning level set 0 .. 3. Default: 2
   MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
-  COMP_FLAGS_RUN:       Compiler optimization level and debug option with BUILD_MODE = run.
+  COMP_FLAGS_RUN:     Compiler optimization level and debug option with BUILD_MODE = run.
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
-  COMP_FLAGS_DEBUG:     Compiler optimization level and debug option with BUILD_MODE = debug.
+  COMP_FLAGS_DEBUG:   Compiler optimization level and debug option with BUILD_MODE = debug.
                       Default: -Og -g3
   BUILDDIR            Directory used for build files (objects-files, dep-files).
                       Default: 'run/build or debug/build'
@@ -62,7 +62,7 @@ Optional customization variables:
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
-  LDLIBS:             Space separated list of libraries given to the linker.
+  LDLIBS:             Space separated list of libraries given to the linker (including -l).
   CXX                 The compiler command to be used. Default: 'g++'
   DISABLE_CONFIG_CHECK: If set to anything other than the empty string, the configuration check is
                       disabled.
@@ -91,6 +91,15 @@ Description:
   If parallel execution is requested (-j n), the script disallowes the congruent execution of clean-
   and production-goals.
 
+  NOTE: The character set for file names is restricted. In particular, the following characters are
+  not allowed in file names: whitespaces, #, ', ", %, :, ;, (, and )
+  Allowed characters are: ?, *, $, !, \, ~, &, ^, {, and }
+
+  NOTE: xFLAGS that contain spaces, quotation marks, or other special shell characters must be
+  quoted. If they are given as command line arguments, they must be qouted twice according to the
+  rules of your shell! Example (for bash):
+  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++
+
 Some useful make-options:
   -h, --help                      Display help.
   -j [N], --jobs[=N]              Allow N jobs at once; infinite jobs with no arg.
@@ -108,7 +117,7 @@ ifneq (,$(findstring info,$(MAKECMDGOALS)))
 
 Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))
 
-Sources found : $(sourcescpp) $(sourcescc)
+Sources found : $(allsources)
 
 Objects to build : $(objectscpp) $(objectscc)
 
@@ -119,6 +128,8 @@ All include (system) directories : $(INCSYSDIRS)
 $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(bmodeflags)
 
 Compiler command : $(CXX)
+
+Custom preprocessor options: $(CPPFLAGS)
 
 Custom compiler options: $(CXXFLAGS)
 
@@ -159,15 +170,16 @@ MKDIR = mkdir -p
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 compile_database_name :=  compile_commands.json
-last_config_store_name := .last_config_store
-temp_config_store_name := .temp_config_store
+last_config_store_name := mks_last_config_store
+temp_config_store_name := .mks_temp_config_store
+gen_db_frag_file := mks_gen_db_frag.sh
 
 single_make_options := $(firstword -$(MAKEFLAGS))
 ifeq (s,$(findstring s,$(single_make_options)))
   silent_mode = 1
 endif
 
-# include optional project specific definitions
+# include project specific definitions if any
 -include $(makefile_defs)
 
 # and add the defaults for the unset variables
@@ -214,6 +226,16 @@ else
   $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
 endif
 
+# allowed special characters in filenames are:
+# ? * $ ! \ ~ & ^ { }
+# disallowed are:
+# # ' " % : ; ( ) and all kind of white space
+# call name_has_char,name,char
+name_has_char = $(if $(findstring $(2),$(1)),$(error Invalid char $(2) in filename $(1)))
+# call check_name,names
+# quotes are paired to satisfy the syntax highlighter
+check_name = $(foreach var,# ' ' " " % : ; ( ),$(call name_has_char,$(1),$(var)))
+
 # determines all directories, sources, objects, dependecies, required flags
 SRCDIRS ?= src
 INCDIRS ?= $(wildcard include)
@@ -228,13 +250,18 @@ sourcescpp := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
 sourcescc := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cc))
 # with this code the cpp files are recursively searched in the source directory list
 #export sourcescpp := $(shell find $(SRCDIRS) -name '*.cpp')
+allsources := $(sourcescpp) $(sourcescc)
+# check for disallowed file names
+$(foreach var,$(allsources),$(call check_name,$(var)))
+
 objectscpp := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.o))
 objectscc := $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.o))
-depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.d)) $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.d))
-dbfragmentscpp := $(addprefix $(BUILDDIR)/,$(addsuffix .jj.tmp,$(sourcescpp)))
-dbfragmentscc := $(addprefix $(BUILDDIR)/,$(addsuffix .jj.tmp,$(sourcescc)))
+depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.dep)) $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.dep))
+dbfragmentscpp := $(addsuffix .mks.tmp,$(objectscpp))
+dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
+srcfakescpp := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescpp)))
+srcfakescc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescc)))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
-allsources := $(sourcescpp) $(sourcescc)
 alltargets := $(objectscpp) $(objectscc) $(TARGET)
 
 # check goals
@@ -259,10 +286,10 @@ endif
 
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
-# OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't
+# OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
-depflags = -MMD -MF$(@:%.o=%.d) -MP -MT$@
+depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
 
 # prints info only if not silent (-s option) and not help goal or info goal
 ifndef silent_mode
@@ -310,6 +337,7 @@ DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
 ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
+allsources=$(allsources)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
@@ -333,9 +361,31 @@ else
   endif
 endif
 
-empty =
-comma = ,
-space = $(empty) $(empty)
+# called with curdir cc -o obj.mks.tmp src.jj.tmt ...
+gen_db_frag_var = 'gen_db_frag() {'$$'\n'\
+' local curdir="$${1}"'$$'\n'\
+' shift'$$'\n'\
+' {'$$'\n'\
+'   echo "	{"'$$'\n'\
+'   echo "		\"directory\": \"$${curdir}\","'$$'\n'\
+'   echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
+'   echo -n "		\"arguments\": [ "'$$'\n'\
+'   local seq='\'\'$$'\n'\
+'   local i i'$$'\n'\
+'   local x y'$$'\n'\
+'   for ((i=1; i<$$\#; i++)); do'$$'\n'\
+'     if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
+'     seq=1'$$'\n'\
+'     eval x="\$${$${i}}"'$$'\n'\
+'     y="$${x//.mks.tmp/}"'$$'\n'\
+'     echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
+'   done'$$'\n'\
+'   echo " ],"'$$'\n'\
+'   echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
+'   echo -n "	}"'$$'\n'\
+' } > "$${3}"'$$'\n'\
+'}'
+
 # call conditional_echo,string
 ifndef silent_mode
   conditional_echo = @echo -e "$(1)"
@@ -343,43 +393,13 @@ else
   conditional_echo =
 endif
 # depflags, output option and source are single quoted
-compile_source = $(CXX) $(allflags) $(foreach var,$(depflags) $(call OUTPUT_OPTION,$@) $<,'$(var)')
-
-# quote double quote
-qdq = $(subst ",\\\",$(1))
-# Function to produce one Compilation Database fragment
-# call compdb_file_entry,sourcename,targetname
-compdb_file_entry = {\n\
-  $(space)\"directory\": \"$(call qdq,$(CURDIR))\",\n\
-  $(space)\"file\": \"$(call qdq,$(1:$(BUILDDIR)/%=%))\",\n\
-  $(space)\"arguments\": [$(foreach var,$(CXX) $(allflags) $(call OUTPUT_OPTION,$(2)),\"$(call qdq,$(var))\"$(comma)) \"$(call qdq,$(1:$(BUILDDIR)/%=%))\"],\n\
-  $(space)\"output\": \"$(call qdq,$(2))\" }
+compile_source = $(CXX)\
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
+gen_db_fragment = source $(gen_db_frag_file); gen_db_frag '$(CURDIR)' $(CXX)\
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
 
 # rules:
 all: compdb build
-
-compdb: $(compile_database_name)
-
-$(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
-	@echo "[" > '$@'
-	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
-	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
-	@echo "]" >> '$@'
-	$(call conditional_echo,Finished database $@\n)
-
-$(dbfragmentscpp): $(makefile_this) $(last_config_store_target) | $(builddirs)
-	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cpp.jj.tmp=%.o))" > '$@'
-	$(call conditional_echo,Finished database fragment $@)
-
-$(dbfragmentscc): $(makefile_this) $(last_config_store_target) | $(builddirs)
-	@echo -e "$(call compdb_file_entry,$(@:%.jj.tmp=%),$(@:%.cc.jj.tmp=%.o))" > '$@'
-	$(call conditional_echo,Finished database fragment $@)
-
-.INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc)
-
-# when no configuration file exists, this rule and all depending rules are forced to run
-$(last_config_store_target):
-	@$(MV) '$(temp_config_store_name)' '$@'
 
 build: $(BINDIR)/$(TARGET)
 
@@ -404,6 +424,37 @@ $(BINDIR):
 # includes additional rules after default rule
 -include $(depfiles)
 
+compdb: $(compile_database_name)
+
+.INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc) $(srcfakescpp) $(srcfakescc)
+
+$(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
+	@echo "[" > '$@'
+	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
+	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
+	@echo -e "\n]" >> '$@'
+	$(call conditional_echo,Finished database $@\n)
+
+$(dbfragmentscpp): %.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+	@$(gen_db_fragment)
+	$(call conditional_echo,Finished database fragment $@)
+
+$(dbfragmentscc): %.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+	@$(gen_db_fragment)
+	$(call conditional_echo,Finished database fragment $@)
+
+$(srcfakescpp) $(srcfakescc): | $(builddirs)
+	@touch '$@'
+
+# when no configuration file exists, this rule and all depending rules are forced to run
+$(last_config_store_target):
+	@$(MV) '$(temp_config_store_name)' '$@'
+	$(call conditional_echo,Configuration file $@ written\n)
+
+$(gen_db_frag_file): $(makefile_this)
+	@echo $(gen_db_frag_var) > '$@'
+	$(call conditional_echo,Script file $@ written\n)
+
 clean:
 	$(call conditional_echo,Cleanup)
 	-$(RM) '$(BINDIR)/$(TARGET)'
@@ -412,8 +463,8 @@ clean:
 
 cleanall: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
+	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RMDIR) '$(BUILDDIR)' '$(BINDIR)' debug run
-	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)'
 	$(call conditional_echo,)
 
 info:

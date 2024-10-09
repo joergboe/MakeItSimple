@@ -1,5 +1,5 @@
 # Prerequisites
-*.d
+*.dep
 
 # Compiled Object files
 *.slo
@@ -40,8 +40,10 @@
 /ProjectOutPlaceBuild/run/
 /ProjectOutPlaceBuild2/debug/
 /ProjectOutPlaceBuild2/run/
-.last_config_store
-.temp_config_store
+mks_last_config_store
+.mks_temp_config_store
+mks_gen_db_frag.sh
+*.mks.tmp
 
 # test artifacts
 /Test/scripts/
