@@ -66,8 +66,8 @@ checkBuildOutput() {
 	if [[ -n $VERBOSE && -z $NOBUILD ]]; then
 		local CXXOPTIONTOFIND='-Og'
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*src/m1.cpp*" \
-			"*${CXXOPTIONTOFIND}*src/m2.cc*" \
+			"*src/m1.cpp*${CXXOPTIONTOFIND}*" \
+			"*src/m2.cc*${CXXOPTIONTOFIND}*" \
 			"*-o*${BINDIR}/${TTRO_variantCase}*"
 
 		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'true' '*-iquoteinclude*'

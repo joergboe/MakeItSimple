@@ -107,8 +107,8 @@ checkBuildOutput() {
 			debug*) local CXXOPTIONTOFIND='-Og';;
 		esac
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-			"*${CXXOPTIONTOFIND}*src/m1.cpp*" \
-			"*${CXXOPTIONTOFIND}*src/m2.cc*" \
+			"*src/m1.cpp*${CXXOPTIONTOFIND}*" \
+			"*src/m2.cc*${CXXOPTIONTOFIND}*" \
 			"*-o*${BINDIR}/${TTRO_variantCase}*"
 	fi
 	case ${TTRO_variantCase} in

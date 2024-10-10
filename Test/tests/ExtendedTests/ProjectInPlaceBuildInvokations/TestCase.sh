@@ -59,18 +59,18 @@ checkBuildOutput() {
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Build mode 4 is not supported*';;
 		cxxFlags)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-Wextra*-ftabstop=4*-MMD*m1.cpp*'\
-				'*-Wextra*-ftabstop=4*-MMD*m2.cc*'\
+				'*m1.cpp*-Wextra*-ftabstop=4*-MMD*'\
+				'*m2.cc*-Wextra*-ftabstop=4*-MMD*'\
 				"*m1.o*m2.*-o*${TTRO_variantCase}*";;
 		cppFlages)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-DMY_MACRO=11*m1.cpp*'\
-				'*-DMY_MACRO=11*m2.cc*'\
+				'*m1.cpp*-DMY_MACRO=11*'\
+				'*m2.cc*-DMY_MACRO=11*'\
 				"*m1.o*m2.o*-o*${TTRO_variantCase}*";;
 		incsysdir)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-				'*-I/dir1/dir2*m1.cpp*'\
-				'*-I/dir1/dir2*m2.cc*'\
+				'*m1.cpp*-I/dir1/dir2*'\
+				'*m2.cc*-I/dir1/dir2*'\
 				"*m1.o*m2.o*-o*${TTRO_variantCase}*";;
 		cleanallall*)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*cleanall must be the only goal!*';;

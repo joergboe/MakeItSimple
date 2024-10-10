@@ -122,11 +122,11 @@ makeSourceFiles() {
 		else
 			ALL_SOURCE_FILE_NAMES+=" module${i}.cpp"
 			ALL_OBJ_FILE_NAMES+=" module${i}.o"
-			ALL_DEP_FILE_NAMES+=" module${i}.d"
+			ALL_DEP_FILE_NAMES+=" module${i}.dep"
 		fi
 	done
 	echo "${incl}${TEXT1}${call}${TEXT2}" > src/prog.cpp
 	ALL_SOURCE_FILE_NAMES+=" prog.cpp"
 	ALL_OBJ_FILE_NAMES+=" prog.o"
-	ALL_DEP_FILE_NAMES+=" prog.d"
+	ALL_DEP_FILE_NAMES+=" prog.dep"
 }

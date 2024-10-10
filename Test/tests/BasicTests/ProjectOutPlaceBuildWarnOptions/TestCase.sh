@@ -130,8 +130,8 @@ checkOut() {
 
 checkBuildOutput() {
 	echoAndExecute linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
-		"*${myWarningString}*src/m1.cpp*" \
-		"*${myWarningString}*src/m2.cc*"
+		"*src/m1.cpp*${myWarningString}*" \
+		"*src/m2.cc*${myWarningString}*"
 }
 
 checkNoBuildOutput() {
