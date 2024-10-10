@@ -18,10 +18,10 @@ case ${TTRO_variantCase} in
 	incsysdir)
 		OPTIONS='WARN_LEVEL=2 INCSYSDIRS=/dir1/dir2';;
 	cleanallall)
-		OPTIONS='WARN_LEVEL=2 cleanall m1'
+		OPTIONS='WARN_LEVEL=2 distclean m1'
 		EXPECT_FAILURE='true';;
 	cleanallallsilent)
-		OPTIONS='WARN_LEVEL=2 -s cleanall m1'
+		OPTIONS='WARN_LEVEL=2 -s distclean m1'
 		EXPECT_FAILURE='true';;
 	cleanall)
 		OPTIONS='WARN_LEVEL=2 -j clean all'
@@ -70,7 +70,7 @@ checkBuildOutput() {
 				'*m1.cpp*-I/dir1/dir2*' \
 				'*m2.cc*-I/dir1/dir2*';;
 		cleanallall*)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*cleanall must be the only goal!*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*distclean must be the only goal!*';;
 		cleanall*)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Cleanup and production is not allowed with parallel make enabled!*';;
 		*)

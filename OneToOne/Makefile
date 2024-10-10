@@ -23,7 +23,7 @@ Goals:
   build     Build or update all outdated executables.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up all generated executables.
-  cleanall  Clean up all generated executables, build artefacts, the Compilation Database and the configuration store.
+  distclean Clean up all generated executables, build artefacts, the Compilation Database and the configuration store.
   info      Print project info.
   help      Print this help text.
   %         Build or update this target file if a coresponding sorce file exists.
@@ -128,7 +128,7 @@ All generated dependecies: $(depfiles)
 endif
 
 production_goals = all build compdb
-cleanup_goals = clean cleanall
+cleanup_goals = clean distclean
 action_goals = $(production_goals) $(cleanup_goals)
 phony_goals = $(action_goals) info help
 
@@ -246,8 +246,8 @@ ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
     endif
   endif
 endif
-ifeq (cleanall,$(findstring cleanall,$(goals)))
-  $(intcmp $(words $(goals)),2,,$(error cleanall must be the only goal!))
+ifeq (distclean,$(findstring distclean,$(goals)))
+  $(intcmp $(words $(goals)),2,,$(error distclean must be the only goal!))
 endif
 
 # call OUTPUT_OPTION,outfile
@@ -409,7 +409,7 @@ clean:
 	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
 	$(call conditional_echo,)
 
-cleanall: clean
+distclean: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
 	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')

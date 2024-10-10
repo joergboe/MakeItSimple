@@ -34,7 +34,7 @@ case ${TTRO_variantCase} in
 		GOALS=clean
 		CLEANUP='true';;  # db exists from previous make all
 	*Clean2)
-		GOALS='cleanall'
+		GOALS='distclean'
 		CLEANUP2='true'
 		HASCOMPDB='';;
 	*Info)

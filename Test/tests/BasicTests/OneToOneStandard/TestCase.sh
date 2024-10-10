@@ -24,7 +24,7 @@ case ${TTRO_variantCase} in
 	*CleanAll)
 		GOALS='clean all';;
 	*Clean_All)
-		GOALS='cleanall'
+		GOALS='distclean'
 		CLEANUP='true'
 		HASCOMPDB='';;
 	*All)
