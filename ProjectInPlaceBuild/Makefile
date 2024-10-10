@@ -25,7 +25,7 @@ Goals:
   clean     Clean up the target executable and all build artefacts.
   distclean Clean up executable, all generated build artefacts, the Compilation Database and the
             configuration store.
-  info      Print project info.
+  show      Print project info.
   help      Print this help text.
   %.o       Build this object file if a coresponding source file exists.
 
@@ -99,7 +99,7 @@ Some useful make-options:
   endef
 endif
 # Prepare the info string if required
-ifneq (,$(findstring info,$(MAKECMDGOALS)))
+ifneq (,$(findstring show,$(MAKECMDGOALS)))
   define infostring =
 
 Build target '$(TARGET)' from *.cpp and *.cc sourcefiles
@@ -136,7 +136,7 @@ endif
 production_goals = all build compdb
 cleanup_goals = clean distclean
 action_goals = $(production_goals) $(cleanup_goals)
-phony_goals = $(action_goals) info help
+phony_goals = $(action_goals) show help
 
 .SUFFIXES:        # deletes the old fashioned suffix rules from database (speedup)
 .DELETE_ON_ERROR: # instructs make to delete the target of a rule if it has changed and its recipe
@@ -265,9 +265,9 @@ allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fme
   $(TARGET_ARCH) -c
 depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
 
-# prints info only if not silent (-s option) and not help goal or info goal
+# prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
-  ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
+  ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring show,$(MAKECMDGOALS))))
     $(info )
     $(info Build target '$(TARGET)' from *.cpp and *.cc sourcefiles)
     $(info )
@@ -431,7 +431,7 @@ distclean: clean
 	-$(RM) $(foreach var,$(srcfakescpp) $(srcfakescc),'$(var)')
 	$(call conditional_echo,)
 
-info:
+show:
 	$(info $(infostring))
 	@$(CXX) --version
 	@echo

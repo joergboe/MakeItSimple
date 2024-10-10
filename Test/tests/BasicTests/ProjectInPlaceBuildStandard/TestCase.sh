@@ -33,7 +33,7 @@ case ${TTRO_variantCase} in
 		GOALS=clean
 		CLEANUP='true';; # db exists from previous make all
 	*Info)
-		GOALS=info
+		GOALS='show'
 		NOBUILD='true'
 		HASCOMPDB='';;
 	helpGoal)

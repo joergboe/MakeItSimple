@@ -25,7 +25,7 @@ Goals:
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
   distclean Clean up executables and all generated build artefacts and the Compilation Database
             and the configuration store.
-  info      Print project info.
+  show      Print project info.
   help      Print this help text.
   dir/%.o   Build this object file if a coresponding source file exists.
 
@@ -118,7 +118,7 @@ Some useful make-options:
   endef
 endif
 # Prepare the info string if required
-ifneq (,$(findstring info,$(MAKECMDGOALS)))
+ifneq (,$(findstring show,$(MAKECMDGOALS)))
   define infostring =
 
 Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS)
@@ -173,7 +173,7 @@ endif
 production_goals = all build compdb
 cleanup_goals = clean distclean
 action_goals = $(production_goals) $(cleanup_goals)
-phony_goals = $(action_goals) info help
+phony_goals = $(action_goals) show help
 
 .SUFFIXES:        # deletes the old fashioned suffix rules from database (speedup)
 .DELETE_ON_ERROR: # instructs make to delete the target of a rule if it has changed and its recipe
@@ -352,9 +352,9 @@ allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) -fmess
 allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
 depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
 
-# prints info only if not silent (-s option) and not help goal or info goal
+# prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
-  ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring info,$(MAKECMDGOALS))))
+  ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring show,$(MAKECMDGOALS))))
     $(info )
     $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS))
     $(info )
@@ -571,7 +571,7 @@ distclean: clean
 	-$(RMDIR) '$(BUILDDIR)' '$(BINDIR)' debug run
 	$(call conditional_echo,)
 
-info:
+show:
 	$(info $(infostring))
 	@$(CXX) --version
 	@echo

@@ -38,7 +38,7 @@ case ${TTRO_variantCase} in
 		CLEANUP2='true'
 		HASCOMPDB='';;
 	*Info)
-		GOALS=info
+		GOALS='show'
 		NOBUILD='true'
 		HASCOMPDB='';;
 	help)

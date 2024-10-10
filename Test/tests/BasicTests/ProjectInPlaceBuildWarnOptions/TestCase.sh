@@ -22,9 +22,9 @@ case ${TTRO_variantCase} in
 		OPTIONS+=' WARN_LEVEL=2'
 		CHECK='true';;
 	infoGoal)
-		printInfo "### Test warn level 2 with special warn file and info goal"
+		printInfo "### Test warn level 2 with special warn file and show goal"
 		OPTIONS+=' WARN_LEVEL=2'
-		GOALS='info'
+		GOALS='show'
 		CHECK='true'
 		NOBUILD='true';;
 	helpGoal)

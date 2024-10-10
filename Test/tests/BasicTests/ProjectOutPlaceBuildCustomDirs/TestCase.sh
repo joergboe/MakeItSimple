@@ -18,7 +18,7 @@ case ${TTRO_variantCase} in
 		GOALS=clean
 		CLEANUP='true';;
 	*Info)
-		GOALS=info
+		GOALS='show'
 		NOBUILD='true';;
 esac
 

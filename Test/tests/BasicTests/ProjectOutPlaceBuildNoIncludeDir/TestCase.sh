@@ -12,7 +12,7 @@ case ${TTRO_variantCase} in
 		GOALS=clean
 		CLEANUP='true';;
 	info)
-		GOALS=info
+		GOALS='show'
 		NOBUILD='true';;
 	help)
 		GOALS=help
