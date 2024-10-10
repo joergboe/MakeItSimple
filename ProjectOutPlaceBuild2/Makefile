@@ -7,7 +7,7 @@ and %.s) in all project source directories and creates a JSON Compilation Databa
 for the clang language server.
 The script supports 2 Build Modes (run and debug) and 4 Warning levels.
 The script keeps track of the last used configuration in a file ($(last_config_store_name)). During
-startup, the script checks the current build configuration. If a change in the buid configuration
+startup, the script checks the current build configuration. If a change in the build configuration
 has been detected, a complete build of all targets is initiated.
 
 
