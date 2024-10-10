@@ -93,7 +93,7 @@ Description:
 
   NOTE: The character set for file names is restricted. In particular, the following characters are
   not allowed in file names: whitespaces, #, ', ", %, :, ;, (, and )
-  Allowed characters are: ?, *, $, !, \, ~, &, ^, {, and }
+  Allowed characters are: ?, *, $$, !, \, ~, &, ^, {, and }
 
   NOTE: xFLAGS that contain spaces, quotation marks, or other special shell characters must be
   quoted. If they are given as command line arguments, they must be qouted twice according to the

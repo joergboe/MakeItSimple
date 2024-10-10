@@ -99,12 +99,12 @@ Description:
 
   NOTE: The character set for file names is restricted. In particular, the following characters are
   not allowed in file names: whitespaces, #, ', ", %, :, ;, (, and )
-  Allowed characters are: ?, *, $, !, \, ~, &, ^, {, and }
+  Allowed characters are: ?, *, $$, !, \, ~, &, ^, {, and }
 
   NOTE: xFLAGS that contain spaces, quotation marks, or other special shell characters must be
   quoted. If they are given as command line arguments, they must be qouted twice according to the
   rules of your shell! Example (for bash):
-  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++
+  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++ CC=clang
 
 Some useful make-options:
   -h, --help                      Display help.
@@ -131,7 +131,10 @@ All include directories (-iquote): $(INCDIRS)
 
 All include (system) directories : $(INCSYSDIRS)
 
-$(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(bmodeflags)
+$(modeinfostring) : BUILD_MODE=$(BUILD_MODE)
+c++ build options : $(bmodeflags)
+c build options   : $(cbmodeflags)
+as build options  : $(asbmodeflags)
 
 Custom preprocessor options: $(CPPFLAGS)
 
@@ -211,6 +214,12 @@ ifeq (,$(findstring clang,$(CXX)))
 else
   COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
 endif
+C_COMP_FLAGS_RUN ?= -O2 -g1
+ifeq (,$(findstring clang,$(CC)))
+  C_COMP_FLAGS_DEBUG ?= -Og -g3
+else
+  C_COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
+endif
 AS_FLAGS_RUN ?= -O2
 AS_FLAGS_DEBUG ?= -g
 AS_FLAGS_LIST ?= -asli=$(@:%.o=%.lst)
@@ -256,10 +265,12 @@ endif
 
 ifeq ($(BUILD_MODE),run)
   bmodeflags := $(COMP_FLAGS_RUN)
+  cbmodeflags := $(C_COMP_FLAGS_RUN)
   asbmodeflags := $(AS_FLAGS_RUN)
   modeinfostring := Building optimized release version
 else ifeq ($(BUILD_MODE),debug)
   bmodeflags := $(COMP_FLAGS_DEBUG)
+  cbmodeflags := $(C_COMP_FLAGS_DEBUG)
   asbmodeflags := $(AS_FLAGS_DEBUG)
   modeinfostring := Building with debug information
 else
@@ -305,11 +316,9 @@ depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.dep)) $(addprefix $(BUIL
 dbfragmentscpp := $(addsuffix .mks.tmp,$(objectscpp))
 dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
 dbfragmentsc := $(addsuffix .mks.tmp,$(objectsc))
-dbfragmentsas := $(addsuffix .mks.tmp,$(objectsas))
 srcfakescpp := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescpp)))
 srcfakescc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescc)))
 srcfakesc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcesc)))
-srcfakesas := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcesas)))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectscpp) $(objectscc) $(objectsc) $(objectsas) $(TARGET)
 
@@ -338,7 +347,7 @@ OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't'
 allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
-allcflags = $(CFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) -fmessage-length=0\
+allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
 allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
 depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
@@ -508,9 +517,9 @@ $(BINDIR):
 
 compdb: $(compile_database_name)
 
-.INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc) $(dbfragmentsas) $(srcfakescpp) $(srcfakescc) $(srcfakesc) $(srcfakesas)
+.INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc) $(srcfakescpp) $(srcfakescc) $(srcfakesc)
 
-$(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc) $(dbfragmentsas)
+$(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc)
 	@echo "[" > '$@'
 	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
 	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
@@ -538,14 +547,7 @@ $(dbfragmentsc): %.o.mks.tmp: %.c.mks.tmp $(gen_db_frag_file) $(last_config_stor
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
-$(dbfragmentsas): my_cc = $(AS)
-$(dbfragmentsas): my_flags = $(allasflags)
-$(dbfragmentsas): my_depflags = $(AS_FLAGS_LIST)
-$(dbfragmentsas): %.o.mks.tmp: %.s.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
-	@$(gen_db_fragment)
-	$(call conditional_echo,Finished database fragment $@)
-
-$(srcfakescpp) $(srcfakescc) $(srcfakesc) $(srcfakesas): | $(builddirs)
+$(srcfakescpp) $(srcfakescc) $(srcfakesc): | $(builddirs)
 	@touch '$@'
 
 # when no configuration file exists, this rule and all depending rules are forced to run
