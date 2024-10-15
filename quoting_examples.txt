@@ -1,0 +1,7 @@
+make "CPPFLAGS=-D MYHELLO='\"XXX  XXX\"' -MJ\$@.jj -D MYHELLO2='\"Hello World #2\"'" CXX=clang++
+
+make CPPFLAGS=-D\ MYHELLO=\\\"XXX\\\ \\\ XXX\\\"\ -MJ\$@.jj\ -D\ MYHELLO2=\\\"Hello\\\ World\\\ \\\#2\\\" CXX=clang++
+
+make CPPFLAGS='-D MYHELLO="\"XXX  XXX\"" -MJ$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++
+
+make CPPFLAGS='-D MYHELLO='\''"XXX  XXX"'\'' -MJ$@.jj -D MYHELLO2='\''"Hello World #2"'\' CXX=clang++
