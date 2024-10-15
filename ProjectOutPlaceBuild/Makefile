@@ -23,7 +23,7 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  distclean Clean up executables and all generated build artefacts and the Compilation Database
+  distclean Clean up executables and all generated build artifacts, the compilation database
             and the configuration store.
   show      Print project info.
   help      Print this help text.
@@ -289,7 +289,7 @@ OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
-depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
+depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
@@ -337,7 +337,6 @@ DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
 ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
-allsources=$(allsources)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
@@ -403,15 +402,18 @@ all: compdb build
 
 build: $(BINDIR)/$(TARGET)
 
+%: %.o
 $(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
-$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(makefile_this) $(last_config_store_target) | $(builddirs)
+%.o: %.cpp
+$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
-$(objectscc): $(BUILDDIR)/%.o: %.cc $(makefile_this) $(last_config_store_target) | $(builddirs)
+%.o: %.cc
+$(objectscc): $(BUILDDIR)/%.o: %.cc $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
@@ -421,8 +423,10 @@ $(builddirs):
 $(BINDIR):
 	$(MKDIR) '$@'
 
+$(depfiles):
+
 # includes additional rules after default rule
--include $(depfiles)
+include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 

@@ -23,7 +23,7 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  distclean Clean up executables and all generated build artefacts and the Compilation Database
+  distclean Clean up executables and all generated build artifacts, the compilation database
             and the configuration store.
   show      Print project info.
   help      Print this help text.
@@ -350,7 +350,7 @@ allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -
 allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
 allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
-depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
+depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
@@ -408,7 +408,6 @@ ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
 cwarnings=$(strip $(cwarnings))
 aswarnings=$(strip $(aswarnings))
-allsources=$(allsources)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
@@ -474,31 +473,36 @@ all: compdb build
 
 build: $(BINDIR)/$(TARGET)
 
+%: %.o
 $(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) $(objectsc) $(objectsas)| $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
+%.o: %.cpp
 $(objectscpp): my_cc = $(CXX)
 $(objectscpp): my_flags = $(allcxxflags)
 $(objectscpp): my_depflags = $(depflags)
-$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(makefile_this) $(last_config_store_target) | $(builddirs)
+$(objectscpp): $(BUILDDIR)/%.o: %.cpp $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
+%.o: %.cc
 $(objectscc): my_cc = $(CXX)
 $(objectscc): my_flags = $(allcxxflags)
 $(objectscc): my_depflags = $(depflags)
-$(objectscc): $(BUILDDIR)/%.o: %.cc $(makefile_this) $(last_config_store_target) | $(builddirs)
+$(objectscc): $(BUILDDIR)/%.o: %.cc $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
+%.o: %.c
 $(objectsc): my_cc = $(CC)
 $(objectsc): my_flags = $(allcflags)
 $(objectsc): my_depflags = $(depflags)
-$(objectsc): $(BUILDDIR)/%.o: %.c $(makefile_this) $(last_config_store_target) | $(builddirs)
+$(objectsc): $(BUILDDIR)/%.o: %.c $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
+%.o: %.s
 $(objectsas): my_cc = $(AS)
 $(objectsas): my_flags = $(allasflags)
 $(objectsas): my_depflags = $(AS_FLAGS_LIST)
@@ -512,8 +516,10 @@ $(builddirs):
 $(BINDIR):
 	$(MKDIR) '$@'
 
+$(depfiles):
+
 # includes additional rules after default rule
--include $(depfiles)
+include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 

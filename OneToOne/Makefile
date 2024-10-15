@@ -22,8 +22,8 @@ Goals:
             build or update the JSON compilation database if neccessary.
   build     Build or update all outdated executables.
   compdb    Build or update the JSON Compilation Database if neccessary.
-  clean     Clean up all generated executables.
-  distclean Clean up all generated executables, build artefacts, the Compilation Database and the configuration store.
+  clean     Clean up all generated executables and build artifacts.
+  distclean Clean up all generated executables, build artifacts, the compilation database and the configuration store.
   show      Print project info.
   help      Print this help text.
   %         Build or update this target file if a coresponding sorce file exists.
@@ -255,7 +255,7 @@ OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
-depflags = -MMD -MF$(@:%=%.dep) -MP -MT$@
+depflags = -MMD -MF $(@:%=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
@@ -296,7 +296,6 @@ DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
 ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
-allsources=$(allsources)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
@@ -362,16 +361,20 @@ all: compdb build
 
 build: $(targetscpp) $(targetscc)
 
-$(targetscpp): %: %.cpp $(makefile_this) $(last_config_store_target)
+%: %.cpp
+$(targetscpp): %: %.cpp %.dep $(makefile_this) $(last_config_store_target)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
-$(targetscc): %: %.cc $(makefile_this) $(last_config_store_target)
+%: %.cc
+$(targetscc): %: %.cc %.dep $(makefile_this) $(last_config_store_target)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
+
+$(depfiles):
 
 # includes additional rules after default rule
--include $(depfiles)
+include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 

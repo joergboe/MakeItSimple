@@ -22,8 +22,8 @@ Goals:
             JSON compilation database if neccessary.
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
-  clean     Clean up the target executable and all build artefacts.
-  distclean Clean up executable, all generated build artefacts, the Compilation Database and the
+  clean     Clean up the target executable and all build artifacts.
+  distclean Clean up executable, all generated build artifacts, the compilation database and the
             configuration store.
   show      Print project info.
   help      Print this help text.
@@ -263,7 +263,7 @@ OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
   $(TARGET_ARCH) -c
-depflags = -MMD -MF$(@:%.o=%.dep) -MP -MT$@
+depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
@@ -307,7 +307,6 @@ DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
 ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
-allsources=$(allsources)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
@@ -373,20 +372,25 @@ all: compdb build
 
 build: $(TARGET)
 
+%: %.o
 $(TARGET): $(objectscpp) $(objectscc)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
-$(objectscpp): %.o: %.cpp $(makefile_this) $(last_config_store_target)
+%.o: %.cpp
+$(objectscpp): %.o: %.cpp %.dep $(makefile_this) $(last_config_store_target)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
-$(objectscc): %.o: %.cc $(makefile_this) $(last_config_store_target)
+%.o: %.cc
+$(objectscc): %.o: %.cc %.dep $(makefile_this) $(last_config_store_target)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
+
+$(depfiles):
 
 # includes additional rules after default rule
--include $(depfiles)
+include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 
