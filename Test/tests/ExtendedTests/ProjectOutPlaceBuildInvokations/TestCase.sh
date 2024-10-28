@@ -8,7 +8,7 @@ case ${TTRO_variantCase} in
 		: ;;
 	invalidWarn)
 		EXPECT_FAILURE='true'
-		OPTIONS='WARN_LEVEL=4';;
+		OPTIONS='WARN_LEVEL=6';;
 	invalidBuildMode)
 		EXPECT_FAILURE='true'
 		OPTIONS='BUILD_MODE=4';;

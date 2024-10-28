@@ -5,16 +5,16 @@ ifneq (,$(findstring help,$(MAKECMDGOALS)))
 This make script builds one executable from all %.cpp and %.cc source files in all project source
 directories and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
 server.
-The script supports 2 Build Modes (run and debug) and 4 Warning levels.
+The script supports 2 Build Modes (run and debug) and 6 Warning levels.
 The script keeps track of the last used configuration in a file ($(last_config_store_name)). During
 startup, the script checks the current build configuration. If a change in the build configuration
 has been detected, a complete build of all targets is initiated.
 
 
 Synopsis:
-    make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [..] [goal ..]
+    make [make-options] [BUILD_MODE=debug|run] [WARN_LEVEL=[0..5]] [..] [goal ..]
   or
-    [BUILD_MODE=debug|run] [WARN_LEVEL=0|1|2|3] [..] make [make-options] [goal ..]
+    [BUILD_MODE=debug|run] [WARN_LEVEL=[0..5]] [..] make [make-options] [goal ..]
 
 
 Goals:
@@ -47,7 +47,7 @@ Optional customization variables:
                       is the empty value.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
-  WARN_LEVEL:         Warning level set 0 .. 3. Default: 2
+  WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
   MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
   COMP_FLAGS_RUN:     Compiler optimization level and debug option with BUILD_MODE = run.
@@ -81,8 +81,8 @@ Description:
   information included.
   If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
-  The variable WARN_LEVEL can assign warning levels from 0 .. 3.
-  The default warning level is 2 and activates a comprehensive set of warnings (for gcc and clang).
+  The variable WARN_LEVEL can assign warning levels from 0 .. 5.
+  The default warning level is 4 and activates a comprehensive set of warnings (for gcc and clang).
 
   By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
 
@@ -183,7 +183,7 @@ endif
 -include $(makefile_defs)
 
 # and add the defaults for the unset variables
-WARN_LEVEL ?= 2
+WARN_LEVEL ?= 4
 MAKEFILE_WARN ?= warnings.mk
 BUILD_MODE ?= debug
 COMP_FLAGS_RUN ?= -O2 -g1
@@ -192,26 +192,44 @@ ifeq (,$(findstring clang,$(CXX)))
 else
   COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
 endif
+FORMAT_FLAGS ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
 -include $(MAKEFILE_WARN)
-cxxwarn0 ?= -ftabstop=4
-cxxwarn1 ?= -pedantic -Wall -Wextra
-cxxwarn2 ?= -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wmissing-declarations\
-  -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wconversion\
-  -Wsign-conversion -Wundef -Wfloat-equal -Winline -Wzero-as-null-pointer-constant\
-  -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
-cxxwarn3 ?= -Wswitch-default -Wswitch-enum -Wsign-promo -Wpadded -Weffc++ -Winline -Winvalid-pch\
-  -Wunused-macros -Wstrict-overflow=5
+cxxwarn0 ?= -w
+cxxwarn1 ?=
+cxxwarn2 ?= -Wall
+cxxwarn3 ?= -Wextra -Wpedantic -Wshadow=compatible-local
+cxxwarn4 ?= -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctad-maybe-unsupported -Wctor-dtor-privacy\
+  -Wdeprecated-copy-dtor -Wdeprecated-enum-enum-conversion -Wdeprecated-enum-float-conversion -Wduplicated-cond\
+  -Wenum-conversion -Wextra-semi -Wflex-array-member-not-at-end -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
+  -Wformat-security -Wformat-y2k -Winvalid-constexpr -Winvalid-utf8 -Wlogical-op -Wmismatched-tags\
+  -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnoexcept -Wnull-dereference -Wold-style-cast\
+  -Wplacement-new=2 -Wredundant-decls -Wshadow=local -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel\
+  -Wstrict-overflow=2 -Wstringop-overflow=3 -Wsuggest-attribute=cold -Wsuggest-attribute=const -Wsuggest-attribute=format\
+  -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types\
+  -Wsuggest-override -Wtemplate-id-cdtor -Wtrampolines -Wtrivial-auto-var-init -Wuseless-cast -Wvolatile
+cxxwarn5 ?= -Waggregate-return -Walloca -Wanalyzer-symbol-too-complex -Wanalyzer-too-complex -Warith-conversion\
+  -Warray-bounds=2 -Wattribute-alias=2 -Wcast-align=strict -Wcast-qual -Wcomma-subscript -Wconditionally-supported\
+  -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Weffc++ -Wfloat-equal -Wformat-overflow=2\
+  -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-imported-macros -Winvalid-pch -Wmissing-declarations\
+  -Wmissing-include-dirs -Wmultiple-inheritance -Wnamespaces -Wnrvo -Wopenacc-parallelism -Wpacked -Wpadded\
+  -Wredundant-tags -Wregister -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
+  -Wstringop-overflow=4 -Wsuggest-final-methods -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros\
+  -Wvector-operation-performance -Wzero-as-null-pointer-constant
 
 ifeq ($(WARN_LEVEL),0)
   cxxwarnings := $(cxxwarn0)
 else ifeq ($(WARN_LEVEL),1)
-  cxxwarnings := $(cxxwarn1) $(cxxwarn0)
+  cxxwarnings := $(cxxwarn1)
 else ifeq ($(WARN_LEVEL),2)
-  cxxwarnings := $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
+  cxxwarnings := $(cxxwarn1) $(cxxwarn2)
 else ifeq ($(WARN_LEVEL),3)
-  cxxwarnings := $(cxxwarn3) $(cxxwarn2) $(cxxwarn1) $(cxxwarn0)
+  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3)
+else ifeq ($(WARN_LEVEL),4)
+  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4)
+else ifeq ($(WARN_LEVEL),5)
+  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4) $(cxxwarn5)
 else
   $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
 endif
@@ -287,7 +305,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) -fmessage-length=0\
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings)\
   $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
@@ -325,6 +343,7 @@ MAKEFILE_WARN=$(value MAKEFILE_WARN)
 BUILD_MODE=$(value BUILD_MODE)
 COMP_FLAGS_RUN=$(value COMP_FLAGS_RUN)
 COMP_FLAGS_DEBUG=$(value COMP_FLAGS_DEBUG)
+FORMAT_FLAGS=$(value FORMAT_FLAGS)
 BUILDDIR=$(value BUILDDIR)
 BINDIR=$(value BINDIR)
 CPPFLAGS=$(value CPPFLAGS)

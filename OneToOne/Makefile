@@ -277,7 +277,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(COMP_FLAGS) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings) \
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings)\
   $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
 depflags = -MMD -MF $(@:%=%.dep) -MP -MT $@
 
@@ -310,7 +310,6 @@ MAKEFILE_WARN=$(value MAKEFILE_WARN)
 BUILD_MODE=$(value BUILD_MODE)
 COMP_FLAGS_RUN=$(value COMP_FLAGS_RUN)
 COMP_FLAGS_DEBUG=$(value COMP_FLAGS_DEBUG)
-COMP_FLAGS=$(value COMP_FLAGS)
 FORMAT_FLAGS=$(value FORMAT_FLAGS)
 CPPFLAGS=$(value CPPFLAGS)
 CXXFLAGS=$(value CXXFLAGS)
