@@ -22,8 +22,15 @@ fi
 PREPS=(
 	'printInfo "Testing with MakeItSimple installation in ${TTRO_installDir}"'
 	'${suiteCompiler} --version'
-	'prepareWarnFile'
+	'prepareWarnFile2'
 )
+
+prepareWarnFile2() {
+	local wf="${TTRO_installDir}/CommonCustomization/warnings.${TTRO_variantSuite}.mk"
+	if [[ -f "${wf}" ]]; then
+		export MAKEFILE_WARN="${wf}"
+	fi
+}
 
 prepareWarnFile() {
 	local versionstring=$(${suiteCompiler} --version)
