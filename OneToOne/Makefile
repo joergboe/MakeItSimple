@@ -277,7 +277,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings)\
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(FORMAT_FLAGS)\
   $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
 depflags = -MMD -MF $(@:%=%.dep) -MP -MT $@
 

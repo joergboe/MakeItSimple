@@ -163,7 +163,7 @@ C-Warning flags : $(cwarn2)
 Warning level 3 adds : $(cxxwarn3)
 C-Warning flags : $(cwarn3)
 
-The active warning include file is: $(MAKEFILE_WARN)
+The active warning include file is: $(MAKEFILE_WARN) - File $(if $(wildcard $(MAKEFILE_WARN)),exists.,does not exist!)
 
 All generated dependecies: $(depfiles)
 
@@ -253,11 +253,23 @@ cwarn0 ?= -w
 cwarn1 ?=
 cwarn2 ?= -Wall
 cwarn3 ?= -Wextra -Wpedantic -Wshadow=compatible-local
-cwarn4 ?= -Wcast-align -Wcast-qual -Wformat=2 -Winit-self -Wmissing-declarations\
-  -Wmissing-include-dirs -Wredundant-decls -Wshadow -Wconversion\
-  -Wsign-conversion -Wundef -Wfloat-equal -Winline\
-  -Wstrict-overflow=4 -Wdate-time -Wnull-dereference -Wdisabled-optimization
-cwarn5 ?= -Wswitch-default -Wswitch-enum -Wpadded -Winline -Winvalid-pch -Wunused-macros -Wstrict-overflow=5
+cwarn4 ?= -Walloc-zero -Wcast-align -Wconversion\
+  -Wduplicated-cond\
+  -Wenum-conversion -Wflex-array-member-not-at-end -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
+  -Wformat-security -Wformat-y2k -Winvalid-utf8 -Wlogical-op\
+  -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnull-dereference\
+  -Wredundant-decls -Wshadow=local -Wsign-conversion\
+  -Wstrict-overflow=2 -Wstringop-overflow=3 -Wsuggest-attribute=cold -Wsuggest-attribute=const -Wsuggest-attribute=format\
+  -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types\
+  -Wtrampolines -Wtrivial-auto-var-init -Wuseless-cast
+cwarn5 ?= -Waggregate-return -Walloca -Wanalyzer-symbol-too-complex -Wanalyzer-too-complex -Warith-conversion\
+  -Warray-bounds=2 -Wattribute-alias=2 -Wcast-align=strict -Wcast-qual\
+  -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Wfloat-equal -Wformat-overflow=2\
+  -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-pch -Wmissing-declarations\
+  -Wmissing-include-dirs -Wopenacc-parallelism -Wpacked -Wpadded\
+  -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
+  -Wstringop-overflow=4 -Wsuggest-final-methods -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros\
+  -Wvector-operation-performance
 
 ifeq ($(WARN_LEVEL),0)
   cxxwarnings := $(cxxwarn0)
@@ -369,9 +381,9 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't'
-allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings)\
+allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(FORMAT_FLAGS)\
   $(TARGET_ARCH) -c
-allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cwarnings)\
+allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) $(FORMAT_FLAGS)\
   $(TARGET_ARCH) -c
 allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@

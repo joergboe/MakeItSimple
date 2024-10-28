@@ -126,7 +126,7 @@ Warning level 2 adds : $(cxxwarn2)
 
 Warning level 3 adds : $(cxxwarn3)
 
-The active warning include file is: $(MAKEFILE_WARN)
+The active warning include file is: $(MAKEFILE_WARN) - File $(if $(wildcard $(MAKEFILE_WARN)),exists.,does not exist!)
 
 All generated dependecies: $(depfiles)
 
@@ -279,7 +279,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(FORMAT_FLAGS) $(CPPFLAGS) $(cxxwarnings)\
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(FORMAT_FLAGS)\
   $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 

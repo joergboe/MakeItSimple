@@ -39,3 +39,7 @@ cxxwarn5 = -Walloca -Watomic-implicit-seq-cst\
   -Wunsupported-dll-base-class-template\
   -Wunused-exception-parameter -Wunused-local-typedefs -Wunused-macros -Wunused-member-function -Wunused-template\
   -Wvla -Wweak-vtables -Wzero-as-null-pointer-constant
+
+cwarn3 = $(cxxwarn3)
+cwarn4 = $(cxxwarn4)
+cwarn5 = $(cxxwarn5)
