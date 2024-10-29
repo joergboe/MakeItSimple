@@ -175,7 +175,7 @@ ifeq (,$(findstring clang,$(CXX)))
 else
   COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
 endif
-FORMAT_FLAGS ?= -ftabstop=4 -fmessage-length=0
+formatflags ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
 -include $(MAKEFILE_WARN)
@@ -279,7 +279,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(FORMAT_FLAGS)\
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags)\
   $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
@@ -296,36 +296,24 @@ ifndef silent_mode
   endif
 endif
 
-# call neq,param1,param2
-# Expands to 'true' if param1 and param2 are not equal or to the empty string otherwise
-neq = $(if $(subst $(2),,$(1)),true)
-
-# call tail,separator,wordlist
-# Expands to the rest of the word list that follows the separator word.
-tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
-
-# prepare configuration store
-arg_vars = $(call tail,--,$(MAKEFLAGS))
-
+# Recursive variables intended for expansion in a recipe must be saved as 'value'.
 define configuration =
-TARGET=$(value TARGET)
-INCSYSDIRS=$(value INCSYSDIRS)
-WARN_LEVEL=$(value WARN_LEVEL)
-MAKEFILE_WARN=$(value MAKEFILE_WARN)
-BUILD_MODE=$(value BUILD_MODE)
-COMP_FLAGS_RUN=$(value COMP_FLAGS_RUN)
-COMP_FLAGS_DEBUG=$(value COMP_FLAGS_DEBUG)
-FORMAT_FLAGS=$(value FORMAT_FLAGS)
+TARGET=$(TARGET)
+INCSYSDIRS=$(INCSYSDIRS)
+BUILD_MODE=$(BUILD_MODE)
+COMP_FLAGS_RUN=$(COMP_FLAGS_RUN)
+COMP_FLAGS_DEBUG=$(COMP_FLAGS_DEBUG)
 CPPFLAGS=$(value CPPFLAGS)
 CXXFLAGS=$(value CXXFLAGS)
 TARGET_ARCH=$(value TARGET_ARCH)
 LDFLAGS=$(value LDFLAGS)
 LDLIBS=$(value LDLIBS)
-CXX=$(value CXX)
-DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
+CXX=$(CXX)
+DISABLE_CONFIG_CHECK=$(DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
-ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
+depflags=$(value depflags)
+formatflags=$(value formatflags)
 endef
 
 ifdef DISABLE_CONFIG_CHECK

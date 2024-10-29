@@ -223,7 +223,7 @@ endif
 AS_FLAGS_RUN ?= -O2
 AS_FLAGS_DEBUG ?= -g
 AS_FLAGS_LIST ?= -asli=$(@:%.o=%.lst)
-FORMAT_FLAGS ?= -ftabstop=4 -fmessage-length=0
+formatflags ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
 -include $(MAKEFILE_WARN)
@@ -381,9 +381,9 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't'
-allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(FORMAT_FLAGS)\
+allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags)\
   $(TARGET_ARCH) -c
-allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) $(FORMAT_FLAGS)\
+allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) $(formatflags)\
   $(TARGET_ARCH) -c
 allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
@@ -401,33 +401,22 @@ ifndef silent_mode
   endif
 endif
 
-# call neq,param1,param2
-# Expands to 'true' if param1 and param2 are not equal or to the empty string otherwise
-neq = $(if $(subst $(2),,$(1)),true)
-
-# call tail,separator,wordlist
-# Expands to the rest of the word list that follows the separator word.
-tail = $(let first rest,$(2),$(if $(and $(rest),$(call neq,$(1),$(first))),$(call tail,$(1),$(rest)),$(rest)))
-
-# prepare configuration store
-arg_vars = $(call tail,--,$(MAKEFLAGS))
-
+# Recursive variables intended for expansion in a recipe must be saved as 'value'.
 define configuration =
-TARGET=$(value TARGET)
-SRCDIRS=$(value SRCDIRS)
-INCDIRS=$(value INCDIRS))
-INCSYSDIRS=$(value INCSYSDIRS)
-WARN_LEVEL=$(value WARN_LEVEL)
-MAKEFILE_WARN=$(value MAKEFILE_WARN)
-BUILD_MODE=$(value BUILD_MODE)
-COMP_FLAGS_RUN=$(value COMP_FLAGS_RUN)
-COMP_FLAGS_DEBUG=$(value COMP_FLAGS_DEBUG)
-FORMAT_FLAGS=$(value FORMAT_FLAGS)
-AS_FLAGS_RUN=$(value AS_FLAGS_RUN)
-AS_FLAGS_DEBUG=$(value AS_FLAGS_DEBUG)
+TARGET=$(TARGET)
+SRCDIRS=$(SRCDIRS)
+INCDIRS=$(INCDIRS)
+INCSYSDIRS=$(INCSYSDIRS)
+BUILD_MODE=$(BUILD_MODE)
+COMP_FLAGS_RUN=$(COMP_FLAGS_RUN)
+COMP_FLAGS_DEBUG=$(COMP_FLAGS_DEBUG)
+C_COMP_FLAGS_DEBUG=$(C_COMP_FLAGS_DEBUG)
+C_COMP_FLAGS_RUN=$(C_COMP_FLAGS_RUN)
+AS_FLAGS_RUN=$(AS_FLAGS_RUN)
+AS_FLAGS_DEBUG=$(AS_FLAGS_DEBUG)
 AS_FLAGS_LIST==$(value AS_FLAGS_LIST)
-BUILDDIR=$(value BUILDDIR)
-BINDIR=$(value BINDIR)
+BUILDDIR=$(BUILDDIR)
+BINDIR=$(BINDIR)
 CPPFLAGS=$(value CPPFLAGS)
 CXXFLAGS=$(value CXXFLAGS)
 CFLAGS=$(value CFLAGS)
@@ -436,15 +425,16 @@ TARGET_ARCH=$(value TARGET_ARCH)
 TARGET_MACH=$(value TARGET_MACH)
 LDFLAGS=$(value LDFLAGS)
 LDLIBS=$(value LDLIBS)
-CXX=$(value CXX)
-CC=$(value CC)
-AS=$(value AS)
-DISABLE_CONFIG_CHECK=$(value DISABLE_CONFIG_CHECK)
+CXX=$(CXX)
+CC=$(CC)
+AS=$(AS)
+DISABLE_CONFIG_CHECK=$(DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
-ARG_VARS=$(arg_vars)
 cxxwarnings=$(strip $(cxxwarnings))
 cwarnings=$(strip $(cwarnings))
 aswarnings=$(strip $(aswarnings))
+depflags=$(value depflags)
+formatflags=$(value formatflags)
 endef
 
 ifdef DISABLE_CONFIG_CHECK
