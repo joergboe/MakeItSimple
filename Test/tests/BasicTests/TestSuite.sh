@@ -26,9 +26,8 @@ PREPS=(
 )
 
 prepareWarnFile2() {
-	local wf="${TTRO_installDir}/CommonCustomization/warnings.${TTRO_variantSuite}.mk"
-	if [[ -f "${wf}" ]]; then
-		export MAKEFILE_WARN="${wf}"
+	if [ "${TTRO_variantSuite}" != 'default' ]; then
+		export MAKEFILE_WARN="${TTRO_installDir}/CommonCustomization/warnings.${TTRO_variantSuite}.mk"
 	fi
 }
 
