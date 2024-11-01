@@ -277,8 +277,8 @@ objectscc := $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.o))
 depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.dep)) $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.dep))
 dbfragmentscpp := $(addsuffix .mks.tmp,$(objectscpp))
 dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
-srcfakescpp := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescpp)))
-srcfakescc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescc)))
+srcfakescpp := $(addsuffix .mks.tmp,$(sourcescpp))
+srcfakescc := $(addsuffix .mks.tmp,$(sourcescc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectscpp) $(objectscc) $(TARGET)
 
@@ -367,30 +367,27 @@ else
   endif
 endif
 
-# called with curdir cc -o obj.mks.tmp src.jj.tmt ...
-gen_db_frag_var = 'gen_db_frag() {'$$'\n'\
-' local curdir="$${1}"'$$'\n'\
-' shift'$$'\n'\
-' {'$$'\n'\
-'   echo "	{"'$$'\n'\
-'   echo "		\"directory\": \"$${curdir}\","'$$'\n'\
-'   echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
-'   echo -n "		\"arguments\": [ "'$$'\n'\
-'   local seq='\'\'$$'\n'\
-'   local i i'$$'\n'\
-'   local x y'$$'\n'\
-'   for ((i=1; i<$$\#; i++)); do'$$'\n'\
-'     if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
-'     seq=1'$$'\n'\
-'     eval x="\$${$${i}}"'$$'\n'\
-'     y="$${x//.mks.tmp/}"'$$'\n'\
-'     echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
-'   done'$$'\n'\
-'   echo " ],"'$$'\n'\
-'   echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
-'   echo -n "	}"'$$'\n'\
-' } > "$${3}"'$$'\n'\
-'}'
+# args: curdir cxx -o object.mks.tmp source.mks.tmp option1 ...
+gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
+'shift'$$'\n'\
+'{'$$'\n'\
+'	echo "	{"'$$'\n'\
+'	echo "		\"directory\": \"$${curdir}\","'$$'\n'\
+'	echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
+'	echo -n "		\"arguments\": [ "'$$'\n'\
+'	seq='\'\'$$'\n'\
+'	declare -i i'$$'\n'\
+'	for ((i=1; i<$$\#; i++)); do'$$'\n'\
+'		if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
+'		seq=1'$$'\n'\
+'		eval x="\$${$${i}}"'$$'\n'\
+'		y="$${x//.mks.tmp/}"'$$'\n'\
+'		echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
+'	done'$$'\n'\
+'	echo " ],"'$$'\n'\
+'	echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
+'	echo -n "	}"'$$'\n'\
+'} > "$${3}"'$$'\n'
 
 # call conditional_echo,string
 ifndef silent_mode
@@ -401,7 +398,7 @@ endif
 # depflags, output option and source are single quoted
 compile_source = $(CXX)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
-gen_db_fragment = source $(gen_db_frag_file); gen_db_frag '$(CURDIR)' $(CXX)\
+gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CXX)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
 
 # rules:
@@ -446,11 +443,11 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@echo -e "\n]" >> '$@'
 	$(call conditional_echo,Finished database $@\n)
 
-$(dbfragmentscpp): %.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscpp): $(BUILDDIR)/%.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
-$(dbfragmentscc): %.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscc): $(BUILDDIR)/%.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 

@@ -352,9 +352,9 @@ depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.dep)) $(addprefix $(BUIL
 dbfragmentscpp := $(addsuffix .mks.tmp,$(objectscpp))
 dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
 dbfragmentsc := $(addsuffix .mks.tmp,$(objectsc))
-srcfakescpp := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescpp)))
-srcfakescc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcescc)))
-srcfakesc := $(addprefix $(BUILDDIR)/,$(addsuffix .mks.tmp,$(sourcesc)))
+srcfakescpp := $(addsuffix .mks.tmp,$(sourcescpp))
+srcfakescc := $(addsuffix .mks.tmp,$(sourcescc))
+srcfakesc := $(addsuffix .mks.tmp,$(sourcesc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectscpp) $(objectscc) $(objectsc) $(objectsas) $(TARGET)
 
@@ -458,30 +458,27 @@ else
   endif
 endif
 
-# called with curdir cc -o obj.mks.tmp src.jj.tmt ...
-gen_db_frag_var = 'gen_db_frag() {'$$'\n'\
-' local curdir="$${1}"'$$'\n'\
-' shift'$$'\n'\
-' {'$$'\n'\
-'   echo "	{"'$$'\n'\
-'   echo "		\"directory\": \"$${curdir}\","'$$'\n'\
-'   echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
-'   echo -n "		\"arguments\": [ "'$$'\n'\
-'   local seq='\'\'$$'\n'\
-'   local i i'$$'\n'\
-'   local x y'$$'\n'\
-'   for ((i=1; i<$$\#; i++)); do'$$'\n'\
-'     if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
-'     seq=1'$$'\n'\
-'     eval x="\$${$${i}}"'$$'\n'\
-'     y="$${x//.mks.tmp/}"'$$'\n'\
-'     echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
-'   done'$$'\n'\
-'   echo " ],"'$$'\n'\
-'   echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
-'   echo -n "	}"'$$'\n'\
-' } > "$${3}"'$$'\n'\
-'}'
+# args: curdir cxx -o object.mks.tmp source.mks.tmp option1 ...
+gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
+'shift'$$'\n'\
+'{'$$'\n'\
+'	echo "	{"'$$'\n'\
+'	echo "		\"directory\": \"$${curdir}\","'$$'\n'\
+'	echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
+'	echo -n "		\"arguments\": [ "'$$'\n'\
+'	seq='\'\'$$'\n'\
+'	declare -i i'$$'\n'\
+'	for ((i=1; i<$$\#; i++)); do'$$'\n'\
+'		if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
+'		seq=1'$$'\n'\
+'		eval x="\$${$${i}}"'$$'\n'\
+'		y="$${x//.mks.tmp/}"'$$'\n'\
+'		echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
+'	done'$$'\n'\
+'	echo " ],"'$$'\n'\
+'	echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
+'	echo -n "	}"'$$'\n'\
+'} > "$${3}"'$$'\n'
 
 # call conditional_echo,string
 ifndef silent_mode
@@ -492,7 +489,7 @@ endif
 # depflags, output option and source are single quoted
 compile_source = $(my_cc)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(my_flags) $(foreach var,$(my_depflags),'$(var)')
-gen_db_fragment = source $(gen_db_frag_file); gen_db_frag '$(CURDIR)' $(my_cc)\
+gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(my_cc)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(my_flags) $(foreach var,$(my_depflags),'$(var)')
 
 # rules:
@@ -562,21 +559,21 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc)
 $(dbfragmentscpp): my_cc = $(CXX)
 $(dbfragmentscpp): my_flags = $(allcxxflags)
 $(dbfragmentscpp): my_depflags = $(depflags)
-$(dbfragmentscpp): %.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscpp): $(BUILDDIR)/%.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
 $(dbfragmentscc): my_cc = $(CXX)
 $(dbfragmentscc): my_flags = $(allcxxflags)
 $(dbfragmentscc): my_depflags = $(depflags)
-$(dbfragmentscc): %.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscc): $(BUILDDIR)/%.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
 $(dbfragmentsc): my_cc = $(CC)
 $(dbfragmentsc): my_flags = $(allcflags)
 $(dbfragmentsc): my_depflags = $(depflags)
-$(dbfragmentsc): %.o.mks.tmp: %.c.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentsc): $(BUILDDIR)/%.o.mks.tmp: %.c.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
