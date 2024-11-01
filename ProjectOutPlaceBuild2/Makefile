@@ -582,7 +582,7 @@ $(srcfakescpp) $(srcfakescc) $(srcfakesc): | $(builddirs)
 
 # when no configuration file exists, this rule and all depending rules are forced to run
 $(last_config_store_target):
-	@$(MV) '$(temp_config_store_name)' '$@'
+	-@$(MV) '$(temp_config_store_name)' '$@'
 	$(call conditional_echo,Configuration file $@ written\n)
 
 $(gen_db_frag_file): $(makefile_this)
