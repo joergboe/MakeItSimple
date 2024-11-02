@@ -547,7 +547,7 @@ include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 
-.INTERMEDIATE: $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc) $(srcfakescpp) $(srcfakescc) $(srcfakesc)
+.INTERMEDIATE: $(srcfakescpp) $(srcfakescc) $(srcfakesc)
 
 $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc) $(dbfragmentsc)
 	@echo "[" > '$@'
