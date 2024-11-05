@@ -1,6 +1,10 @@
 # This file contains the compiler warning definitions tailored for g++ version 7 or higher
-# Copy this file to the project directory an re-name to makefile.warn
-# or provide a link makefile.warn pointing to this file : ln -s ../CommonCustomization/warnings.g++-7.mk warnings.mk
+
+ifndef silent_mode
+  $(info Using warnings.g++-7.mk)
+endif
+
+cxxwarn3 = -Wextra -Wpedantic -Wshadow=compatible-local
 
 cxxwarn4 = -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctor-dtor-privacy -Wduplicated-cond\
   -Wfloat-conversion -Wformat=2 -Wformat-nonliteral -Wformat-security -Wformat-y2k -Winit-self -Wlogical-op\
@@ -9,6 +13,7 @@ cxxwarn4 = -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctor-dtor-
   -Wstrict-overflow=2 -Wstringop-overflow=3 -Wsuggest-attribute=const -Wsuggest-attribute=format\
   -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types -Wsuggest-override\
   -Wtrampolines -Wuseless-cast
+
 cxxwarn5 = -Waggregate-return -Walloca -Warray-bounds=2 -Wcast-align -Wcast-qual -Wconditionally-supported\
   -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Weffc++ -Wfloat-equal -Wformat-overflow=2\
   -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-pch -Wmissing-declarations\
@@ -16,21 +21,3 @@ cxxwarn5 = -Waggregate-return -Walloca -Warray-bounds=2 -Wcast-align -Wcast-qual
   -Wregister -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
   -Wstringop-overflow=4 -Wsuggest-final-methods -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros\
   -Wvector-operation-performance -Wzero-as-null-pointer-constant
-
-cwarn4 = -Walloc-zero -Wcast-align -Wconversion\
-  -Wduplicated-cond\
-  -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
-  -Wformat-security -Wformat-y2k -Wlogical-op\
-  -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnull-dereference\
-  -Wredundant-decls -Wshadow=local -Wsign-conversion\
-  -Wstrict-overflow=2 -Wstringop-overflow=3 -Wsuggest-attribute=const -Wsuggest-attribute=format\
-  -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types\
-  -Wtrampolines
-cwarn5 = -Waggregate-return -Walloca\
-  -Warray-bounds=2 -Wcast-qual\
-  -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Wfloat-equal -Wformat-overflow=2\
-  -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-pch -Wmissing-declarations\
-  -Wmissing-include-dirs -Wpacked -Wpadded\
-  -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
-  -Wstringop-overflow=4 -Wsuggest-final-methods -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros\
-  -Wvector-operation-performance

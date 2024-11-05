@@ -1,6 +1,8 @@
-# This file contains the compiler warning definitions tailored for clang++ version 18 or higher
-# Copy this file to the project directory an re-name to makefile.warn
-# or provide a link makefile.warn pointing to this file : ln -s ../CommonCustomization/warnings.clang++-18.mk warnings.mk
+# This file contains the compiler warning definitions tailored for clang/clang++ version 18 or higher
+
+ifndef silent_mode
+  $(info Using warnings.clang++-18.mk)
+endif
 
 cxxwarn3 = -Wpedantic -Wvariadic-macros
 

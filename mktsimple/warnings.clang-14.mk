@@ -1,6 +1,8 @@
-# This file contains the compiler warning definitions tailored for clang++ version 13 or higher
-# Copy this file to the project directory an re-name to makefile.warn
-# or provide a link makefile.warn pointing to this file : ln -s ../CommonCustomization/warnings.clang++-13.mk warnings.mk
+# This file contains the compiler warning definitions tailored for clang/clang++ version 14 or higher
+
+ifndef silent_mode
+  $(info Using warnings.clang++-14.mk)
+endif
 
 cxxwarn3 = -Wpedantic -Wvariadic-macros
 
@@ -33,9 +35,9 @@ cxxwarn5 = -Walloca -Watomic-implicit-seq-cst\
   -Wmissing-prototypes -Wnewline-eof -Wnonportable-system-include-path\
   -Wpacked -Wpadded -Wpoison-system-directories -Wquoted-include-in-framework-header\
   -Wreceiver-forward-class -Wreserved-id-macro -Wreserved-identifier -Wreserved-user-defined-literal\
-  -Wshadow-all -Wshift-sign-overflow -Wsigned-enum-bitfield -Wstatic-in-inline\
+  -Rsearch-path-usage -Wshadow-all -Wshift-sign-overflow -Wsigned-enum-bitfield -Wstatic-in-inline\
   -Wstrict-prototypes -Wswitch-default -Wswitch-enum -Wthread-safety -Wthread-safety-negative -Wthread-safety-verbose\
-  -Wundef -Wundef-prefix -Wunnamed-type-template-args\
+  -Wunaligned-access -Wundef -Wundef-prefix -Wunnamed-type-template-args\
   -Wunsupported-dll-base-class-template\
   -Wunused-exception-parameter -Wunused-local-typedefs -Wunused-macros -Wunused-member-function -Wunused-template\
   -Wvla -Wweak-vtables -Wzero-as-null-pointer-constant
