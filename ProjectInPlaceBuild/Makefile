@@ -49,6 +49,8 @@ Optional customization variables:
                       Default: -Og -g3
   CPPFLAGS:           Extra compiler preprocessor options.
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
+  SRCxxxxFLAGS        Flags for one specific source file. xxxx stands for the name of the source file,
+                      where periods and slashes are replaced by underscores.
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
   LDLIBS:             Space separated list of libraries given to the linker (including -l).
@@ -306,8 +308,8 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags)\
-  $(TARGET_ARCH) -c
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+  $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
@@ -323,8 +325,14 @@ ifndef silent_mode
   endif
 endif
 
+# new line required 2 lines!
+define nl =
+
+
+endef
 # Recursive variables intended for expansion in a recipe must be saved as 'value'.
 define configuration =
+Last stored configuration:
 TARGET=$(TARGET)
 INCSYSDIRS=$(INCSYSDIRS)
 BUILD_MODE=$(BUILD_MODE)
@@ -341,6 +349,8 @@ OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cxxwarnings=$(strip $(cxxwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
+$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
+End.
 endef
 
 ifdef DISABLE_CONFIG_CHECK

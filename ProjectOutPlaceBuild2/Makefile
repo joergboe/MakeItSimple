@@ -62,6 +62,8 @@ Optional customization variables:
                       Default: run or debug
   CPPFLAGS:           Extra compiler preprocessor options.
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
+  SRCxxxxFLAGS        Flags for one specific source file. xxxx stands for the name of the source file,
+                      where periods and slashes are replaced by underscores.
   CFLAGS:             Extra c compiler options.
   ASFLAGS:            Extra assembler options.
   TARGET_ARCH:        Target specific flags for the c-, c++-compiler and linker.
@@ -429,11 +431,11 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION and allxxxflags go into the compilation database, depflags don't'
-allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags)\
-  $(TARGET_ARCH) -c
-allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) $(formatflags)\
-  $(TARGET_ARCH) -c
-allasflags = $(ASFLAGS) $(asbmodeflags) $(aswarnings) -c
+allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+  $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
+allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+  $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
+allasflags = $(ASFLAGS) $(asbmodeflags) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS) $(aswarnings) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
@@ -449,8 +451,14 @@ ifndef silent_mode
   endif
 endif
 
+# new line required 2 lines!
+define nl =
+
+
+endef
 # Recursive variables intended for expansion in a recipe must be saved as 'value'.
 define configuration =
+Last stored configuration:
 TARGET=$(TARGET)
 SRCDIRS=$(SRCDIRS)
 INCDIRS=$(INCDIRS)
@@ -483,6 +491,8 @@ cwarnings=$(strip $(cwarnings))
 aswarnings=$(strip $(aswarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
+$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
+End.
 endef
 
 ifdef DISABLE_CONFIG_CHECK
