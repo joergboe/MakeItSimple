@@ -1,9 +1,5 @@
 # This file contains the compiler warning definitions tailored for g++ version 7 or higher
 
-ifndef silent_mode
-  $(info Using warnings.g++-7.mk)
-endif
-
 cxxwarn3 = -Wextra -Wpedantic -Wshadow=compatible-local
 
 cxxwarn4 = -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctor-dtor-privacy -Wduplicated-cond\

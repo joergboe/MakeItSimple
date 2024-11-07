@@ -1,9 +1,5 @@
 # This file contains the compiler warning definitions tailored for gcc version 13 or higher
 
-ifndef silent_mode
-  $(info Using warnings.gcc-13.mk)
-endif
-
 cwarn3 = -Wextra -Wpedantic -Wshadow=compatible-local
 
 cwarn4 = -Walloc-zero -Wcast-align -Wconversion\

@@ -1,9 +1,5 @@
 # This file contains the compiler warning definitions tailored for g++ version 13 or higher
 
-ifndef silent_mode
-  $(info Using warnings.g++-13.mk)
-endif
-
 cxxwarn3 = -Wextra -Wpedantic -Wshadow=compatible-local
 
 cxxwarn4 = -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctad-maybe-unsupported -Wctor-dtor-privacy\

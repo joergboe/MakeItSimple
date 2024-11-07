@@ -171,8 +171,10 @@ endif
 # include project specific definitions if any
 -include $(makefile_defs)
 
+# call $1 - info string
+conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 compiler command
+# call $1 - compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
   if [[ "$${ins}" =~ (gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
@@ -181,17 +183,15 @@ get_comp_name_version = $(shell\
 
 # add the defaults
 ifndef MAKEFILE_WARN
-  cc_name_vers = $(call get_comp_name_version,$(CXX))
+  cc_name_vers := $(call get_comp_name_version,$(CXX))
   ifneq (2,$(words $(cc_name_vers)))
     $(warning Unknown compiler version $(CCX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
-    MAKEFILE_WARN = warnings.mk
+    MAKEFILE_WARN := warnings.mk
   else
-    MAKEFILE_WARN = mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
+    MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
   endif
 endif
-ifndef silent_mode
-  $(info Using MAKEFILE_WARN=$(MAKEFILE_WARN))
-endif
+$(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
 WARN_LEVEL ?= 4
 BUILD_MODE ?= debug
 COMP_FLAGS_RUN ?= -O2 -g1
@@ -206,6 +206,11 @@ formatflags ?= -ftabstop=4 -fmessage-length=0
 oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
+ifeq (,$(makefile_warn_used))
+  $(warning warnings file $(MAKEFILE_WARN) does not exist!)
+else
+  $(call conditional_info,Using warnings from $(makefile_warn_used))
+endif
 cxxwarn0 ?= -w
 cxxwarn1 ?=
 cxxwarn2 ?= -Wall

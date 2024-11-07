@@ -61,6 +61,10 @@ Description:
   current project directory. The name of the executable is defined through variable TARGET and the
   default is the last component of the directory which contains this Makefile.
 
+  This script checks the version of the compiler and searches for an appropriate 'warnings.xxxx.mk'
+  file in directory /usr/local/include/mktsimple. If the tool is installed in a different place than
+  /usr/local/include or /usr/include, add the base directory of the installation with make option -I.
+
   If a 'production goal' (all compdb %.o..) runs and a configuration change has bee detected the
   compilation database is automatically created or updated.
 
@@ -126,7 +130,12 @@ Warning level 2 adds : $(cxxwarn2)
 
 Warning level 3 adds : $(cxxwarn3)
 
-The active warning include file is: $(MAKEFILE_WARN) - File $(if $(wildcard $(MAKEFILE_WARN)),exists.,does not exist!)
+Warning level 4 adds : $(cxxwarn4)
+
+Warning level 5 adds : $(cxxwarn5)
+
+The active warning include file is: $(MAKEFILE_WARN) $(if $(makefile_warn_used),, - does not exist!)
+$(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 
 All generated dependecies: $(depfiles)
 
@@ -165,9 +174,28 @@ endif
 # include project specific definitions if any
 -include $(makefile_defs)
 
+# call $1 - info string
+conditional_info = $(if $(silent_mode),,$(info $1))
+# get compiler name and version
+# call $1 compiler command
+get_comp_name_version = $(shell\
+  ins=$$($1 --version);\
+  if [[ "$${ins}" =~ (gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
+    echo "$${BASH_REMATCH[1]} $${BASH_REMATCH[2]}";\
+  fi)
+
 # add the defaults
+ifndef MAKEFILE_WARN
+  cc_name_vers := $(call get_comp_name_version,$(CXX))
+  ifneq (2,$(words $(cc_name_vers)))
+    $(warning Unknown compiler version $(CCX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
+    MAKEFILE_WARN := warnings.mk
+  else
+    MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
+  endif
+endif
+$(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
 WARN_LEVEL ?= 4
-MAKEFILE_WARN ?= warnings.mk
 BUILD_MODE ?= debug
 COMP_FLAGS_RUN ?= -O2 -g1
 ifeq (,$(findstring clang,$(CXX)))
@@ -178,28 +206,27 @@ endif
 formatflags ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
+oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
+makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
+ifeq (,$(makefile_warn_used))
+  $(warning warnings file $(MAKEFILE_WARN) does not exist!)
+else
+  $(call conditional_info,Using warnings from $(makefile_warn_used))
+endif
 cxxwarn0 ?= -w
 cxxwarn1 ?=
 cxxwarn2 ?= -Wall
-cxxwarn3 ?= -Wextra -Wpedantic -Wshadow=compatible-local
-cxxwarn4 ?= -Waligned-new=all -Walloc-zero -Wcast-align -Wconversion -Wctad-maybe-unsupported -Wctor-dtor-privacy\
-  -Wdeprecated-copy-dtor -Wdeprecated-enum-enum-conversion -Wdeprecated-enum-float-conversion -Wduplicated-cond\
-  -Wenum-conversion -Wextra-semi -Wflex-array-member-not-at-end -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
-  -Wformat-security -Wformat-y2k -Winvalid-constexpr -Winvalid-utf8 -Wlogical-op -Wmismatched-tags\
-  -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnoexcept -Wnull-dereference -Wold-style-cast\
-  -Wplacement-new=2 -Wredundant-decls -Wshadow=local -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel\
-  -Wstrict-overflow=2 -Wstringop-overflow=3 -Wsuggest-attribute=cold -Wsuggest-attribute=const -Wsuggest-attribute=format\
-  -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types\
-  -Wsuggest-override -Wtemplate-id-cdtor -Wtrampolines -Wtrivial-auto-var-init -Wuseless-cast -Wvolatile
-cxxwarn5 ?= -Waggregate-return -Walloca -Wanalyzer-symbol-too-complex -Wanalyzer-too-complex -Warith-conversion\
-  -Warray-bounds=2 -Wattribute-alias=2 -Wcast-align=strict -Wcast-qual -Wcomma-subscript -Wconditionally-supported\
-  -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Weffc++ -Wfloat-equal -Wformat-overflow=2\
-  -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-imported-macros -Winvalid-pch -Wmissing-declarations\
-  -Wmissing-include-dirs -Wmultiple-inheritance -Wnamespaces -Wnrvo -Wopenacc-parallelism -Wpacked -Wpadded\
-  -Wredundant-tags -Wregister -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
-  -Wstringop-overflow=4 -Wsuggest-final-methods -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros\
-  -Wvector-operation-performance -Wzero-as-null-pointer-constant
+cxxwarn3 ?= -Wextra -Wpedantic
+cxxwarn4 ?= -Wcast-align -Wconversion -Wctor-dtor-privacy -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
+  -Wformat-security -Wformat-y2k -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnull-dereference\
+  -Wold-style-cast -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-overflow=2 -Wsuggest-override
+cxxwarn5 ?= -Waggregate-return -Walloca -Warray-bounds -Wattributes -Wcast-qual\
+  -Wdate-time -Wdisabled-optimization -Weffc++ -Wfloat-equal\
+  -Winline -Winvalid-pch -Wmissing-declarations\
+  -Wmissing-include-dirs -Wpacked -Wpadded -Wregister -Wshadow\
+  -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
+  -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros -Wzero-as-null-pointer-constant
 
 ifeq ($(WARN_LEVEL),0)
   cxxwarnings := $(cxxwarn0)

@@ -1,9 +1,5 @@
 # This file contains the compiler warning definitions tailored for clang/clang++ version 17 or higher
 
-ifndef silent_mode
-  $(info Using warnings.clang++-17.mk)
-endif
-
 cxxwarn3 = -Wpedantic -Wvariadic-macros
 
 cxxwarn4 = -Wabstract-vbase-init -Wanon-enum-enum-conversion -Warc-repeated-use-of-weak -Warray-bounds-pointer-arithmetic\
