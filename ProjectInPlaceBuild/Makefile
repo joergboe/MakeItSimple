@@ -210,7 +210,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq (,$(makefile_warn_used))
-  $(warning warnings file $(MAKEFILE_WARN) does not exist!)
+  $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I 'install_dir' ?)
 else
   $(call conditional_info,Using warnings from $(makefile_warn_used))
 endif
