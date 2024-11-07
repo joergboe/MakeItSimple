@@ -27,7 +27,8 @@ PREPS=(
 
 prepareWarnFile2() {
 	if [ "${TTRO_variantSuite}" != 'default' ]; then
-		export MAKEFILE_WARN="${TTRO_installDir}/CommonCustomization/warnings.${TTRO_variantSuite}.mk"
+		local compiler_warnfile=${TTRO_variantSuite/clang++/clang}
+		export MAKEFILE_WARN="${TTRO_installDir}/mktsimple/warnings.${compiler_warnfile}.mk"
 	fi
 }
 
@@ -36,9 +37,9 @@ prepareWarnFile() {
 	if [[ $versionstring =~ g\+\+.*[[:blank:]]+([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+).* ]]; then
 		printInfo "g++ compiler major version ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]}"
 		if [[ ${BASH_REMATCH[1]} -eq 7 ]]; then
-			setVar 'TTRO_warnFile' "${TTRO_installDir}/CommonCustomization/warnings.g++7.mk"
+			setVar 'TTRO_warnFile' "${TTRO_installDir}/mktsimple/warnings.g++7.mk"
 		elif [[ ${BASH_REMATCH[1]} -eq 11 ]]; then
-			setVar 'TTRO_warnFile' "${TTRO_installDir}/CommonCustomization/warnings.g++11.mk"
+			setVar 'TTRO_warnFile' "${TTRO_installDir}/mktsimple/warnings.g++11.mk"
 		else
 			setVar 'TTRO_warnFile' ""
 		fi

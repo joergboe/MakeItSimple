@@ -1,4 +1,4 @@
-#--variantList='check default warn0 warn1 warn2 warn3 warn4 warn5 infoGoal helpGoal'
+#--variantList='check default warn0 warn1 warn2 warn3 warn4 warn5 infoGoal helpGoal auto'
 
 OPTIONS=''
 GOALS=
@@ -25,12 +25,12 @@ case ${TTRO_variantCase} in
 		OPTIONS+=' WARN_LEVEL=5';;
 	check)
 		printInfo "### Test warn level 2 with special warn file and default goal"
-		OPTIONS+=' WARN_LEVEL=2'
+		OPTIONS+=' WARN_LEVEL=2 MAKEFILE_WARN=warnings.mk'
 		CHECK='true'
 		unset MAKEFILE_WARN;;
 	infoGoal)
 		printInfo "### Test warn level 2 with special warn file and show goal"
-		OPTIONS+=' WARN_LEVEL=2'
+		OPTIONS+=' WARN_LEVEL=2 MAKEFILE_WARN=warnings.mk'
 		GOALS='show'
 		CHECK='true'
 		NOBUILD='true'
@@ -40,6 +40,16 @@ case ${TTRO_variantCase} in
 		OPTIONS+=' WARN_LEVEL=3'
 		GOALS='help'
 		NOBUILD='true';;
+	auto)
+		printInfo "### Test warn level 5 with automatic warn file detection"
+		if [[ ${TTRO_variantSuite} = 'default' ]]; then
+			setSkip "Skip this test for default compiler"
+		else
+			OPTIONS+=" WARN_LEVEL=5 -I ${TTRO_installDir}"
+			NOBUILD='true'
+			mywarn_file="${MAKEFILE_WARN}"
+			unset MAKEFILE_WARN
+		fi;;
 esac
 
 PREPS=(
@@ -66,6 +76,8 @@ getWarnString() {
 	local cxxwarn5=''
 	if isExistingAndTrue 'MAKEFILE_WARN'; then
 		scanFile "${MAKEFILE_WARN}"
+	elif isExistingAndTrue 'mywarn_file'; then
+		scanFile "${mywarn_file}"
 	else
 		scanFile 'Makefile'
 		if [[ -f warnings.mk ]]; then
@@ -131,7 +143,7 @@ checkOut() {
 			local myWarningString="${TTRO_cxxwarn1}*${TTRO_cxxwarn2}*${TTRO_cxxwarn3}";;
 		warn4)
 			local myWarningString="${TTRO_cxxwarn1}*${TTRO_cxxwarn2}*${TTRO_cxxwarn3}*${TTRO_cxxwarn4}";;
-		warn5)
+		warn5|auto)
 			local myWarningString="${TTRO_cxxwarn1}*${TTRO_cxxwarn2}*${TTRO_cxxwarn3}*${TTRO_cxxwarn4}*${TTRO_cxxwarn5}";;
 		*)
 			printErrorAndExit "Invalid case variant ${TTRO_variantCase}";;
