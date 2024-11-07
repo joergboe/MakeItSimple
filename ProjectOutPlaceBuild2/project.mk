@@ -14,6 +14,10 @@ INCDIRS := include
 TARGET := program1
 
 # Optionale definitions
-CPPFLAGS=-D 'MYHELLO="External define!"' -D 'MYHELLO2="Hello World \#2"'
+CPPFLAGS=-D 'MYHELLO="External define!"'
 
 CXXFLAGS := -std=c++11
+
+# define one source file specific variable
+# the real source name is src/m1.cpp
+SRCsrc_m1_cppFLAGS = -D 'MYHELLO2="Hello World \#2"'
