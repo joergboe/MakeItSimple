@@ -184,7 +184,15 @@ $(if $(makefile_warn_c_used),Used is file: $(makefile_warn_c_used))
 
 All generated dependecies: $(depfiles)
 
+Make version : $(MAKE_VERSION)
+
   endef
+endif
+
+min_make_version = 4.4
+ifeq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
+else
+  $(error required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
 endif
 
 production_goals = all build compdb
@@ -556,7 +564,7 @@ all: compdb build
 build: $(BINDIR)/$(TARGET)
 
 %: %.o
-$(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) $(objectsc) $(objectsas)| $(BINDIR)
+$(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) $(objectsc) $(objectsas) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
