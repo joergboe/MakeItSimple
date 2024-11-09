@@ -189,7 +189,7 @@ Make version : $(MAKE_VERSION)
   endef
 endif
 
-min_make_version = 4.4
+min_make_version = 4.3
 ifeq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
 else
   $(error required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
@@ -284,9 +284,11 @@ formatflags ?= -ftabstop=4 -fmessage-length=0
 oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
-ifeq (,$(makefile_warn_used))
+ifeq ($(oldlist),$(MAKEFILE_LIST))
   $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I 'install_dir' ?)
+  makefile_warn_used :=
 else
+  makefile_warn_used := $(lastword $(MAKEFILE_LIST))
   $(call conditional_info,Using warnings from $(makefile_warn_used))
 endif
 oldlist := $(MAKEFILE_LIST)
@@ -433,7 +435,9 @@ ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
   endif
 endif
 ifeq (distclean,$(findstring distclean,$(goals)))
-  $(intcmp $(words $(goals)),2,,$(error distclean must be the only goal!))
+  ifneq (,$(filter-out distclean,$(goals)))
+    $(error distclean must be the only goal!)
+  endif
 endif
 
 # call OUTPUT_OPTION,outfile
