@@ -146,7 +146,7 @@ Make version : $(MAKE_VERSION)
   endef
 endif
 
-min_make_version = 4.3
+min_make_version = 4.2
 ifeq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
 else
   $(error required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
@@ -271,9 +271,10 @@ endif
 # # ' " % : ; ( ) and all kind of white space
 # call name_has_char,name,char
 name_has_char = $(if $(findstring $(2),$(1)),$(error Invalid char $(2) in filename $(1)))
+hs := \#
 # call check_name,names
 # quotes are paired to satisfy the syntax highlighter
-check_name = $(foreach var,# ' ' " " % : ; ( ),$(call name_has_char,$(1),$(var)))
+check_name = $(foreach var,$(hs) ' ' " " % : ; ( ),$(call name_has_char,$(1),$(var)))
 
 # get the last path component from the realpath of this filename as target name
 TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))

@@ -19,6 +19,19 @@ else
 	suiteCompiler='g++'
 fi
 
+if isExisting 'CC'; then
+	suiteCCompiler="$CC"
+else
+	suiteCCompiler='cc'
+fi
+
+if ! ${suiteCompiler} --version; then
+  setSkip "No such compiler installed: ${suiteCompiler}"
+fi
+if ! ${suiteCCompiler} --version; then
+  setSkip "No such compiler installed: ${suiteCCompiler}"
+fi
+
 PREPS=(
 	'printInfo "Testing with MakeItSimple installation in ${TTRO_installDir}"'
 	'${suiteCompiler} --version'
