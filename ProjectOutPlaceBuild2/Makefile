@@ -256,7 +256,6 @@ ifndef MAKEFILE_WARN_C
     $(warning Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN_C=warnings_c.mk)
     MAKEFILE_WARN_C := warnings_c.mk
   else
-    cc_name_vers := $(patsubst cc,gcc,$(cc_name_vers))
     MAKEFILE_WARN_C := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
   endif
 endif

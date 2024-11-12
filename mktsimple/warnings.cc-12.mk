@@ -1,0 +1,1 @@
+warnings.gcc-12.mk
