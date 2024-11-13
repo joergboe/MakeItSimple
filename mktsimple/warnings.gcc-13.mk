@@ -12,7 +12,7 @@ cwarn4 = -Walloc-zero -Wcast-align -Wconversion\
   -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-attribute=pure -Wsuggest-final-types\
   -Wtrampolines -Wtrivial-auto-var-init
 
-cwarn5 = -Waggregate-return -Walloca -Wanalyzer-symbol-too-complex -Wanalyzer-too-complex -Warith-conversion\
+cwarn5 = -Waggregate-return -Walloca -Wanalyzer-too-complex -Warith-conversion\
   -Warray-bounds=2 -Wattribute-alias=2 -Wcast-align=strict -Wcast-qual\
   -Wdate-time -Wdisabled-optimization -Wduplicated-branches -Wfloat-equal -Wformat-overflow=2\
   -Wformat-signedness -Wformat-truncation=2 -Winline -Winvalid-pch -Wmissing-declarations\
