@@ -108,7 +108,7 @@ if [[ -n $BUILD_FIRST ]]; then
 fi
 # The main test run
 STEPS+=('executeLogAndSuccess make $OPTIONS $GOALS')
-# Test the for empty bin dir in case of cleanup test
+# Test for built results in case of cleanup test
 if [[ -n $IS_CLEAN ]]; then
 	if [[ ${TTRO_variantSuite} = 'OneToOne' ]]; then
 		STEPS+=(
@@ -118,6 +118,13 @@ if [[ -n $IS_CLEAN ]]; then
 	else
 		STEPS+=( 'if [[ -e ${BINDIR}/${TTRO_variantCase} ]]; then setFailure "File ${BINDIR}/${TTRO_variantCase} exists!"; fi' )
 	fi
+fi
+# Test the for .o and .dep files in bin dir in case of cleanup test
+if [[ -n $IS_CLEAN ]]; then
+	STEPS+=(
+		'THEFILES=$(echo ${BUILDDIR}/*.o ${BUILDDIR}/*.dep)'
+		'if [[ -n $THEFILES ]]; then setFailure "The directory has build artifacts: $THEFILES"; fi'
+	)
 fi
 
 if [[ -n $IS_TOTAL_CLEAN ]]; then
@@ -136,6 +143,12 @@ if [[ -n $HASCONFIGSTORE ]]; then
 else
 	STEPS+=( 'if [[ -e mks_last_config_store ]]; then setFailure "mks_last_config_store exists!"; fi' )
 fi
+# these files should never remain
+STEPS+=(
+	'THEFILES=$(echo ${SRCDIR}*.cpp.mks.tmp ${SRCDIR}*.cc.mks.tmp ${SRCDIR}*.c.mks.tmp ${SRCDIR}*.s.mks.tmp)'
+	'if [[ -n $THEFILES ]]; then setFailure "The directory is not empty: $THEFILES"; fi'
+	'if [[ -e .mks_temp_config_store ]]; then setFailure ".mks_temp_config_store exists!"; fi'
+	)
 
 # Test of all empty bin dirs in nobuild cases
 if [[ -n $NOBUILD ]]; then
@@ -154,12 +167,6 @@ else
 	fi
 	STEPS+=( 'checkBuildOutput' )
 fi
-# these files should never remain
-STEPS+=(
-	'THEFILES=$(echo ${SRCDIR}*.cpp.mks.tmp ${SRCDIR}*.cc.mks.tmp ${SRCDIR}*.c.mks.tmp ${SRCDIR}*.s.mks.tmp)'
-	'if [[ -n $THEFILES ]]; then setFailure "The directory is not empty: $THEFILES"; fi'
-	'if [[ -e .mks_temp_config_store ]]; then setFailure ".mks_temp_config_store exists!"; fi'
-	)
 
 checkBuildOutput() {
 	if [[ -n $VERBOSE ]]; then

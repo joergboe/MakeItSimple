@@ -1,6 +1,6 @@
 #include "m2.h"
 #include "defines/definitions.h"
-#include "internal_definitions.hpp"
+#include "internal_definitions.h"
 
 #include <iostream>
 
