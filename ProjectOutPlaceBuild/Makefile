@@ -319,7 +319,7 @@ dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
 srcfakescpp := $(addsuffix .mks.tmp,$(sourcescpp))
 srcfakescc := $(addsuffix .mks.tmp,$(sourcescc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
-alltargets := $(objectscpp) $(objectscc) $(TARGET)
+alltargets := $(objectscpp) $(objectscc) $(BINDIR)/$(TARGET)
 
 # check goals
 goals := $(MAKECMDGOALS)
@@ -514,8 +514,7 @@ $(gen_db_frag_file): $(makefile_this)
 
 clean:
 	$(call conditional_echo,Cleanup)
-	-$(RM) '$(BINDIR)/$(TARGET)'
-	-$(RMDIR) '$(BUILDDIR)'
+	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
 	$(call conditional_echo,)
 
 distclean: clean

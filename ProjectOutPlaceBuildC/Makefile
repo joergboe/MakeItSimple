@@ -319,7 +319,7 @@ depfiles := $(addprefix $(BUILDDIR)/,$(sourcesc:.c=.dep))
 dbfragmentsc := $(addsuffix .mks.tmp,$(objectsc))
 srcfakesc := $(addsuffix .mks.tmp,$(sourcesc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
-alltargets := $(objectsc) $(TARGET)
+alltargets := $(objectsc) $(BINDIR)/$(TARGET)
 
 # check goals
 goals := $(MAKECMDGOALS)
@@ -505,8 +505,7 @@ $(gen_db_frag_file): $(makefile_this)
 
 clean:
 	$(call conditional_echo,Cleanup)
-	-$(RM) '$(BINDIR)/$(TARGET)'
-	-$(RMDIR) '$(BUILDDIR)'
+	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
 	$(call conditional_echo,)
 
 distclean: clean

@@ -40,6 +40,8 @@
 /ProjectOutPlaceBuild/run/
 /ProjectOutPlaceBuild2/debug/
 /ProjectOutPlaceBuild2/run/
+/ProjectOutPlaceBuildC/debug/
+/ProjectOutPlaceBuildC/run/
 mks_last_config_store
 .mks_temp_config_store
 mks_gen_db_frag.sh
