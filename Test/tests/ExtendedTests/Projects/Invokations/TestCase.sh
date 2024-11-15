@@ -27,10 +27,10 @@ case ${TTRO_variantCase} in
 		EXPECT_CONFIG_STORE='true'
 		EXPECT_COMPILE_DB='true';;
 	cleanallall)
-		OPTIONS='WARN_LEVEL=2 distclean m1'
+		OPTIONS='WARN_LEVEL=2 purge m1'
 		EXPECT_FAILURE='true';;
 	cleanallallsilent)
-		OPTIONS='WARN_LEVEL=2 -s distclean m1'
+		OPTIONS='WARN_LEVEL=2 -s purge m1'
 		EXPECT_FAILURE='true';;
 	cleanall)
 		OPTIONS='WARN_LEVEL=2 -j clean all'
@@ -98,7 +98,7 @@ checkBuildOutput() {
 				'*m1.c*-I/dir1/dir2*' \
 				'*m2.c*-I/dir1/dir2*';;
 		cleanallall*)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*distclean must be the only goal!*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*purge must be the only goal!*';;
 		cleanall*)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Cleanup and production is not allowed with parallel make enabled!*';;
 		*)

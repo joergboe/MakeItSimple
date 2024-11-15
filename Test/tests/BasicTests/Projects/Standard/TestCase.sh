@@ -39,7 +39,7 @@ case ${TTRO_variantCase} in
 		HASCOMPDB='true'
 		HASCONFIGSTORE='true';;
 	*Clean2)
-		GOALS='distclean'
+		GOALS='purge'
 		BUILD_FIRST='true'
 		IS_CLEAN='true'
 		IS_TOTAL_CLEAN='true'

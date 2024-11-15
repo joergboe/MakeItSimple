@@ -23,7 +23,7 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable and all build artifacts.
-  distclean Clean up executable, all generated build artifacts, the compilation database and the
+  purge     Clean up executable, all generated build artifacts, the compilation database and the
             configuration store.
   show      Print project info.
   help      Print this help text.
@@ -153,7 +153,7 @@ else
 endif
 
 production_goals = all build compdb
-cleanup_goals = clean distclean
+cleanup_goals = clean purge
 action_goals = $(production_goals) $(cleanup_goals)
 phony_goals = $(action_goals) show help
 
@@ -311,9 +311,9 @@ ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
     endif
   endif
 endif
-ifeq (distclean,$(findstring distclean,$(goals)))
-  ifneq (,$(filter-out distclean,$(goals)))
-    $(error distclean must be the only goal!)
+ifeq (purge,$(findstring purge,$(goals)))
+  ifneq (,$(filter-out purge,$(goals)))
+    $(error purge must be the only goal!)
   endif
 endif
 
@@ -481,7 +481,7 @@ clean:
 	-$(RM) $(foreach var,$(alltargets) $(depfiles),'$(var)')
 	$(call conditional_echo,)
 
-distclean: clean
+purge: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
 	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
