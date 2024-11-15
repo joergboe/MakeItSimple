@@ -1,8 +1,9 @@
 #--variantList='default info help clean all'
 
 BINDIR='debug'
-OPTIONS=''
+BUILDDIR="${BINDIR}/build"
 
+OPTIONS=''
 GOALS=
 CLEANUP=
 NOBUILD=
@@ -39,7 +40,7 @@ STEPS+=('executeLogAndSuccess make $OPTIONS $GOALS')
 # Test the for empty bin dir in case of cleanup test
 if [[ -n $CLEANUP ]]; then
 	STEPS+=(
-		'THEFILES=$(ls ${BINDIR})'
+		'THEFILES=$(echo ${BINDIR}/${TTRO_variantCase}* ${BUILDDIR}/*.o ${BUILDDIR}/*.dep)'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory $BINDIR is not empty: $THEFILES"; fi'
 	)
 # Test of all empty bin dirs in nobuild cases

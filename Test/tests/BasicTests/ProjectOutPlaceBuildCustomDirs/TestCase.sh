@@ -10,6 +10,7 @@ case ${TTRO_variantCase} in
 		BINDIR='debug';;
 esac
 
+BUILDDIR="${BINDIR}/build"
 GOALS=
 CLEANUP=
 NOBUILD=
@@ -25,8 +26,9 @@ esac
 CHANGETARGET=
 TARGETNAME="${TTRO_variantCase}"
 case ${TTRO_variantCase} in
-	*Target*) CHANGETARGET='true'
-	TARGETNAME='program';;
+	*Target*)
+		CHANGETARGET='true'
+		TARGETNAME='program';;
 esac
 
 PREPS=(
@@ -47,7 +49,7 @@ STEPS+=('executeLogAndSuccess make $OPTIONS $GOALS')
 # Test the for empty bin dir in case of cleanup test
 if [[ -n $CLEANUP ]]; then
 	STEPS+=(
-		'THEFILES=$(ls ${BINDIR})'
+		'THEFILES=$(echo ${BINDIR}/program* ${BINDIR}/${TTRO_variantCase}* ${BUILDDIR}/*.o ${BUILDDIR}/*.dep)'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory $BINDIR is not empty: $THEFILES"; fi'
 	)
 # Test of all empty bin dirs in nobuild cases
