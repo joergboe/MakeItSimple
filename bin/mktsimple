@@ -1,0 +1,277 @@
+#!/usr/bin/env bash
+
+usage() {
+	local command=${0##*/}
+	cat <<-EOF
+		Usage ${command} [ ]
+		sssss
+		ssss
+	EOF
+}
+
+# check whether directory $1//share/${mks} contains valid install files
+check_install_dir() {
+	if [[ $# -ne 1 ]]; then
+		echo "Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	if [[ -z $1 ]]; then
+		echo "empty string for source dir"
+		return 1
+	fi
+	local mypath="${1}/share/${mks}"
+	local x
+	for x in ${all_install_files}; do
+		#echo "checking: ${mypath}/${x}"
+		if [[ ! -f "${mypath}/${x}" ]]; then
+			echo "Source dir '$1' is invalid"
+			return 1
+		fi
+	done
+	return 0
+}
+
+# check whether directory $1 is a directory and is writable
+check_dest_dir() {
+	if [[ $# -ne 1 ]]; then
+		echo "Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	if [[ ! -d "$1" ]]; then
+		echo "Destination directory '$1' does not exsist"
+		return 1
+	else
+		if [[ ! -w "$1" ]]; then
+			echo "Destination directory $1 is not writable. Consider sudo!"
+			return 1
+		fi
+	fi
+	return 0
+}
+
+# check whether $1 is a valid project type
+check_type() {
+	if [[ $# -ne 1 ]]; then
+		echo "Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	local x
+	local is_valid=''
+	for x in $valid_types; do
+		if [[ "$1" == "$x" ]]; then
+			is_valid='true'
+			break
+		fi
+	done
+	if [[ -n "$is_valid" ]]; then
+		return 0
+	else
+		echo -e "Invalid project type: $1\nValid types are: $valid_types"
+		return 1
+	fi
+}
+
+readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
+readonly prefix='/usr/local'
+readonly mks='mktsimple'
+readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
+invalid_parameter=''
+missing_value=''
+helprequest=''
+no_prompt=''
+src_dir=''
+dest_dir=''
+pr_type=''
+overwrite=''
+
+while [[ $# -gt 0 ]]; do
+	one_more_shift=''
+	case "$1" in
+	'-h'|'--help')
+		helprequest='true';;
+	'-s'|'--src'|'--source')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			src_dir="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-d'|'--dest'|'--destination')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			dest_dir="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-t'|'--type'|'--project-type')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			pr_type="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-o'|'--overwrite')
+		overwrite='true';;
+	'-n'|'--no-prompt')
+		no_prompt='true';;
+	*)
+		invalid_parameter='true'
+		break;;
+	esac
+	shift
+	if [[ -n $one_more_shift ]]; then shift; fi
+done
+
+if [[ -n $helprequest ]]; then
+	usage
+	exit 0
+fi
+if [[ -n $invalid_parameter ]]; then
+	echo "Invalid parameter $1" >&2
+	exit 2
+fi
+if [[ -n $missing_value ]]; then
+	echo "Missing value for parameter $1" >&2
+	exit 2
+fi
+
+# request and validate destination directory
+pr1='Enter the destination directory - the project directory. (^D to exit)
+Default is . '
+if [[ -z $no_prompt ]]; then
+	while [[ -z $dest_dir ]]; do
+		read -r -p "$pr1" dest_dir || exit 1
+		[[ -z $dest_dir ]] && dest_dir='.'
+		if ! check_dest_dir "$dest_dir"; then
+			dest_dir=''
+		fi
+	done
+fi
+if ! check_dest_dir >&2 "$dest_dir"; then
+	exit 1
+fi
+# lookup for an installation
+if [[ -z $src_dir ]]; then
+	src_dir=$MKTSIMPLE_HOME
+	if [[ -z $src_dir ]]; then
+		if check_install_dir "${prefix}"; then
+			src_dir="${prefix}"
+		fi
+	fi
+fi
+# request and validate source directory
+if [[ -z $no_prompt ]]; then
+	pr2="No MKTSIMPLE_HOME found and no mktsimple installation found! Enter base dir of your private installation. (^D to exit)"
+	pr2+=$'\n'
+	pr2+="Default is ${src_dir}"
+	input_dir=''
+	while [[ -z $input_dir ]]; do
+		read -r -p "$pr2" input_dir || exit 1
+		if [[ -z $input_dir ]]; then
+			input_dir="$src_dir"
+		fi
+		if check_install_dir "${input_dir}"; then
+			src_dir="$input_dir"
+		else
+			input_dir=''
+		fi
+	done
+fi
+if ! check_install_dir "${src_dir}" >&2; then
+	exit 1
+fi
+# request and validate the type of the installation
+pr3=('otocpp -- C++ project - Build executable targets from each %.cpp and %.cc source file in the project directory.'
+     'ipbcpp -- C++ project - Build one executable from all %.cpp and %.cc source files in the project directory.'
+     'opbcpp -- C++ project - Build one executable from all %.cpp and %.cc source files in all project source directories.'
+     'opbc   -- C project - Build one executable from all %.c source files in all project source directories.'
+     'opb    -- C/C++ project - Build one executable from all C++, C and assembler source files in all project source directories.'
+     'exit'
+)
+if [[ -z $no_prompt ]]; then
+	if [[ -z $pr_type ]]; then
+		echo "Enter the type of the project."
+		select x in "${pr3[@]}"; do
+			case $REPLY in
+				1|2|3|4|5)
+					echo "$x"
+					pr_type="${x%%\ *}"
+					break;;
+				6)
+					exit 1;;
+			esac
+		done || exit 1
+	fi
+fi
+if ! check_type "$pr_type" >&2; then
+	exit 1
+fi
+# check if Makefile already exists
+makefile_name="${dest_dir}/Makefile"
+if [[ -z "$no_prompt" ]]; then
+	if [[ -a "$makefile_name" ]]; then
+		pr4="File ${makefile_name} already exists. Overwite: y/n. (^D to exit)"
+		my_ov=''
+		while [[ ("$my_ov" != 'y') && ("$my_ov" != 'yes') && ("$my_ov" != 'n') && ("$my_ov" != 'no') ]]; do
+			read -r -p "${pr4}" || exit 1
+			my_ov="${REPLY,,}"
+		done
+		if [[ ($my_ov == 'yes') || ($my_ov == 'y') ]]; then
+			overwrite='true'
+		else
+			overwrite=''
+		fi
+	fi
+fi
+if [[ (-a "$makefile_name") && ( -z "$overwrite") ]]; then
+	echo "Makefile ${makefile_name} already exists" >&2
+	exit 1
+fi
+echo "Installing from ${src_dir}"
+echo "Install into destination ${dest_dir}"
+echo "Type of the makefile to install ${pr_type}"
+if [[ (-a "$makefile_name") && ( -n "$overwrite") ]]; then
+	echo "Overwrite makefile ${makefile_name}"
+fi
+
+execute_all='true'
+if [[ -z "$no_prompt" ]]; then
+	pr5='Proceed y/n (^D to exit)'
+	my_ov=''
+	while [[ ("$my_ov" != 'y') && ("$my_ov" != 'yes') && ("$my_ov" != 'n') && ("$my_ov" != 'no') ]]; do
+		read -r -p "${pr5}" || exit 1
+		my_ov="${REPLY,,}"
+	done
+	if [[ ($my_ov == 'yes') || ($my_ov == 'y') ]]; then
+		execute_all='true'
+	else
+		execute_all=''
+	fi
+fi
+if [[ -n ${execute_all} ]]; then
+	echo "Do intstallation"
+	if [[ -a "${makefile_name}" ]]; then
+		rm -v "${makefile_name}"
+	fi
+	case ${pr_type} in
+		otocpp)
+			src_name='one_to_one_cpp.mk';;
+		ipbcpp)
+			src_name='in_place_cpp.mk';;
+		opbc)
+			src_name='out_place_c.mk';;
+		opbcpp)
+			src_name='out_place_cpp.mk';;
+		opb)
+			src_name='out_place.mk'
+	esac
+	cp "${src_dir}/share/${mks}/${src_name}" "${makefile_name}"
+	echo "All done"
+else
+	echo "Nothing to do"
+fi
+
+exit 0
