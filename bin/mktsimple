@@ -3,9 +3,19 @@
 usage() {
 	local command=${0##*/}
 	cat <<-EOF
-		Usage ${command} [ ]
-		sssss
-		ssss
+		The Make It Simple project wizard - generate the makefile.
+		Usage: ${command} [option..]
+
+		OPTIONS:
+		-h|--help                 : Display this help.
+		--help=type               : Print project type information.
+		-s|--src|--source         : The source directory. The installation base directory. If 'Make It Simple'
+		                            is installed, this value is automatically detected.
+		-d|--dest|--destination   : The base directory of the C/C++ project.
+		-t|--type|--project-type  : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb.
+		                            To find out more about the types use option --help=type
+		-o|--overwrite            : Overwrite an existing makefile in destination.
+		-n|--no-prompt|--noprompt : Do not enter the interactive mode.
 	EOF
 }
 
@@ -24,7 +34,7 @@ check_install_dir() {
 	for x in ${all_install_files}; do
 		#echo "checking: ${mypath}/${x}"
 		if [[ ! -f "${mypath}/${x}" ]]; then
-			echo "Source dir '$1' is invalid"
+			echo "Source dir '$1' is not a valid installation!"
 			return 1
 		fi
 	done
@@ -75,20 +85,38 @@ readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
 readonly prefix='/usr/local'
 readonly mks='mktsimple'
 readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
+pr1='Enter the destination directory - the project directory. (^D to exit)
+Default is . '
+pr2="No MKTSIMPLE_HOME found and no mktsimple installation found! Enter base dir of your private installation. (^D to exit)"
+pr2+=$'\n'
+pr2+="Default is ${src_dir}"
+pr3=('otocpp -- C++ project   One To One      - Build executable targets from each %.cpp and %.cc source file in the project directory.'
+     'ipbcpp -- C++ project   In Place Build  - Build one executable from all %.cpp and %.cc source files in the project directory.'
+     'opbcpp -- C++ project   Out Place Build - Build one executable from all %.cpp and %.cc source files in all project source directories.'
+     'opbc   -- C project     Out Place Build - Build one executable from all %.c source files in all project source directories.'
+     'opb    -- C/C++ project Out Place Build - Build one executable from all C++, C and assembler source files in all project source directories.'
+     'exit'
+)
+readonly pr1 pr2 pr3
+
 invalid_parameter=''
 missing_value=''
 helprequest=''
+typehelprequest=''
 no_prompt=''
 src_dir=''
 dest_dir=''
 pr_type=''
 overwrite=''
 
+# get parameters
 while [[ $# -gt 0 ]]; do
 	one_more_shift=''
 	case "$1" in
 	'-h'|'--help')
 		helprequest='true';;
+	'--help=type')
+		typehelprequest='true';;
 	'-s'|'--src'|'--source')
 		if [[ $# -gt 1 ]]; then
 			one_more_shift='true'
@@ -115,7 +143,7 @@ while [[ $# -gt 0 ]]; do
 		fi;;
 	'-o'|'--overwrite')
 		overwrite='true';;
-	'-n'|'--no-prompt')
+	'-n'|'--no-prompt'|'--noprompt')
 		no_prompt='true';;
 	*)
 		invalid_parameter='true'
@@ -125,10 +153,6 @@ while [[ $# -gt 0 ]]; do
 	if [[ -n $one_more_shift ]]; then shift; fi
 done
 
-if [[ -n $helprequest ]]; then
-	usage
-	exit 0
-fi
 if [[ -n $invalid_parameter ]]; then
 	echo "Invalid parameter $1" >&2
 	exit 2
@@ -138,9 +162,20 @@ if [[ -n $missing_value ]]; then
 	exit 2
 fi
 
+# handle help requests
+[[ -n $helprequest ]] && usage
+
+if [[ -n ${typehelprequest} ]]; then
+	declare -i i
+	for ((i=0; i<${#pr3[*]}; i++)); do
+		echo "${pr3[$i]}"
+	done
+fi
+if [[ -n ${helprequest} || -n ${typehelprequest} ]]; then
+	exit 0
+fi
+
 # request and validate destination directory
-pr1='Enter the destination directory - the project directory. (^D to exit)
-Default is . '
 if [[ -z $no_prompt ]]; then
 	while [[ -z $dest_dir ]]; do
 		read -r -p "$pr1" dest_dir || exit 1
@@ -149,10 +184,12 @@ if [[ -z $no_prompt ]]; then
 			dest_dir=''
 		fi
 	done
+	echo
 fi
 if ! check_dest_dir >&2 "$dest_dir"; then
 	exit 1
 fi
+
 # lookup for an installation
 if [[ -z $src_dir ]]; then
 	src_dir=$MKTSIMPLE_HOME
@@ -162,11 +199,9 @@ if [[ -z $src_dir ]]; then
 		fi
 	fi
 fi
+
 # request and validate source directory
 if [[ -z $no_prompt ]]; then
-	pr2="No MKTSIMPLE_HOME found and no mktsimple installation found! Enter base dir of your private installation. (^D to exit)"
-	pr2+=$'\n'
-	pr2+="Default is ${src_dir}"
 	input_dir=''
 	while [[ -z $input_dir ]]; do
 		read -r -p "$pr2" input_dir || exit 1
@@ -179,18 +214,13 @@ if [[ -z $no_prompt ]]; then
 			input_dir=''
 		fi
 	done
+	echo
 fi
 if ! check_install_dir "${src_dir}" >&2; then
 	exit 1
 fi
+
 # request and validate the type of the installation
-pr3=('otocpp -- C++ project - Build executable targets from each %.cpp and %.cc source file in the project directory.'
-     'ipbcpp -- C++ project - Build one executable from all %.cpp and %.cc source files in the project directory.'
-     'opbcpp -- C++ project - Build one executable from all %.cpp and %.cc source files in all project source directories.'
-     'opbc   -- C project - Build one executable from all %.c source files in all project source directories.'
-     'opb    -- C/C++ project - Build one executable from all C++, C and assembler source files in all project source directories.'
-     'exit'
-)
 if [[ -z $no_prompt ]]; then
 	if [[ -z $pr_type ]]; then
 		echo "Enter the type of the project."
@@ -205,10 +235,12 @@ if [[ -z $no_prompt ]]; then
 			esac
 		done || exit 1
 	fi
+	echo
 fi
 if ! check_type "$pr_type" >&2; then
 	exit 1
 fi
+
 # check if Makefile already exists
 makefile_name="${dest_dir}/Makefile"
 if [[ -z "$no_prompt" ]]; then
@@ -225,18 +257,34 @@ if [[ -z "$no_prompt" ]]; then
 			overwrite=''
 		fi
 	fi
+	echo
 fi
 if [[ (-a "$makefile_name") && ( -z "$overwrite") ]]; then
 	echo "Makefile ${makefile_name} already exists" >&2
 	exit 1
 fi
+
+# get the type info string
+pr_type_info=''
+declare -i i
+for ((i=0; i<${#pr3[*]}; i++)); do
+	x="${pr3[$i]}"
+	if [[ "${pr_type}" == "${x%%\ *}" ]]; then
+		pr_type_info="${x}"
+		break
+	fi
+done
+
+# final summary check
+echo '**********************************************'
 echo "Installing from ${src_dir}"
 echo "Install into destination ${dest_dir}"
 echo "Type of the makefile to install ${pr_type}"
+echo "${pr_type_info}"
 if [[ (-a "$makefile_name") && ( -n "$overwrite") ]]; then
 	echo "Overwrite makefile ${makefile_name}"
 fi
-
+echo '**********************************************'
 execute_all='true'
 if [[ -z "$no_prompt" ]]; then
 	pr5='Proceed y/n (^D to exit)'
@@ -250,9 +298,12 @@ if [[ -z "$no_prompt" ]]; then
 	else
 		execute_all=''
 	fi
+	echo
 fi
+
+# execution
 if [[ -n ${execute_all} ]]; then
-	echo "Do intstallation"
+	echo -e "\nDo intstallation..."
 	if [[ -a "${makefile_name}" ]]; then
 		rm -v "${makefile_name}"
 	fi
@@ -268,10 +319,10 @@ if [[ -n ${execute_all} ]]; then
 		opb)
 			src_name='out_place.mk'
 	esac
-	cp "${src_dir}/share/${mks}/${src_name}" "${makefile_name}"
-	echo "All done"
+	cp -v "${src_dir}/share/${mks}/${src_name}" "${makefile_name}"
+	echo "**** All done ****"
 else
-	echo "Nothing to do"
+	echo "**** Nothing to do ****"
 fi
 
 exit 0
