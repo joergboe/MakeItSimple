@@ -30,7 +30,7 @@ esac
 
 PREPS=(
 	'makeSourceFiles'
-	'cp "${TTRO_installDir}/ProjectInPlaceBuild/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t ipbcpp --noprompt"
 )
 
 STEPS=(

@@ -90,7 +90,7 @@ fi
 
 PREPS=(
 	'cp -r ${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/* .'
-	'cp "${TTRO_installDir}/${TTRO_variantSuite}/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t \"${TTRO_projectType}\" --noprompt"
 )
 
 STEPS=( 'echo ${TTRO_variantSuite} ${TTRO_variantCase}' )

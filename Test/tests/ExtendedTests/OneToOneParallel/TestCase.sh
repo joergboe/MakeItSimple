@@ -30,7 +30,7 @@ esac
 
 PREPS=(
 	'makeSourceFiles'
-	'cp "${TTRO_installDir}/OneToOne/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t otocpp --noprompt"
 )
 
 STEPS=(

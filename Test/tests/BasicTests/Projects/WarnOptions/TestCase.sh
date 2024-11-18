@@ -45,7 +45,7 @@ case ${TTRO_variantCase} in
 		NOBUILD='true';;
 	auto)
 		printInfo "### Test warn level 5 with automatic warn file detection"
-		OPTIONS+=" WARN_LEVEL=5 -I ${TTRO_installDir}"
+		OPTIONS+=" WARN_LEVEL=5 -I ${TTRO_installDir}/include"
 		mywarn_file="${TTRO_warnFile}"
 		mywarn_file_c="${TTRO_warnFileC}"
 		unset MAKEFILE_WARN
@@ -61,7 +61,7 @@ fi
 
 PREPS=(
 	'cp -r ${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/* .'
-	'cp "${TTRO_installDir}/${TTRO_variantSuite}/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t \"${TTRO_projectType}\" --noprompt"
 	'[[ -z $LOCAL_WARN_FILE ]] || echo -e "cxxwarn2 = -Wcast-align\ncwarn2 = -Wcast-align" > "warnings.mk"'
 	'getWarnString'
 )

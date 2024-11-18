@@ -1,25 +1,37 @@
 #!/usr/bin/env bash
 
+my_install_dir=
+my_command="${0##*/}"
+if [[ "$0" == /* ]]; then
+	my_install_dir="${0%"/bin/${my_command}"}"
+elif [[ "$0" == "${my_command}" ]]; then
+	x="$(which "${my_command}")"
+	my_install_dir="${x%"/bin/${my_command}"}"
+else
+	x="$(pwd -P)/$0"
+	my_install_dir="${x%"/bin/${my_command}"}"
+fi
+
 usage() {
-	local command=${0##*/}
 	cat <<-EOF
 		The Make It Simple project wizard - generate the makefile.
-		Usage: ${command} [option..]
+		Usage: ${my_command} [option..]
 
 		OPTIONS:
-		-h|--help                 : Display this help.
-		--help=type               : Print project type information.
-		-s|--src|--source         : The source directory. The installation base directory. If 'Make It Simple'
-		                            is installed, this value is automatically detected.
-		-d|--dest|--destination   : The base directory of the C/C++ project.
-		-t|--type|--project-type  : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb.
-		                            To find out more about the types use option --help=type
-		-o|--overwrite            : Overwrite an existing makefile in destination.
-		-n|--no-prompt|--noprompt : Do not enter the interactive mode.
+		-h|--help                      : Display this help.
+		--help=type                    : Print project type information.
+		-n|--no-prompt|--noprompt      : Do not enter the interactive mode and use the command line options only.
+		-s|--src|--source VALUE        : The source directory. The installation base directory. The default
+		                                 value is detected from the location of the ${my_command} script.
+		-d|--dest|--destination VALUE  : The base directory of the C/C++ project.
+		-t|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb.
+		                                 To find out more about the types use option --help=type
+		-c|--copy-warn                 : Make a local copy of the warning files in the project directory.
+		-o|--overwrite                 : Overwrite an existing makefile in destination.
 	EOF
 }
 
-# check whether directory $1//share/${mks} contains valid install files
+# check whether directory $1 contains valid install files
 check_install_dir() {
 	if [[ $# -ne 1 ]]; then
 		echo "Wrong invocation ${FUNCNAME[0]}" >&2
@@ -29,7 +41,7 @@ check_install_dir() {
 		echo "empty string for source dir"
 		return 1
 	fi
-	local mypath="${1}/share/${mks}"
+	local mypath="${1}"
 	local x
 	for x in ${all_install_files}; do
 		#echo "checking: ${mypath}/${x}"
@@ -52,7 +64,7 @@ check_dest_dir() {
 		return 1
 	else
 		if [[ ! -w "$1" ]]; then
-			echo "Destination directory $1 is not writable. Consider sudo!"
+			echo "Destination directory $1 is not writable."
 			return 1
 		fi
 	fi
@@ -82,14 +94,12 @@ check_type() {
 }
 
 readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
-readonly prefix='/usr/local'
 readonly mks='mktsimple'
 readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
-pr1='Enter the destination directory - the project directory. (^D to exit)
-Default is . '
-pr2="No MKTSIMPLE_HOME found and no mktsimple installation found! Enter base dir of your private installation. (^D to exit)"
-pr2+=$'\n'
-pr2+="Default is ${src_dir}"
+pr1='Enter the destination directory - the project directory.
+(^D to exit) [.] '
+pr2="Enter the share/${mks} dir of your private installation."$'\n'
+pr2+="(^D to exit) [${my_install_dir}/share/${mks}] "
 pr3=('otocpp -- C++ project   One To One      - Build executable targets from each %.cpp and %.cc source file in the project directory.'
      'ipbcpp -- C++ project   In Place Build  - Build one executable from all %.cpp and %.cc source files in the project directory.'
      'opbcpp -- C++ project   Out Place Build - Build one executable from all %.cpp and %.cc source files in all project source directories.'
@@ -107,6 +117,7 @@ no_prompt=''
 src_dir=''
 dest_dir=''
 pr_type=''
+copy_warn=''
 overwrite=''
 
 # get parameters
@@ -141,6 +152,8 @@ while [[ $# -gt 0 ]]; do
 			missing_value='true'
 			break
 		fi;;
+	'-c'|'--copy-warn')
+		copy_warn='true';;
 	'-o'|'--overwrite')
 		overwrite='true';;
 	'-n'|'--no-prompt'|'--noprompt')
@@ -175,53 +188,47 @@ if [[ -n ${helprequest} || -n ${typehelprequest} ]]; then
 	exit 0
 fi
 
+echo -e "\nMake It Simple installation in: ${my_install_dir}\n"
+
 # request and validate destination directory
-if [[ -z $no_prompt ]]; then
-	while [[ -z $dest_dir ]]; do
+if [[ -z ${no_prompt} ]]; then
+	while [[ -z ${dest_dir} ]]; do
 		read -r -p "$pr1" dest_dir || exit 1
-		[[ -z $dest_dir ]] && dest_dir='.'
-		if ! check_dest_dir "$dest_dir"; then
+		[[ -z ${dest_dir} ]] && dest_dir='.'
+		if ! check_dest_dir "${dest_dir}"; then
 			dest_dir=''
 		fi
 	done
 	echo
 fi
-if ! check_dest_dir >&2 "$dest_dir"; then
+if ! check_dest_dir >&2 "${dest_dir}"; then
 	exit 1
 fi
 
-# lookup for an installation
-if [[ -z $src_dir ]]; then
-	src_dir=$MKTSIMPLE_HOME
-	if [[ -z $src_dir ]]; then
-		if check_install_dir "${prefix}"; then
-			src_dir="${prefix}"
-		fi
-	fi
-fi
-
 # request and validate source directory
-if [[ -z $no_prompt ]]; then
-	input_dir=''
-	while [[ -z $input_dir ]]; do
-		read -r -p "$pr2" input_dir || exit 1
-		if [[ -z $input_dir ]]; then
-			input_dir="$src_dir"
+if [[ -z ${no_prompt} ]]; then
+	while [[ -z ${src_dir} ]]; do
+		read -r -p "$pr2" src_dir || exit 1
+		if [[ -z ${src_dir} ]]; then
+			src_dir="${my_install_dir}/share/${mks}"
 		fi
-		if check_install_dir "${input_dir}"; then
-			src_dir="$input_dir"
-		else
-			input_dir=''
+		if ! check_install_dir "${src_dir}"; then
+			src_dir=''
 		fi
 	done
 	echo
+else
+	# lookup for an installation
+	if [[ -z ${src_dir} ]]; then
+		src_dir="${my_install_dir}/share/${mks}"
+	fi
 fi
 if ! check_install_dir "${src_dir}" >&2; then
 	exit 1
 fi
 
 # request and validate the type of the installation
-if [[ -z $no_prompt ]]; then
+if [[ -z ${no_prompt} ]]; then
 	if [[ -z $pr_type ]]; then
 		echo "Enter the type of the project."
 		select x in "${pr3[@]}"; do
@@ -241,17 +248,33 @@ if ! check_type "$pr_type" >&2; then
 	exit 1
 fi
 
+# request copy warnings local option
+if [[ -z "${no_prompt}" && -z "${copy_warn}" ]]; then
+	pr4="Make a local copy of the warning files in the project directory: (^D to exit) [y/n] "
+	temp=''
+	while [[ ("${temp}" != 'y') && ("${temp}" != 'yes') && ("${temp}" != 'n') && ("${temp}" != 'no') ]]; do
+		read -r -p "${pr4}" || exit 1
+		temp="${REPLY,,}"
+	done
+	if [[ (${temp} == 'yes') || (${temp} == 'y') ]]; then
+		copy_warn='true'
+	else
+		copy_warn=''
+	fi
+fi
+
 # check if Makefile already exists
 makefile_name="${dest_dir}/Makefile"
-if [[ -z "$no_prompt" ]]; then
-	if [[ -a "$makefile_name" ]]; then
-		pr4="File ${makefile_name} already exists. Overwite: y/n. (^D to exit)"
-		my_ov=''
-		while [[ ("$my_ov" != 'y') && ("$my_ov" != 'yes') && ("$my_ov" != 'n') && ("$my_ov" != 'no') ]]; do
-			read -r -p "${pr4}" || exit 1
-			my_ov="${REPLY,,}"
+warndir_name="${dest_dir}/${mks}"
+if [[ -z "${no_prompt}" && -z "${overwrite}" ]]; then
+	if [[ (-a "${makefile_name}") || ((-d "${warndir_name}") && (-n "${copy_warn}")) ]]; then
+		pr5="File ${makefile_name} or ${warndir_name} already exists. Overwite: (^D to exit) [y/n] "
+		temp=''
+		while [[ ("${temp}" != 'y') && ("${temp}" != 'yes') && ("${temp}" != 'n') && ("${temp}" != 'no') ]]; do
+			read -r -p "${pr5}" || exit 1
+			temp="${REPLY,,}"
 		done
-		if [[ ($my_ov == 'yes') || ($my_ov == 'y') ]]; then
+		if [[ (${temp} == 'yes') || (${temp} == 'y') ]]; then
 			overwrite='true'
 		else
 			overwrite=''
@@ -259,8 +282,12 @@ if [[ -z "$no_prompt" ]]; then
 	fi
 	echo
 fi
-if [[ (-a "$makefile_name") && ( -z "$overwrite") ]]; then
+if [[ -a "${makefile_name}" && -z "${overwrite}" ]]; then
 	echo "Makefile ${makefile_name} already exists" >&2
+	exit 1
+fi
+if [[ -d "${warndir_name}" && -n "${copy_warn}" && -z "${overwrite}" ]]; then
+	echo "Warnings ${warndir_name} already exists" >&2
 	exit 1
 fi
 
@@ -281,19 +308,25 @@ echo "Installing from ${src_dir}"
 echo "Install into destination ${dest_dir}"
 echo "Type of the makefile to install ${pr_type}"
 echo "${pr_type_info}"
-if [[ (-a "$makefile_name") && ( -n "$overwrite") ]]; then
-	echo "Overwrite makefile ${makefile_name}"
+if [[ (-a "${makefile_name}") && (-n "${overwrite}") ]]; then
+	echo "Overwrite makefile ${makefile_name} !"
+fi
+if [[ -n "${copy_warn}" ]]; then
+	echo "Copy warnings into project directory."
+	if [[ (-d "${warndir_name}") && (-n "${overwrite}") ]]; then
+		echo "Overwrite warndir ${warndir_name} !"
+	fi
 fi
 echo '**********************************************'
 execute_all='true'
-if [[ -z "$no_prompt" ]]; then
-	pr5='Proceed y/n (^D to exit)'
-	my_ov=''
-	while [[ ("$my_ov" != 'y') && ("$my_ov" != 'yes') && ("$my_ov" != 'n') && ("$my_ov" != 'no') ]]; do
+if [[ -z "${no_prompt}" ]]; then
+	pr5='Proceed (^D to exit) [y/n] '
+	temp=''
+	while [[ ("${temp}" != 'y') && ("${temp}" != 'yes') && ("${temp}" != 'n') && ("${temp}" != 'no') ]]; do
 		read -r -p "${pr5}" || exit 1
-		my_ov="${REPLY,,}"
+		temp="${REPLY,,}"
 	done
-	if [[ ($my_ov == 'yes') || ($my_ov == 'y') ]]; then
+	if [[ (${temp} == 'yes') || (${temp} == 'y') ]]; then
 		execute_all='true'
 	else
 		execute_all=''
@@ -319,7 +352,11 @@ if [[ -n ${execute_all} ]]; then
 		opb)
 			src_name='out_place.mk'
 	esac
-	cp -v "${src_dir}/share/${mks}/${src_name}" "${makefile_name}"
+	cp -v "${src_dir}/${src_name}" "${makefile_name}"
+	if [[ -n "${copy_warn}" ]]; then
+		mkdir -v "${warndir_name}"
+		cp -v "${src_dir}/../../include/${mks}/"* "${warndir_name}"
+	fi
 	echo "**** All done ****"
 else
 	echo "**** Nothing to do ****"

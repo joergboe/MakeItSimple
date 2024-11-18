@@ -33,7 +33,7 @@ esac
 
 PREPS=(
 	'copyOnly'
-	'cp "${TTRO_installDir}/ProjectOutPlaceBuild/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t opbcpp --noprompt"
 	'[[ -z ${CHANGETARGET} ]] || echo "TARGET := program" >> project.mk'
 )
 

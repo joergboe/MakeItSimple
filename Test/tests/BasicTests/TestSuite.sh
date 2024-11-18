@@ -41,7 +41,7 @@ PREPS=(
 prepareWarnFile2() {
 	if [ "${TTRO_variantSuite}" != 'default' ]; then
 		local compiler_warnfile=${TTRO_variantSuite/clang++/clang}
-		export MAKEFILE_WARN="${TTRO_installDir}/mktsimple/warnings.${compiler_warnfile}.mk"
+		export MAKEFILE_WARN="${TTRO_installDir}/include/mktsimple/warnings.${compiler_warnfile}.mk"
 		local c_compiler_warnfile=${MAKEFILE_WARN/g++/gcc}
 		export MAKEFILE_WARN_C="${c_compiler_warnfile}"
 	fi
@@ -58,7 +58,7 @@ prepareWarnFile() {
 	local versionstring=$($1 --version)
 	if [[ $versionstring =~ (g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+).* ]]; then
 		printInfo "c++ compiler major version ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]}"
-		setVar 'TTRO_warnFile' "${TTRO_installDir}/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
+		setVar 'TTRO_warnFile' "${TTRO_installDir}/include/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
 	else
 		printErrorAndExit "unknown c++ compiler: ${versionstring}"
 	fi
@@ -66,7 +66,7 @@ prepareWarnFile() {
 	if [[ $versionstring =~ (cc|gcc|clang).*[[:blank:]]+([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+).* ]]; then
 		printInfo "C compiler major version ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]}"
 		local comp_name="${BASH_REMATCH[1]}"
-		setVar 'TTRO_warnFileC' "${TTRO_installDir}/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
+		setVar 'TTRO_warnFileC' "${TTRO_installDir}/include/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
 	else
 		printErrorAndExit "unknown C compiler: ${versionstring}"
 	fi
