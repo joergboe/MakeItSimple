@@ -1,4 +1,6 @@
-  # Prepare the help string if required
+# version
+mktsimple_version = 4.0.0
+# Prepare the help string if required
 ifneq (,$(findstring help,$(MAKECMDGOALS)))
   define helpstring =
 
@@ -183,6 +185,8 @@ The active C warning include file is: $(MAKEFILE_WARN_C) $(if $(makefile_warn_c_
 $(if $(makefile_warn_c_used),Used is file: $(makefile_warn_c_used))
 
 All generated dependecies: $(depfiles)
+
+Make It Simple version : $(mktsimple_version)
 
 Make version : $(MAKE_VERSION)
 
