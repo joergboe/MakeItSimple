@@ -52,6 +52,10 @@ mks_gen_db_frag.sh
 /Test/testframeInstaller_*.sh
 /Test/workdir/
 
+# release artifacts
+/doc/
+/releases/
+
 # eclipse generated files
 .project
 .cproject

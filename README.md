@@ -1,4 +1,4 @@
-# MakeItSimple - Makefiles for C++ Projects
+# MakeItSimple - Makefiles for C++/C Projects
 
 
 
