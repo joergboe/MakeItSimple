@@ -2,31 +2,28 @@
 
 set -o nounset;
 
-readonly mks='mktsimple'
+readonly mkts='mktsimple'
 
 usage() {
-	if [[ -n $help || -n $wrongInvocation ]]; then
-		myCommand=${0##*/}
-		echo
-		echo "		Install Make It Simple mktsimple"
-		echo
-		echo "Usage: $myCommand [OPTION]... [<install_dir>]"
-		echo
-		echo "		If no command line parameter is specified the installation is done interactive"
-		echo
-		echo "Options:"
-		echo
-		echo "		-h|--help        - Display help"
-		echo "		-i|--install     - Start an installation (default)"
-		echo "		-u|--uninstall   - Uninstall the program"
-		echo "		-d|--delete      - Delete installed files before the installation is done"
-		echo "		install_dir      - The base dir of the installation"
-		echo
-		if [[ -n $wrongInvocation ]]; then
-			exit 2
-		else
-			exit 0
-		fi
+	echo
+	echo "		Install Make It Simple mktsimple"
+	echo
+	echo "Usage: ${mkts} [OPTION]... [<install_dir>]"
+	echo
+	echo "		If no command line parameter is specified the installation is done interactive"
+	echo
+	echo "Options:"
+	echo
+	echo "		-h|--help        - Display help"
+	echo "		-i|--install     - Start an installation (default)"
+	echo "		-u|--uninstall   - Uninstall the program"
+	echo "		-d|--delete      - Delete installed files before the installation is done"
+	echo "		install_dir      - The base dir of the installation"
+	echo
+	if [[ -n $wrongInvocation ]]; then
+		exit 2
+	else
+		exit 0
 	fi
 }
 
@@ -61,30 +58,32 @@ if [[ -n $help_requested ]]; then
 fi
 
 if [[ -n $interactive ]]; then
-	DEFAULTINSTALLDIR="${mks}"
+	DEFAULTINSTALLDIR="${mkts}"
 	installUser=$(whoami)
 	if [[ $installUser == 'root' ]]; then
 		destination="/usr/local"
 	else
 		destination="$HOME/$DEFAULTINSTALLDIR"
 	fi
-else
-	destination="$1"
+fi
+if [[ -z "${destination}" ]]; then
+	echo "ERROR: Destination directory is required!" >&2
+	exit 2
 fi
 
 #Get version information from own filename
 declare -r commandname="${0##*/}"
 echo "$commandname"
-if [[ $commandname =~ ${mks}_installer_v([0-9]+)\.([0-9]+)\.([0-9]+)\.sh ]]; then
+if [[ $commandname =~ ${mkts}_installer_v([0-9]+)\.([0-9]+)\.([0-9]+)\.sh ]]; then
 	major="${BASH_REMATCH[1]}"
 	minor="${BASH_REMATCH[2]}"
 	fix="${BASH_REMATCH[3]}"
 	echo "Install mktsimple release $major.$minor.$fix"
-elif [[ $commandname =~ ${mks}_installer_v([0-9]+)\.([0-9]+)\.([0-9]+.+)\.sh ]]; then
+elif [[ $commandname =~ ${mkts}_installer_v([0-9]+)\.([0-9]+)\.([0-9]+.+)\.sh ]]; then
 	major="${BASH_REMATCH[1]}"
 	minor="${BASH_REMATCH[2]}"
 	fix="${BASH_REMATCH[3]}"
-	echo "Install ${mks} development version $major.$minor.$fix"
+	echo "Install ${mkts} development version $major.$minor.$fix"
 else
 	echo "ERROR: This is no valid install package commandname=$commandname" >&2
 	exit 1
@@ -179,10 +178,10 @@ if [[ -n "${install_requested}" ]]; then
 fi
 
 some_files_exist=
-if [[ -f "${bindir}/${mks}" || -d "${includedir}/${mks}" || -d "${sharedir}/${mks}" || -d "${docdir}/${mks}" ]]; then
+if [[ -f "${bindir}/${mkts}" || -d "${includedir}/${mkts}" || -d "${sharedir}/${mkts}" || -d "${docdir}/${mkts}" ]]; then
 	some_files_exist='true'
 	echo "There are already some files installed!"
-	ls "${bindir}/${mks}" "${includedir}/${mks}" "${sharedir}/${mks}" "${docdir}/${mks}"
+	ls "${bindir}/${mkts}" "${includedir}/${mkts}" "${sharedir}/${mkts}" "${docdir}/${mkts}"
 	if [[ -n $install_requested ]]; then
 		if [[ -n $interactive ]]; then
 			echo
@@ -208,13 +207,13 @@ fi
 declare -i failures=0
 # cleanup
 if [[ -n $some_files_exist && (-n $delete_requested || -n $uninstall_requestd) ]]; then
-	rm -fv "${bindir}/${mks}" || ((failures++))
-	rm -fv "${includedir}/${mks}/"* || ((failures++))
-	rmdir -v "${includedir}/${mks}" || ((failures++))
-	rm -fv "${sharedir}/${mks}/"* || ((failures++))
-	rmdir -v "${sharedir}/${mks}" || ((failures++))
-	rm -fv "${docdir}/${mks}/"* || ((failures++))
-	rmdir -v "${docdir}/${mks}" || ((failures++))
+	rm -fv "${bindir}/${mkts}" || ((failures++))
+	rm -fv "${includedir}/${mkts}/"* || ((failures++))
+	rmdir -v "${includedir}/${mkts}" || ((failures++))
+	rm -fv "${sharedir}/${mkts}/"* || ((failures++))
+	rmdir -v "${sharedir}/${mkts}" || ((failures++))
+	rm -fv "${docdir}/${mkts}/"* || ((failures++))
+	rmdir -v "${docdir}/${mkts}" || ((failures++))
 fi
 
 exit_function() {
@@ -235,14 +234,14 @@ if [[ -n $install_requested ]]; then
 
 	#move the targets
 	mv -v -f "${tempdir}/bin/"* "${bindir}" || exit_function
-	mv -v -f "${tempdir}/include/${mks}" "${includedir}" || exit_function
-	mv -v -f "${tempdir}/share/${mks}" "${sharedir}" || exit_function
-	mv -v -f "${tempdir}/doc/${mks}" "${docdir}" || exit_function
+	mv -v -f "${tempdir}/include/${mkts}" "${includedir}" || exit_function
+	mv -v -f "${tempdir}/share/${mkts}" "${sharedir}" || exit_function
+	mv -v -f "${tempdir}/doc/${mkts}" "${docdir}" || exit_function
 
 	echo -e "\n***********************************************************"
 	echo -e   "	Installation complete. Target bin directory $bindir"
-	echo -e   "	You can execute the ${mks} help function:"
-	echo -e   "	${bindir}/${mks} --help"
+	echo -e   "	You can execute the ${mkts} help function:"
+	echo -e   "	${bindir}/${mkts} --help"
 	if ((failures>0)); then
 		echo -e   "	**** Failures: ${failures} ****"
 	fi

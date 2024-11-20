@@ -44,7 +44,7 @@ Optional customization variables:
                       Default value is 'src' (Use '.' for the project dir)
   INCDIRS:            Space separated list of project internal include directories for the quote form
                       of the include directive (-iquote) Omit this variable, if header and source files
-                      are placed in the source dierectories. The default value is 'inc*' or 'include*'
+                      are placed in the source directories. The default value is 'inc*' or 'include*'
                       if any of these directories exist. If none of the directories exist the default
                       is the empty value.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
