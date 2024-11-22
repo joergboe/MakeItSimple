@@ -61,7 +61,7 @@ fi
 
 PREPS=(
 	'cp -r ${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/* .'
-	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t \"${TTRO_projectType}\" --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
 	'[[ -z $LOCAL_WARN_FILE ]] || echo -e "cxxwarn2 = -Wcast-align\ncwarn2 = -Wcast-align" > "warnings.mk"'
 	'getWarnString'
 )

@@ -31,7 +31,7 @@ esac
 
 PREPS=(
 	'makeSourceFiles'
-	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t opbcpp --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt"
 )
 
 STEPS=(

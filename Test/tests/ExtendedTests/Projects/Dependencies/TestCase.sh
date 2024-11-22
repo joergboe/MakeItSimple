@@ -71,7 +71,7 @@ esac
 
 PREPS=(
 	'cp -r "${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/"* .'
-	"\"${TTRO_installDir}/bin/mktsimple\" -d . -t \"${TTRO_projectType}\" --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
 	'echoAndExecute make ${OPTIONS} all'
 	"cp -p ${BUILDDIR}${BA1} buildartefact1"
 	"cp -p ${BUILDDIR}${BA2} buildartefact2"
