@@ -1,0 +1,591 @@
+#!/usr/bin/env bash
+
+# guess the base directory of the mkts installation
+my_install_dir=
+my_command="${0##*/}"
+if [[ "$0" == /* ]]; then
+	my_install_dir="${0%"/bin/${my_command}"}"
+elif [[ "$0" == "${my_command}" ]]; then
+	x="$(which "${my_command}")"
+	my_install_dir="${x%"/bin/${my_command}"}"
+else
+	x="$(pwd -P)/$0"
+	my_install_dir="${x%"/bin/${my_command}"}"
+fi
+
+usage() {
+	cat <<EOF
+
+The Make It Simple project wizard - generate the makefile.
+
+Usage: ${my_command} [option..]
+
+OPTIONS:
+	-h|--help                      : Display this help.
+	--help=type                    : Print project type information.
+	-p|--project-dir VALUE         : The base directory of the C/C++ project.
+	-y|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb.
+	                                 To find out more about the types use option --help=type
+	-c|--copy-warn                 : Make a local copy of the warning.mk files in the project directory.
+	-t|--target-name VALUE         : Name of the executable to build. Default value is the last path component of
+	                                 of the project directory.
+	-s|--src|--src-dir VALUE       : Directory with the c/c++ source files. If the source files are located in more
+	                                 than one directory, this option may be repeated. Default: src
+	-i|--inc|--include-dir VALUE   : The project internal include directory for the quote form of the include directive (-iquote).
+	                                 If header and source files are placed in the source directories, enter an empty string or a single space.
+	                                 This option may be repeated. The default value is 'include'
+	--hello-world                  : Create a hello world project.
+	-o|--overwrite                 : Overwrite (and backup) existing files in project destination.
+	-n|--no-prompt|--noprompt      : Do not enter the interactive mode and use the command line options only.
+	--mkts-install-dir VALUE       : The base directory of the mktsimple installation. The default
+	                                 value is detected from the location of the ${my_command} script.
+
+RETURNS:
+	0    : Success
+	1    : Runtime error
+	2    : Wrong invokation
+	3    : User abort
+EOF
+}
+
+readonly mkts='mktsimple'
+readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
+readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
+pr3=('otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
+     'ipbcpp -- C++ project   In Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
+     'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
+     'opbc   -- C project     Out Place Build'$'\n''    Build one executable from all %.c source files in all project source directories.'$'\n'
+     'opb    -- C/C++ project Out Place Build'$'\n''    Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
+     'exit'
+)
+readonly pr3
+
+# check whether directory $1 contains valid install files
+check_install_dir() {
+	if [[ $# -ne 1 ]]; then
+		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	if [[ -z $1 ]]; then
+		echo "ERROR: Empty string for source dir"
+		return 1
+	fi
+	local mypath="${1}/share/${mkts}"
+	local x
+	for x in ${all_install_files}; do
+		#echo "checking: ${mypath}/${x}"
+		if [[ ! -f "${mypath}/${x}" ]]; then
+			echo "ERROR: Source dir '$1' is not a valid installation!"
+			return 1
+		fi
+	done
+	return 0
+}
+
+# check whether directory $1 is valid
+check_project_dir() {
+	if [[ $# -ne 1 ]]; then
+		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	if [[ -z $1 ]]; then
+		echo "ERROR: Empty string for project dir"
+		return 1
+	fi
+	return 0
+}
+
+# check whether $1 is a valid project type
+check_type() {
+	if [[ $# -ne 1 ]]; then
+		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
+		exit 1
+	fi
+	local x
+	local is_valid=
+	for x in $valid_types; do
+		if [[ "$1" == "$x" ]]; then
+			is_valid='true'
+			break
+		fi
+	done
+	if [[ -n "$is_valid" ]]; then
+		return 0
+	else
+		echo -e "ERROR: Invalid project type: $1\nValid types are: $valid_types"
+		return 1
+	fi
+}
+
+abort_func() {
+	echo "ERROR: Something went wrong!" >&2
+	exit 1
+}
+
+# read yes/no form stdin
+# $1 - Prompt
+# $2 - name of in/output
+# start over when the referenced value is not empty
+read_yes_no() {
+	local temp
+	declare -ln ref=$2
+	while [[ -z ${ref} ]]; do
+		read -r -p "$1 (^D to exit) [y/n] " || exit 3
+		temp="${REPLY,,}"
+		if [[ (${temp} == 'yes') || (${temp} == 'y') ]]; then
+			ref='true'
+			break
+		elif [[ (${temp} == 'no') || (${temp} == 'n') ]]; then
+			ref=
+			break
+		else
+			ref=
+		fi
+	done
+	echo
+}
+
+# read a value from stdin
+# $1 - Prompt
+# $2 - name of in/output
+# $3 - default value
+# $4 - validator (evaluated)
+# start over when the referenced value is not empty
+read_value() {
+	declare -ln ref=$2
+	while [[ -z ${ref} ]]; do
+		read -r -p "$1 (^D to exit) [${3}] " || exit 3
+		if [[ -z ${REPLY} ]]; then
+			ref="${3}"
+			break
+		fi
+		if eval "$4 \"${REPLY}\""; then
+			ref="${REPLY}"
+			break
+		else
+			ref=
+		fi
+	done
+	echo
+}
+
+invalid_parameter=
+missing_value=
+helprequest=
+typehelprequest=
+no_prompt=
+mkts_install_dir=
+project_dir=
+pr_type=
+target_name=
+src_dir=
+inc_dir=
+hello_world=
+copy_warn=
+overwrite=
+
+# get parameters
+while [[ $# -gt 0 ]]; do
+	one_more_shift=''
+	case "$1" in
+	'-h'|'--help')
+		helprequest='true';;
+	'--help=type')
+		typehelprequest='true';;
+	'--mkts-install-dir')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			mkts_install_dir="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-p'|'--project-dir')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			project_dir="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-y'|'--type'|'--project-type')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			pr_type="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-c'|'--copy-warn')
+		copy_warn='true';;
+	'-t'|'--target-name')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			target_name="$2"
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-s'|'--src'|'--src-dir')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			if [[ -z ${src_dir} ]]; then
+				src_dir="$2"
+			else
+				src_dir+=" $2"
+			fi
+		else
+			missing_value='true'
+			break
+		fi;;
+	'-i'|'--inc'|'--include-dir')
+		if [[ $# -gt 1 ]]; then
+			one_more_shift='true'
+			if [[ -z $2 ]]; then
+				temp=' '
+			else
+				temp="$2"
+			fi
+			if [[ -z ${inc_dir} ]]; then
+				inc_dir="$2"
+			else
+				inc_dir+=" $2"
+			fi
+		else
+			missing_value='true'
+			break
+		fi;;
+	'--hello-world')
+		hello_world='true';;
+	'-o'|'--overwrite')
+		overwrite='true';;
+	'-n'|'--no-prompt'|'--noprompt')
+		no_prompt='true';;
+	*)
+		invalid_parameter='true'
+		break;;
+	esac
+	shift
+	if [[ -n $one_more_shift ]]; then shift; fi
+done
+
+if [[ -n $invalid_parameter ]]; then
+	echo -e "\nERROR: Invalid parameter $1\n" >&2
+	usage >&2
+	exit 2
+fi
+if [[ -n $missing_value ]]; then
+	echo -e "\nERROR: Missing value for parameter $1\n" >&2
+	usage >&2
+	exit 2
+fi
+
+# handle help requests
+[[ -n $helprequest ]] && usage
+
+if [[ -n ${typehelprequest} ]]; then
+	declare -i i
+	for ((i=0; i<${#pr3[*]}; i++)); do
+		if [[ "${pr3[$i]}" != exit* ]]; then
+			echo "${pr3[$i]}"
+		fi
+	done
+fi
+if [[ -n ${helprequest} || -n ${typehelprequest} ]]; then
+	exit 0
+fi
+
+echo -e "\nMake It Simple installation in: ${my_install_dir}\n"
+
+# request and validate mkts installation directory
+if [[ -z ${no_prompt} ]]; then
+	read_value "Enter the base directory of the ${mkts} installation."$'\n' 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
+else
+	# lookup for an installation
+	if [[ -z ${mkts_install_dir} ]]; then
+		mkts_install_dir="${my_install_dir}"
+	fi
+fi
+if ! check_install_dir "${mkts_install_dir}" >&2; then
+	exit 2
+fi
+
+# request project directory
+if [[ -z ${no_prompt} ]]; then
+	read_value "Enter the project directory" 'project_dir' 'project1' 'check_project_dir'
+fi
+if ! check_project_dir >&2 "${project_dir}"; then
+	exit 2
+fi
+
+# request and validate the type of the installation
+if [[ -z ${no_prompt} ]]; then
+	if [[ -z $pr_type ]]; then
+		echo "Enter the type of the project."
+		select x in "${pr3[@]}"; do
+			case $REPLY in
+				1|2|3|4|5)
+					echo "$x"
+					pr_type="${x%%\ *}"
+					break;;
+				6)
+					exit 3;;
+			esac
+		done || exit 3
+	fi
+	echo
+fi
+if ! check_type "$pr_type" >&2; then
+	exit 2
+fi
+out_place_project_type=
+[[ ${pr_type} == opb* ]] && out_place_project_type='true'
+
+# request target name - check target name
+if [[ ${project_dir} == '.' ]]; then
+	temp="${PWD}"
+else
+	temp="${project_dir}"
+
+fi
+temp="${temp%/}"
+defaul_target_name="${temp##*/}"
+if [[ -z "${no_prompt}" ]]; then
+	if [[ "${pr_type}" == oto* ]]; then
+		target_name=
+	else
+		read_value "Name of the executable to build?" 'target_name' "${defaul_target_name}" 'true'
+	fi
+else
+	if [[ "${pr_type}" == oto* ]]; then
+		target_name=
+	else
+		[[ -z ${target_name} ]] && target_name="${defaul_target_name}"
+	fi
+fi
+if [[ "${pr_type}" == oto* ]]; then
+	if [[ -n ${target_name} ]]; then
+		echo "ERROR: No target name allowed in One To One project type" >&2
+		exit 2
+	fi
+else
+	if [[ -z ${target_name} ]]; then
+		echo "ERROR: No target name!" >&2
+		exit 2
+	fi
+fi
+
+if [[ -n ${out_place_project_type} ]]; then
+	# request source dir list
+	if [[ -z "${no_prompt}" ]]; then
+		read_value "Enter a space separated source directory list." 'src_dir' 'src' 'true'
+	else
+		[[ -z ${src_dir} ]] && src_dir='src'
+	fi
+
+	# request include dir list
+	if [[ -z "${no_prompt}" ]]; then
+		read_value "Enter a space separated include directory list."$'\n'"Enter a single space charater for 'no include dir'." 'inc_dir' 'include' 'true'
+	elif [[ -z ${inc_dir} ]]; then
+		inc_dir='include'
+	elif [[ "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+		inc_dir=' '
+	fi
+fi
+
+# request copy warnings local option
+if [[ -z "${no_prompt}" && -z "${copy_warn}" ]]; then
+	read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn'
+fi
+
+# request hello world
+if [[ -z "${no_prompt}" ]]; then
+	read_yes_no "Create a hello world project?" 'hello_world'
+fi
+
+# check src dir and project type
+if [[ -z ${out_place_project_type} ]]; then
+	if [[ -n $src_dir ]]; then
+		echo "ERROR: Source directory '${src_dir}'specified but project is in place type ${pr_type}" >&2
+		exit 2
+	fi
+	if [[ -n $inc_dir ]]; then
+		echo "ERROR: Include directory '${inc_dir}'specified but project is in place type ${pr_type}" >&2
+		exit 2
+	fi
+	module_name="${project_dir}/hello.c"
+else
+	if [[ -z $src_dir ]]; then
+		echo "ERROR: No source directory specified but project is out place type ${pr_type}" >&2
+		exit 2
+	fi
+	if [[ -z $inc_dir ]]; then
+		echo "ERROR: No include directory specified but project is in place type ${pr_type}" >&2
+		exit 2
+	fi
+	first_src_dir=
+	for temp in ${src_dir}; do
+		first_src_dir="${temp}"
+		break
+	done
+	module_name="${project_dir}/${first_src_dir}/hello.c"
+fi
+if [[ ${pr_type} == *cpp ]]; then
+	module_name="${module_name}pp"
+fi
+
+target_name_required=
+src_dir_required=
+inc_dir_required=
+[[ (${target_name} != "${defaul_target_name}") && (${pr_type} != oto*) ]] && target_name_required='true'
+[[ (-n $out_place_project_type) && ($src_dir != 'src') ]] && src_dir_required='true'
+[[ ( -n $out_place_project_type ) && ( "$inc_dir" != 'include' ) && ! ( "$inc_dir" =~ ^[[:blank:]][[:blank:]]*$ ) ]] && inc_dir_required='true'
+project_mk_required='true'		# if true an existing project.mk is backuped
+[[ -n $target_name_required || -n $src_dir_required || -n $inc_dir_required ]] && project_mk_required='true'
+
+# check if some files already exists
+makefile_name="${project_dir}/Makefile"
+warndir_name="${project_dir}/${mkts}"
+project_mk_name="${project_dir}/project.mk"
+overwrite_makefile=
+overwrite_project_mk=
+overwrite_module=
+overwrite_warn_dir=
+overwrite_necessary=
+[[ -a "${makefile_name}" ]] && overwrite_makefile='true'
+[[ -n "${project_mk_required}" && -a "${project_mk_name}" ]] && overwrite_project_mk='true'
+[[ -n "${hello_world}" && -a "${module_name}" ]] && overwrite_module='true'
+[[ -n "${copy_warn}" && -d "${warndir_name}" ]] && overwrite_warn_dir='true'
+[[ -n ${overwrite_makefile} || -n ${overwrite_project_mk} || -n ${overwrite_module} || -n ${overwrite_warn_dir} ]] && overwrite_necessary='true'
+if [[ -z "${no_prompt}" ]]; then
+	if [[ -n ${overwrite_necessary} ]]; then
+		read_yes_no "Some files already exists. Overwite?" 'overwrite'
+	fi
+fi
+if [[ -z ${overwrite} && -n ${overwrite_necessary} ]]; then
+	[[ -n "${overwrite_makefile}" ]] && echo "ERROR: Makefile ${makefile_name} already exists" >&2
+	[[ -n "${overwrite_project_mk}" ]] && echo "ERROR: Projectfile ${project_mk_name} already exists" >&2
+	[[ -n "${overwrite_module}" ]] && echo "ERROR: Project modul ${module_name} already exists" >&2
+	[[ -n "${overwrite_warn_dir}" ]] && echo "ERROR: Warnings ${warndir_name} already exists" >&2
+	exit 1
+fi
+
+# get the type info string
+pr_type_info=''
+declare -i i
+for ((i=0; i<${#pr3[*]}; i++)); do
+	x="${pr3[$i]}"
+	if [[ "${pr_type}" == "${x%%\ *}" ]]; then
+		pr_type_info="${x}"
+		break
+	fi
+done
+
+# final summary check
+echo '**********************************************************************************'
+echo "Make It Simple installing directory ${mkts_install_dir}"
+echo
+echo "Project directory ${project_dir}"
+echo "Type of the makefile to install ${pr_type}"
+echo "	${pr_type_info}"
+if [[ ${pr_type} != oto* ]]; then
+	echo "Name of the executable to build: ${target_name}"
+fi
+if [[ -n ${out_place_project_type} ]]; then
+	echo "Directories with the source files: ${src_dir}"
+	echo "Include directories: ${inc_dir}"
+fi
+[[ -n "${hello_world}" ]] && echo "Create hello world program module ${module_name}"
+[[ -n "${copy_warn}" ]] && echo "Copy warnings into project directory."
+temp='no'
+[[ -n ${overwrite} ]] && temp='yes'
+echo "Overwrite and backup existing files: $temp"
+
+[[ -n "${overwrite_makefile}" ]] && echo "Backup makefile ${makefile_name} !"
+[[ -n "${overwrite_project_mk}" ]] && echo "Backup project file ${project_mk_name} !"
+[[ -n "${overwrite_module}" ]] && echo "Backup modul ${module_name} !"
+[[ -n "${overwrite_warn_dir}" ]] && echo "Overwrite warnings in dir ${warndir_name} !"
+echo '**********************************************************************************'
+execute_all=
+if [[ -z "${no_prompt}" ]]; then
+	read_yes_no 'Proceed?' 'execute_all'
+else
+	execute_all='true'
+fi
+
+# execution
+if [[ -n ${execute_all} ]]; then
+	echo -e "\nDo intstallation..."
+	# create project directory
+	mkdir -p "${project_dir}" || abort_func
+	# Makefile
+	if [[ -a "${makefile_name}" ]]; then
+		mv -v "${makefile_name}" "${makefile_name}.bak" || abort_func
+	fi
+	case ${pr_type} in
+		otocpp)
+			src_name='one_to_one_cpp.mk';;
+		ipbcpp)
+			src_name='in_place_cpp.mk';;
+		opbc)
+			src_name='out_place_c.mk';;
+		opbcpp)
+			src_name='out_place_cpp.mk';;
+		opb)
+			src_name='out_place.mk'
+	esac
+	cp -v "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
+	# create dirs
+	if [[ -n ${out_place_project_type} ]]; then
+		for temp in ${src_dir}; do
+			mkdir -pv "${project_dir}/${temp}" || abort_func
+		done
+		if [[ ! "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+			for temp in ${inc_dir}; do
+				mkdir -pv "${project_dir}/${temp}" || abort_func
+			done
+		fi
+	fi
+	# project.mk
+	if [[ -n "${project_mk_required}" ]]; then
+		if [[ -a "${project_mk_name}" ]]; then
+			mv -v "${project_mk_name}" "${project_mk_name}.bak" || abort_func
+		fi
+		if [[ -n $target_name_required ]]; then
+			echo -e "# Name of the executable\nTARGET := ${target_name}\n" >> "${project_mk_name}" || abort_func
+			echo "TARGET := ${target_name} >> ${project_mk_name}"
+		fi
+		if [[ -n $src_dir_required ]]; then
+			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dir}\n" >> "${project_mk_name}" || abort_func
+			echo "SRCDIRS := ${src_dir} >> ${project_mk_name}"
+		fi
+		if [[ -n $inc_dir_required ]]; then
+			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dir}\n" >> "${project_mk_name}" || abort_func
+			echo "INCDIRS := ${inc_dir} >> ${project_mk_name}"
+		fi
+	fi
+	# hello
+	if [[ -n "${hello_world}" ]]; then
+		if [[ -a "${module_name}" ]]; then
+			mv -v "${module_name}" "${module_name}.bak" || abort_func
+		fi
+		if [[ ${pr_type} == *cpp ]]; then
+			echo -e "#include <iostream>\nint main() {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}\n" > "${module_name}" || abort_func
+			echo "Write ${module_name}"
+		else
+			echo -e "#include <stdio.h>\nint main() {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}\n" > "${module_name}" || abort_func
+			echo "Write ${module_name}"
+		fi
+	fi
+	# warn directory
+	if [[ -n "${copy_warn}" ]]; then
+		mkdir -pv "${warndir_name}" || abort_func
+		cp -v --no-dereference "${mkts_install_dir}/include/${mkts}/"* "${warndir_name}" || abort_func
+	fi
+
+	echo "**** All done ****"
+else
+	echo "**** Nothing to do ****"
+fi
+
+exit 0

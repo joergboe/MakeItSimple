@@ -25,7 +25,7 @@ esac
 
 PREPS=(
 	'copyOnly'
-	'cp "${TTRO_installDir}/ProjectOutPlaceBuild/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt -i ' '"
 )
 
 # Make the project before cleanup tests
@@ -71,7 +71,7 @@ checkBuildOutput() {
 			"*src/m2.cc*${CXXOPTIONTOFIND}*" \
 			"*-o*${BINDIR}/${TTRO_variantCase}*"
 
-		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'true' '*-iquoteinclude*'
+		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'true' '*-iquote*'
 	fi
 }
 

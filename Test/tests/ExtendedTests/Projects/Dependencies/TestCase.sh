@@ -11,7 +11,7 @@ SOURCEDIR='src/'
 INCDIR='include/'
 DEFINESDIR='include/defines/'
 GOALS='all'
-OPTIONS="-I ${TTRO_installDir}"
+OPTIONS="-I ${TTRO_installDir}/include"
 OPTIONS2=''
 MODULE1='m1.cpp'
 MODULE2='m2.cc'
@@ -71,7 +71,7 @@ esac
 
 PREPS=(
 	'cp -r "${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/"* .'
-	'cp "${TTRO_installDir}/${TTRO_variantSuite}/Makefile" .'
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
 	'echoAndExecute make ${OPTIONS} all'
 	"cp -p ${BUILDDIR}${BA1} buildartefact1"
 	"cp -p ${BUILDDIR}${BA2} buildartefact2"

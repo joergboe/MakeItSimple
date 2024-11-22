@@ -25,16 +25,20 @@ esac
 
 CHANGETARGET=
 TARGETNAME="${TTRO_variantCase}"
+CMDLN=
 case ${TTRO_variantCase} in
 	*Target*)
 		CHANGETARGET='true'
-		TARGETNAME='program';;
+		TARGETNAME='program'
+		CMDLN="-t ${TARGETNAME}";;
 esac
 
 PREPS=(
-	'copyOnly'
-	'cp "${TTRO_installDir}/ProjectOutPlaceBuild/Makefile" .'
-	'[[ -z ${CHANGETARGET} ]] || echo "TARGET := program" >> project.mk'
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp -s mysources -s . -i myincludes1 -i myincludes2 --noprompt ${CMDLN}"
+	"cp \"${TTRO_inputDirCase}/\"*.cpp \"${TTRO_workDirCase}\""
+	"cp \"${TTRO_inputDirCase}/mysources/\"* \"${TTRO_workDirCase}/mysources\""
+	"cp \"${TTRO_inputDirCase}/myincludes1/\"* \"${TTRO_workDirCase}/myincludes1\""
+	"cp -r \"${TTRO_inputDirCase}/myincludes2/\"* \"${TTRO_workDirCase}/myincludes2\""
 )
 
 # Make the project before cleanup tests

@@ -1,9 +1,11 @@
+# version
+mktsimple_version = 4.0.0
 # Prepare the help string if required
 ifneq (,$(findstring help,$(MAKECMDGOALS)))
   define helpstring =
 
-This make script builds executable targets from each %.cpp and %.cc source file found in the current
-directory and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
+This make script builds one executable from all %.c source files in all project source
+directories and creates a JSON Compilation Database ($(compile_database_name)) for the clang language
 server.
 The script supports 2 Build Modes (run and debug) and 6 Warning levels.
 The script keeps track of the last used configuration in a file ($(last_config_store_name)). During
@@ -18,23 +20,32 @@ Synopsis:
 
 
 Goals:
-  all       Default goal - Build or update an executable from every *.cpp/*.cc if outdated and
-            build or update the JSON compilation database if neccessary.
-  build     Build or update all outdated executables.
+  all       Default goal - Build or update the target executable if outdated and build or update the
+            JSON compilation database if neccessary.
+  build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
-  clean     Clean up all generated executables and build artifacts.
-  purge     Clean up all generated executables, build artifacts, the compilation database and the configuration store.
+  clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
+  purge     Clean up executables and all generated build artifacts, the compilation database
+            and the configuration store.
   show      Print project info.
   help      Print this help text.
-  %         Build or update this target file if a coresponding sorce file exists.
+  dir/%.o   Build this object file if a coresponding source file exists.
 
 Files:
   Makefile        This make script
   $(makefile_defs)      This optional script contains the project customizations.
-  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be
-                    used to define specific warning options and will be included from Makefile.
+  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
+                  specific warning options and will be included from Makefile.
 
 Optional customization variables:
+  TARGET              Name of the executable to build. Default value is the last path component of
+                      this Makefile.
+  SRCDIRS             Space separated list of directories with c source files.
+                      Default value is 'src' (Use '.' for the project dir)
+  INCDIRS:            Space separated list of project internal include directories for the quote form
+                      of the include directive (-iquote) Omit this variable, if header and source files
+                      are placed in the source directories. The default value is 'include' if this
+                      directory exists, or the empty string if the directory not exists.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
@@ -44,38 +55,45 @@ Optional customization variables:
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
   COMP_FLAGS_DEBUG:   Compiler optimization level and debug option with BUILD_MODE = debug.
                       Default: -Og -g3
+  BUILDDIR            Directory used for build files (objects-files, dep-files).
+                      Default: 'run/build or debug/build'
+  BINDIR              Target directory for the final executable.
+                      Default: run or debug
   CPPFLAGS:           Extra compiler preprocessor options.
-  CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
+  CFLAGS:             Extra c compiler options (use for linker and compiler).
   SRCxxxxFLAGS        Flags for one specific source file. xxxx stands for the name of the source file,
                       where periods and slashes are replaced by underscores.
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
   LDLIBS:             Space separated list of libraries given to the linker (including -l).
-  CXX                 The compiler command to be used. Default: 'g++'
+  CC                  The compiler command to be used. Default: 'cc'
   DISABLE_CONFIG_CHECK: If set to anything other than the empty string, the configuration check is
                       disabled.
 
 Description:
-  This make script builds or updates executables from each %.cpp and %.cc source file found in the
-  current directory.
+  This make script builds or updates one executable from all %.c source files in all project
+  source directories. The name of the executable is defined through variable TARGET and the default
+  is the last component of the directory which contains this Makefile (the project directory).
+  The project may have separate header file directories. If the include directory differs from
+  'include', set the name(s) in variable INCDIRS.
 
   This script checks the version of the compiler and searches for an appropriate 'warnings.xxxx.mk'
   file in directory /usr/local/include/mktsimple. If the tool is installed in a different place than
   /usr/local/include or /usr/include, add the base directory of the installation with make option -I.
 
-  If a 'production goal' (all compdb targetname1..) runs and a configuration change has bee detected
-  the compilation database is automatically created or updated.
+  If a 'production goal' (all compdb %.o..) runs and a configuration change has bee detected the
+  compilation database is automatically created or updated.
 
   If variable BUILD_MODE is not set or has the value debug, the executables are build with debug
   information included.
   If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
   The variable WARN_LEVEL can assign warning levels from 0 .. 5.
-  The default warning level is 3 and activates a comprehensive set of warnings (for gcc and clang).
+  The default warning level is 4 and activates a comprehensive set of warnings (for gcc and clang).
 
-  By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
+  By default the cc compiler is used. To use a different compiler, set variable CC. E.g 'CC=clang'
 
-  Use the CXXFLAGS variable to change the c++ language standard. E.g. 'CXXFLAGS=-std=c++11'.
+  Use the CFLAGS variable to change the c language standard. E.g. 'CFLAGS=-std=c11'.
 
   If parallel execution is requested (-j n), the script disallowes the congruent execution of clean-
   and production-goals.
@@ -87,7 +105,7 @@ Description:
   NOTE: xFLAGS that contain spaces, quotation marks, or other special shell characters must be
   quoted. If they are given as command line arguments, they must be qouted twice according to the
   rules of your shell! Example (for bash):
-  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++
+  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CC=clang
 
 Some useful make-options:
   -h, --help                      Display help.
@@ -97,7 +115,6 @@ Some useful make-options:
   -r, --no-builtin-rules          Disable the built-in implicit rules.
   -s, --silent, --quiet           Don't echo recipes.
   -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
-  -I dir, --include-dir=dir       Specifies a directory dir to search for included makefiles.
 
   endef
 endif
@@ -105,38 +122,42 @@ endif
 ifneq (,$(findstring show,$(MAKECMDGOALS)))
   define infostring =
 
+Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))
+
 Sources found : $(allsources)
 
-Targets to build : $(alltargets)
+Objects to build : $(objectsc)
+
+All include directories (-iquote): $(INCDIRS)
 
 All include (system) directories : $(INCSYSDIRS)
 
 $(modeinfostring) : BUILD_MODE=$(BUILD_MODE) : $(bmodeflags)
 
-Compiler command : $(CXX)
+Compiler command : $(CC)
 
 Custom preprocessor options: $(CPPFLAGS)
 
-Custom compiler options: $(CXXFLAGS)
+Custom compiler options: $(CFLAGS)
 
-Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings)
+Building with WARN_LEVEL=$(WARN_LEVEL) : $(cwarnings)
 
-Warning level 0 includes : $(cxxwarn0)
+Warning level 1 includes : $(cwarn1)
 
-Warning level 1 includes : $(cxxwarn1)
+Warning level 2 adds : $(cwarn2)
 
-Warning level 2 adds : $(cxxwarn2)
+Warning level 3 adds : $(cwarn3)
 
-Warning level 3 adds : $(cxxwarn3)
+Warning level 4 adds : $(cwarn4)
 
-Warning level 4 adds : $(cxxwarn4)
-
-Warning level 5 adds : $(cxxwarn5)
+Warning level 5 adds : $(cwarn5)
 
 The active warning include file is: $(MAKEFILE_WARN) $(if $(makefile_warn_used),, - does not exist!)
 $(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 
 All generated dependecies: $(depfiles)
+
+Make It Simple version : $(mktsimple_version)
 
 Make version : $(MAKE_VERSION)
 
@@ -165,6 +186,8 @@ SHELL = /bin/bash
 
 # command definitions which are not in the default database
 MV = mv -f
+RMDIR = rm -rf
+MKDIR = mkdir -p
 
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
@@ -184,18 +207,18 @@ endif
 # call $1 - info string
 conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 - compiler command
+# call $1 compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
-  if [[ "$${ins}" =~ (gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
+  if [[ "$${ins}" =~ (gcc|cc|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
     echo "$${BASH_REMATCH[1]} $${BASH_REMATCH[2]}";\
   fi)
 
-# add the defaults
+# and add the defaults for the unset variables
 ifndef MAKEFILE_WARN
-  cc_name_vers := $(call get_comp_name_version,$(CXX))
+  cc_name_vers := $(call get_comp_name_version,$(CC))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning Unknown compiler version $(CCX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
+    $(warning Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
     MAKEFILE_WARN := warnings.mk
   else
     MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -205,7 +228,7 @@ $(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
 WARN_LEVEL ?= 4
 BUILD_MODE ?= debug
 COMP_FLAGS_RUN ?= -O2 -g1
-ifeq (,$(findstring clang,$(CXX)))
+ifeq (,$(findstring clang,$(CC)))
   COMP_FLAGS_DEBUG ?= -Og -g3
 else
   COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
@@ -222,32 +245,36 @@ else
   makefile_warn_used := $(lastword $(MAKEFILE_LIST))
   $(call conditional_info,Using warnings from $(makefile_warn_used))
 endif
-cxxwarn0 ?= -w
-cxxwarn1 ?=
-cxxwarn2 ?= -Wall
-cxxwarn3 ?= -Wextra -Wpedantic
-cxxwarn4 ?= -Wcast-align -Wconversion -Wctor-dtor-privacy -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
-  -Wformat-security -Wformat-y2k -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnull-dereference\
-  -Wold-style-cast -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-overflow=2 -Wsuggest-override
-cxxwarn5 ?= -Waggregate-return -Walloca -Warray-bounds -Wattributes -Wcast-qual\
-  -Wdate-time -Wdisabled-optimization -Weffc++ -Wfloat-equal\
+cwarn0 ?= -w
+cwarn1 ?=
+cwarn2 ?= -Wall
+cwarn3 ?= -Wextra -Wpedantic
+cwarn4 ?= -Wcast-align -Wconversion\
+  -Wfloat-conversion -Wformat=2 -Wformat-nonliteral\
+  -Wformat-security -Wformat-y2k\
+  -Wmissing-braces -Wmissing-format-attribute -Wmultichar -Wnull-dereference\
+  -Wredundant-decls -Wsign-conversion\
+  -Wstrict-overflow=2
+cwarn5 ?= -Waggregate-return -Walloca\
+  -Warray-bounds -Wattributes -Wcast-align -Wcast-qual\
+  -Wdate-time -Wdisabled-optimization -Wfloat-equal\
   -Winline -Winvalid-pch -Wmissing-declarations\
-  -Wmissing-include-dirs -Wpacked -Wpadded -Wregister -Wshadow\
-  -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
-  -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros -Wzero-as-null-pointer-constant
+  -Wmissing-include-dirs -Wpacked -Wpadded\
+  -Wshadow -Wstack-protector -Wstrict-aliasing=1 -Wstrict-overflow=5\
+  -Wswitch-default -Wswitch-enum -Wundef -Wunused-macros
 
 ifeq ($(WARN_LEVEL),0)
-  cxxwarnings := $(cxxwarn0)
+  cwarnings := $(cwarn0)
 else ifeq ($(WARN_LEVEL),1)
-  cxxwarnings := $(cxxwarn1)
+  cwarnings := $(cwarn1)
 else ifeq ($(WARN_LEVEL),2)
-  cxxwarnings := $(cxxwarn1) $(cxxwarn2)
+  cwarnings := $(cwarn1) $(cwarn2)
 else ifeq ($(WARN_LEVEL),3)
-  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3)
+  cwarnings := $(cwarn1) $(cwarn2) $(cwarn3)
 else ifeq ($(WARN_LEVEL),4)
-  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4)
+  cwarnings := $(cwarn1) $(cwarn2) $(cwarn3) $(cwarn4)
 else ifeq ($(WARN_LEVEL),5)
-  cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4) $(cxxwarn5)
+  cwarnings := $(cwarn1) $(cwarn2) $(cwarn3) $(cwarn4) $(cwarn5)
 else
   $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
 endif
@@ -273,22 +300,28 @@ hs := \#
 # quotes are paired to satisfy the syntax highlighter
 check_name = $(foreach var,$(hs) ' ' " " % : ; ( ),$(call name_has_char,$(1),$(var)))
 
-# determines all sources, objects, required flags
-sourcescpp := $(wildcard *.cpp)
-sourcescc := $(wildcard *.cc)
-allsources := $(sourcescpp) $(sourcescc)
+# determines all directories, sources, objects, dependecies, required flags
+SRCDIRS ?= src
+INCDIRS ?= $(wildcard include)
+# get the last path component from the realpath of this filename as target name
+TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))
+
+BUILDDIR ?= $(BUILD_MODE)/build
+BINDIR ?= $(BUILD_MODE)
+builddirs := $(addprefix $(BUILDDIR)/,$(SRCDIRS))
+sourcesc := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
+# with this code the c files are recursively searched in the source directory list
+#export sourcesc := $(shell find $(SRCDIRS) -name '*.c')
+allsources := $(sourcesc)
 # check for disallowed file names
 $(foreach var,$(allsources),$(call check_name,$(var)))
 
-targetscpp := $(sourcescpp:.cpp=)
-targetscc := $(sourcescc:.cc=)
-depfiles := $(sourcescpp:.cpp=.dep) $(sourcescc:.cc=.dep)
-dbfragmentscpp := $(addsuffix .mks.tmp,$(targetscpp))
-dbfragmentscc := $(addsuffix .mks.tmp,$(targetscc))
-srcfakescpp := $(addsuffix .mks.tmp,$(sourcescpp))
-srcfakescc := $(addsuffix .mks.tmp,$(sourcescc))
-incflags := $(addprefix -I,$(INCSYSDIRS))
-alltargets := $(targetscpp) $(targetscc)
+objectsc := $(addprefix $(BUILDDIR)/,$(sourcesc:.c=.o))
+depfiles := $(addprefix $(BUILDDIR)/,$(sourcesc:.c=.dep))
+dbfragmentsc := $(addsuffix .mks.tmp,$(objectsc))
+srcfakesc := $(addsuffix .mks.tmp,$(sourcesc))
+incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
+alltargets := $(objectsc) $(BINDIR)/$(TARGET)
 
 # check goals
 goals := $(MAKECMDGOALS)
@@ -315,17 +348,19 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
-  $(cxxwarnings) $(formatflags) $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
-depflags = -MMD -MF $(@:%=%.dep) -MP -MT $@
+allflags = $(CFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+  $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
+depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
   ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring show,$(MAKECMDGOALS))))
     $(info )
+    $(info Build target '$(BINDIR)/$(TARGET)' from *.c sourcefiles in source directories : $(SRCDIRS))
+    $(info )
     $(info Sources found : $(allsources))
     $(info )
-    $(info All include (system) directories : $(INCSYSDIRS))
+    $(info All include directories : $(INCDIRS) $(INCSYSDIRS))
     $(info )
   endif
 endif
@@ -338,19 +373,24 @@ endef
 # Recursive variables intended for expansion in a recipe must be saved as 'value'.
 define configuration =
 Last stored configuration:
+TARGET=$(TARGET)
+SRCDIRS=$(SRCDIRS)
+INCDIRS=$(INCDIRS)
 INCSYSDIRS=$(INCSYSDIRS)
 BUILD_MODE=$(BUILD_MODE)
 COMP_FLAGS_RUN=$(COMP_FLAGS_RUN)
 COMP_FLAGS_DEBUG=$(COMP_FLAGS_DEBUG)
+BUILDDIR=$(BUILDDIR)
+BINDIR=$(BINDIR)
 CPPFLAGS=$(value CPPFLAGS)
-CXXFLAGS=$(value CXXFLAGS)
+CFLAGS=$(value CFLAGS)
 TARGET_ARCH=$(value TARGET_ARCH)
 LDFLAGS=$(value LDFLAGS)
 LDLIBS=$(value LDLIBS)
-CXX=$(CXX)
+CC=$(CC)
 DISABLE_CONFIG_CHECK=$(DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
-cxxwarnings=$(strip $(cxxwarnings))
+cwarnings=$(strip $(cwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
 $(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
@@ -378,7 +418,7 @@ else
   endif
 endif
 
-# args: curdir cxx -o target.mks.tmp source.mks.tmp option1 ...
+# args: curdir cxx -o object.mks.tmp source.mks.tmp option1 ...
 gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
 'shift'$$'\n'\
 '{'$$'\n'\
@@ -407,25 +447,31 @@ else
   conditional_echo =
 endif
 # depflags, output option and source are single quoted
-compile_source = $(CXX)\
+compile_source = $(CC)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
-gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CXX)\
+gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CC)\
   $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
 
 # rules:
 all: compdb build
 
-build: $(targetscpp) $(targetscc)
+build: $(BINDIR)/$(TARGET)
 
-%: %.cpp
-$(targetscpp): %: %.cpp %.dep $(makefile_this) $(last_config_store_target)
+%: %.o
+$(BINDIR)/$(TARGET): $(objectsc) | $(BINDIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
+	$(call conditional_echo,Finished linking target: $@\n)
+
+%.o: %.c
+$(objectsc): $(BUILDDIR)/%.o: %.c $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
 	$(compile_source)
 	$(call conditional_echo,Finished building: $<\n)
 
-%: %.cc
-$(targetscc): %: %.cc %.dep $(makefile_this) $(last_config_store_target)
-	$(compile_source)
-	$(call conditional_echo,Finished building: $<\n)
+$(builddirs):
+	$(MKDIR) '$@'
+
+$(BINDIR):
+	$(MKDIR) '$@'
 
 $(depfiles):
 
@@ -434,24 +480,20 @@ include $(wildcard $(depfiles))
 
 compdb: $(compile_database_name)
 
-.INTERMEDIATE: $(srcfakescpp) $(srcfakescc)
+.INTERMEDIATE: $(srcfakesc)
 
-$(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
+$(compile_database_name): $(dbfragmentsc)
 	@echo "[" > '$@'
 	@sq=''; for x in $(foreach var,$^,'$(var)'); do \
 	[[ -n $${sq} ]] && echo "," >> '$@'; cat "$$x" >> '$@'; sq=1; done
 	@echo -e "\n]" >> '$@'
 	$(call conditional_echo,Finished database $@\n)
 
-$(dbfragmentscpp): %.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentsc): $(BUILDDIR)/%.o.mks.tmp: %.c.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
-$(dbfragmentscc): %.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
-	@$(gen_db_fragment)
-	$(call conditional_echo,Finished database fragment $@)
-
-$(srcfakescpp) $(srcfakescc):
+$(srcfakesc): | $(builddirs)
 	@touch '$@'
 
 # when no configuration file exists, this rule and all depending rules are forced to run
@@ -471,13 +513,12 @@ clean:
 purge: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
 	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
-	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
-	-$(RM) $(foreach var,$(srcfakescpp) $(srcfakescc),'$(var)')
+	-$(RMDIR) '$(BUILDDIR)' '$(BINDIR)' debug run
 	$(call conditional_echo,)
 
 show:
 	$(info $(infostring))
-	@$(CXX) --version
+	@$(CC) --version
 	@echo
 
 help:
