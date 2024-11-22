@@ -32,7 +32,7 @@ OPTIONS:
 	-s|--src|--src-dir VALUE       : Directory with the c/c++ source files. If the source files are located in more
 	                                 than one directory, this option may be repeated. Default: src
 	-i|--inc|--include-dir VALUE   : The project internal include directory for the quote form of the include directive (-iquote).
-	                                 Omit this variable, if header and source files are placed in the source directories.
+	                                 If header and source files are placed in the source directories, enter an empty string or a single space.
 	                                 This option may be repeated. The default value is 'include'
 	--hello-world                  : Create a hello world project.
 	-o|--overwrite                 : Overwrite (and backup) existing files in project destination.
@@ -241,6 +241,11 @@ while [[ $# -gt 0 ]]; do
 	'-i'|'--inc'|'--include-dir')
 		if [[ $# -gt 1 ]]; then
 			one_more_shift='true'
+			if [[ -z $2 ]]; then
+				temp=' '
+			else
+				temp="$2"
+			fi
 			if [[ -z ${inc_dir} ]]; then
 				inc_dir="$2"
 			else
@@ -380,9 +385,11 @@ if [[ -n ${out_place_project_type} ]]; then
 
 	# request include dir list
 	if [[ -z "${no_prompt}" ]]; then
-		read_value "Enter a space separated include directory list." 'inc_dir' 'include' 'true'
-	else
-		[[ -z ${inc_dir} ]] && inc_dir='include'
+		read_value "Enter a space separated include directory list."$'\n'"Enter a single space charater for 'no include dir'." 'inc_dir' 'include' 'true'
+	elif [[ -z ${inc_dir} ]]; then
+		inc_dir='include'
+	elif [[ "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+		inc_dir=' '
 	fi
 fi
 
@@ -432,7 +439,7 @@ src_dir_required=
 inc_dir_required=
 [[ (${target_name} != "${defaul_target_name}") && (${pr_type} != oto*) ]] && target_name_required='true'
 [[ (-n $out_place_project_type) && ($src_dir != 'src') ]] && src_dir_required='true'
-[[ (-n $out_place_project_type) && ($inc_dir != inc*) ]] && inc_dir_required='true'
+[[ ( -n $out_place_project_type ) && ( "$inc_dir" != 'include' ) && ! ( "$inc_dir" =~ ^[[:blank:]][[:blank:]]*$ ) ]] && inc_dir_required='true'
 project_mk_required='true'		# if true an existing project.mk is backuped
 [[ -n $target_name_required || -n $src_dir_required || -n $inc_dir_required ]] && project_mk_required='true'
 
@@ -533,9 +540,11 @@ if [[ -n ${execute_all} ]]; then
 		for temp in ${src_dir}; do
 			mkdir -pv "${project_dir}/${temp}" || abort_func
 		done
-		for temp in ${inc_dir}; do
-			mkdir -pv "${project_dir}/${temp}" || abort_func
-		done
+		if [[ ! "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+			for temp in ${inc_dir}; do
+				mkdir -pv "${project_dir}/${temp}" || abort_func
+			done
+		fi
 	fi
 	# project.mk
 	if [[ -n "${project_mk_required}" ]]; then

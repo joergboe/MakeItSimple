@@ -45,9 +45,8 @@ Optional customization variables:
                       Default value is 'src' (Use '.' for the project dir)
   INCDIRS:            Space separated list of project internal include directories for the quote form
                       of the include directive (-iquote) Omit this variable, if header and source files
-                      are placed in the source directories. The default value is 'inc*' or 'include*'
-                      if any of these directories exist. If none of the directories exist the default
-                      is the empty value.
+                      are placed in the source directories. The default value is 'include' if this
+                      directory exists or the empty string if the directories not exists.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
@@ -83,7 +82,7 @@ Description:
   all project source directories. The name of the executable is defined through variable TARGET and
   the default is the last component of the directory which contains this Makefile.
   The project may have separate header file directories. If the include directory differs from
-  'include*' or 'inc*', set the name in variable INCDIRS.
+  'include', set the name(s) in variable INCDIRS.
 
   This script checks the version of the compiler and searches for an appropriate 'warnings.xxxx.mk'
   file in directory /usr/local/include/mktsimple. If the tool is installed in a different place than
@@ -390,7 +389,6 @@ check_name = $(foreach var,$(hs) ' ' " " % : ; ( ),$(call name_has_char,$(1),$(v
 # determines all directories, sources, objects, dependecies, required flags
 SRCDIRS ?= src
 INCDIRS ?= $(wildcard include)
-INCDIRS ?= $(wildcard inc)
 # get the last path component from the realpath of this filename as target name
 TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))
 
