@@ -35,9 +35,9 @@ fi
 PREPS=(
 	'printInfo "Testing with MakeItSimple installation in ${TTRO_installDir}"'
 	'prepareWarnFile "${suiteCompiler}" "${suiteCCompiler}"'
-	'prepareWarnFile2'
 )
 
+# set MAKEFILE_WARN and MAKEFILE_WARN_C for all variants except default
 prepareWarnFile2() {
 	if [ "${TTRO_variantSuite}" != 'default' ]; then
 		local compiler_warnfile=${TTRO_variantSuite/clang++/clang}
@@ -53,12 +53,15 @@ prepareWarnFile2() {
 	fi
 }
 
+# Set TTRO_warnFile and TTRO_warnFileC for all compilers to ${TTRO_installDir}/include/mktsimple/warnings.<g++|clang>-<dd>.mk
+# and set MAKEFILE_WARN and MAKEFILE_WARN_C
 # args $1 c++ compiler, $2 c compiler
 prepareWarnFile() {
 	local versionstring=$($1 --version)
 	if [[ $versionstring =~ (g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+).* ]]; then
 		printInfo "c++ compiler major version ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]}"
 		setVar 'TTRO_warnFile' "${TTRO_installDir}/include/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
+		export MAKEFILE_WARN="${TTRO_warnFile}"
 	else
 		printErrorAndExit "unknown c++ compiler: ${versionstring}"
 	fi
@@ -67,6 +70,7 @@ prepareWarnFile() {
 		printInfo "C compiler major version ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]}"
 		local comp_name="${BASH_REMATCH[1]}"
 		setVar 'TTRO_warnFileC' "${TTRO_installDir}/include/mktsimple/warnings.${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.mk"
+		export MAKEFILE_WARN_C="${TTRO_warnFileC}"
 	else
 		printErrorAndExit "unknown C compiler: ${versionstring}"
 	fi
