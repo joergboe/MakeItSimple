@@ -24,6 +24,15 @@ while [[ ("${response}" != 'y') && ("${response}" != 'yes') ]]; do
 	fi
 done
 
+for x in in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place.mk; do
+	temp="$(grep "${mks}_version =" share/mktsimple/${x})"
+	release_version_x="${temp##* }"
+	if [[ "${release_version}" != "${release_version_x}" ]]; then
+		echo "ERROR: Version info ${release_version_x} of ${x} does not match!" >&2
+		exit 1
+	fi
+done
+
 commitstatus=$(git status --porcelain)
 if [[ $commitstatus ]]; then
 	echo "Repository has uncommited changes:"
