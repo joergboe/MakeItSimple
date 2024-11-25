@@ -3,17 +3,22 @@
 
 ## Features
 
-This github repository has a set of simple makefiles that may be useful for small or medium sized C++
-projects without any further build system. The scripts build executable targets from c++source files
-in the current project directory and create a JSON Compilation Database for the clang language server.
+This github repository has a set of simple makefiles that may be useful for small or medium sized C and C++
+projects without any further build system. The scripts build executable targets from c-, c++- and
+assembler source files in the current project directory and create a JSON Compilation Database for
+the clang language server.
 These makefiles only use functions that are available in a standard GNU Linux installation and do
 not require any additional build tools to be installed. They are therefore ideally suited to get a
-quick introduction to the C++ world.
+quick introduction to the C/C++ world.
+
+Together with an editor that can use the capabilities of the Clang language server, it is possible to
+support code completion and code navigation in the best possible and interactive way.
 
 An interactive project wizard allows a convenient and quick creation of the project skeleton for 5
 different project types.
 
-For maximum performance, all make scripts support parallel build.
+Make automatically determines which pieces of a program need to be recompiled, and issues commands
+to recompile them. For maximum performance, all make scripts support parallel build.
 
 The scripts keeps track of the last used configuration and perform a complete build, if changes in
 the build configuration have been detected.
@@ -29,27 +34,32 @@ adapt the options and warning flags accordingly.
 
 ## Project Types
 
-* One To One:     C++ project    - Build executable targets from each %.cpp and %.cc source file in the project directory.
-* In Place Build: C++ project    - Build one executable from all %.cpp and %.cc source files in the project directory.
+* One To One:      C++ project    - Build executable targets from each %.cpp and %.cc source file in the project directory.
+* In Place Build:  C++ project    - Build one executable from all %.cpp and %.cc source files in the project directory.
 * Out Place Build: C++ project   - Build one executable from all %.cpp and %.cc source files in all project source directories.
 * Out Place Build: C project     - Build one executable from all %.c source files in all project source directories.
 * Out Place Build: C/C++ project - Build one executable from all C++, C and assembler source files in all project source directories.
 
 ## Installation
 
-The release package is a self extracting script. Execute it and follow the instructions.
-You can install the tool into an arbitrary palace. If you want to install the tool into a system
-directory execute the installation script as root.
+You can execute this tool directly from the cloned/downloaded source-repository or you can install the tool.
+
+If you want to install the tool, download the installation script of the latest release [Releases](https://github.com/joergboe/MakeItSimple/releases)
+and run it. The release package is a self extracting script. Execute it and follow the instructions on the screen.
+You can install the tool into an arbitrary place. The preferred way is to run this script as root user
+and to install the tool into a system directory.
 * The default installation place for the root user is '/usr/local'
 * The default installation place or other users is '~/mktsimple'
 
-It is recommended to enter the location of the test framework into your PATH like:
-
 ## Quick Start
 
-* After installation you can start the project wizard	'mktsimple' from your installation directory.
-* Follow the instructions from the screen and select the option 'Create a hello world project'.
-* Then open the created project directory and execute 'make all'.
+* After installation you can start the project wizard 'mktsimple' from your installation directory.
+* Follow the instructions and select the option 'Create a hello world project'.
+* Then open the created project directory in a shell and execute 'make all'.
+* To find out more about the possible options of the tool execute 'make help'
+* If the tool is not installed in the default location ('/usr/local') and the project has no local copy
+of the 'warning.xxx.mk files it is necessary to add the option '-I' with the path to the include directory
+of your installation e. g.: 'make -I ~/mktsimple/include'
 
 If you have any suggestions or bug reports please write a Github Issue.
 

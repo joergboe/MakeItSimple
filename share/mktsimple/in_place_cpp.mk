@@ -1,5 +1,5 @@
 # version
-mktsimple_version = 4.0.0
+mktsimple_version = 4.0.1
 # Prepare the help string if required
 ifneq (,$(findstring help,$(MAKECMDGOALS)))
   define helpstring =
@@ -66,8 +66,9 @@ Description:
   default is the last component of the directory which contains this Makefile.
 
   This script checks the version of the compiler and searches for an appropriate 'warnings.xxxx.mk'
-  file in directory /usr/local/include/mktsimple. If the tool is installed in a different place than
-  /usr/local/include or /usr/include, add the base directory of the installation with make option -I.
+  file in the directories ./mktsimple and /usr/local/include/mktsimple. If the tool is installed in
+  a different place than /usr/local/include or /usr/include, add the option '-I' with the path to the
+  include directory of your installation e. g.: '-I ~/mktsimple/include'.
 
   If a 'production goal' (all compdb %.o..) runs and a configuration change has bee detected the
   compilation database is automatically created or updated.
@@ -103,6 +104,7 @@ Some useful make-options:
   -r, --no-builtin-rules          Disable the built-in implicit rules.
   -s, --silent, --quiet           Don't echo recipes.
   -O[TYPE], --output-sync[=TYPE]  Synchronize output of parallel jobs by TYPE (none|line|target|recurse).
+  -I dir, --include-dir=dir       Specifies a directory dir to search for included makefiles.
 
   endef
 endif
