@@ -51,11 +51,12 @@ EOF
 readonly mkts='mktsimple'
 readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
 readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
-pr3=('otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
-     'ipbcpp -- C++ project   In Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
-     'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
+pr3=(
      'opbc   -- C project     Out Place Build'$'\n''    Build one executable from all %.c source files in all project source directories.'$'\n'
+     'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
      'opb    -- C/C++ project Out Place Build'$'\n''    Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
+     'ipbcpp -- C++ project   In Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
+     'otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
      'exit'
 )
 readonly pr3
