@@ -108,9 +108,9 @@ endif
 ifneq (,$(findstring show,$(MAKECMDGOALS)))
   define infostring =
 
-Sources found : $(allsources)
+Sources found : $(sort $(allsources))
 
-Targets to build : $(alltargets)
+Targets to build : $(sort $(alltargets))
 
 All include (system) directories : $(INCSYSDIRS)
 
@@ -139,7 +139,7 @@ Warning level 5 adds : $(cxxwarn5)
 The active warning include file is: $(MAKEFILE_WARN) $(if $(makefile_warn_used),, - does not exist!)
 $(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 
-All generated dependecies: $(depfiles)
+All generated dependecies: $(sort $(depfiles))
 
 Make It Simple version : $(mktsimple_version)
 
@@ -328,7 +328,7 @@ depflags = -MMD -MF $(@:%=%.dep) -MP -MT $@
 ifndef silent_mode
   ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring show,$(MAKECMDGOALS))))
     $(info )
-    $(info Sources found : $(allsources))
+    $(info Sources found : $(sort $(allsources)))
     $(info )
     $(info All include (system) directories : $(INCSYSDIRS))
     $(info )

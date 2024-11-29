@@ -134,9 +134,9 @@ ifneq (,$(findstring show,$(MAKECMDGOALS)))
 
 Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS)
 
-Sources found : $(allsources)
+Sources found : $(sort $(allsources))
 
-Objects to build : $(objectscpp) $(objectscc) $(objectsc) $(objectsas)
+Objects to build : $(sort $(objectscpp) $(objectscc) $(objectsc) $(objectsas))
 
 All include directories (-iquote): $(INCDIRS)
 
@@ -185,7 +185,7 @@ $(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 The active C warning include file is: $(MAKEFILE_WARN_C) $(if $(makefile_warn_c_used),, - does not exist!)
 $(if $(makefile_warn_c_used),Used is file: $(makefile_warn_c_used))
 
-All generated dependecies: $(depfiles)
+All generated dependecies: $(sort $(depfiles))
 
 Make It Simple version : $(mktsimple_version)
 
@@ -460,7 +460,7 @@ ifndef silent_mode
     $(info )
     $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS))
     $(info )
-    $(info Sources found : $(allsources))
+    $(info Sources found : $(sort $(allsources)))
     $(info )
     $(info All include directories : $(INCDIRS) $(INCSYSDIRS))
     $(info )

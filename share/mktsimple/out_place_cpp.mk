@@ -126,9 +126,9 @@ ifneq (,$(findstring show,$(MAKECMDGOALS)))
 
 Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))
 
-Sources found : $(allsources)
+Sources found : $(sort $(allsources))
 
-Objects to build : $(objectscpp) $(objectscc)
+Objects to build : $(sort $(objectscpp) $(objectscc))
 
 All include directories (-iquote): $(INCDIRS)
 
@@ -157,7 +157,7 @@ Warning level 5 adds : $(cxxwarn5)
 The active warning include file is: $(MAKEFILE_WARN) $(if $(makefile_warn_used),, - does not exist!)
 $(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 
-All generated dependecies: $(depfiles)
+All generated dependecies: $(sort $(depfiles))
 
 Make It Simple version : $(mktsimple_version)
 
@@ -360,7 +360,7 @@ ifndef silent_mode
     $(info )
     $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp and *.cc sourcefiles in source directories : $(SRCDIRS))
     $(info )
-    $(info Sources found : $(allsources))
+    $(info Sources found : $(sort $(allsources)))
     $(info )
     $(info All include directories : $(INCDIRS) $(INCSYSDIRS))
     $(info )
