@@ -131,6 +131,7 @@ if [[ -n $IS_TOTAL_CLEAN ]]; then
 	STEPS+=(
 		'THEFILES=$(echo ${BUILDDIR}/*.mks.tmp)'
 		'if [[ -n $THEFILES ]]; then setFailure "The directory has build artifacts: $THEFILES"; fi'
+		'if [[ -d .mktsimple ]]; then setFailure "Hidden dir exists"; fi'
 	)
 fi
 if [[ -n $HASCOMPDB ]]; then

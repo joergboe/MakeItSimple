@@ -174,13 +174,16 @@ SHELL = /bin/bash
 
 # command definitions which are not in the default database
 MV = mv -f
+RMDIR = rm -rf
+MKDIR = mkdir -p
 
+hidden_dir_name := .mktsimple
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 compile_database_name :=  compile_commands.json
 last_config_store_name := mks_last_config_store
-temp_config_store_name := .mks_temp_config_store
-gen_db_frag_file := mks_gen_db_frag.sh
+temp_config_store_name := mks_temp_config_store
+gen_db_frag_file := $(hidden_dir_name)/mks_gen_db_frag.sh
 
 single_make_options := $(firstword -$(MAKEFLAGS))
 ifeq (s,$(findstring s,$(single_make_options)))
@@ -371,19 +374,28 @@ $(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
 End.
 endef
 
+# Make hidden directory
+ifneq (,$(or $(current_production_goals),$(current_target_goals)))
+  $(shell $(MKDIR) '$(hidden_dir_name)')
+  ifneq (0,$(.SHELLSTATUS))
+    $(error Can not create $(hidden_dir_name))
+  endif
+endif
+
+# check configuration
 ifdef DISABLE_CONFIG_CHECK
   last_config_store_target =
 else
-  last_config_store_target = $(last_config_store_name)
+  last_config_store_target = $(hidden_dir_name)/$(last_config_store_name)
   # check for configuration changes only for production goals
   ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-    compare_configuration := $(file < $(last_config_store_name))
+    compare_configuration := $(file < $(hidden_dir_name)/$(last_config_store_name))
     prompt := No configuration change detected.
     ifneq ($(compare_configuration),$(configuration))
       # if configuration has changed: remove the configuration storage and store the temp_config_store
       prompt := Configuration has changed!
-      $(shell $(RM) '$(last_config_store_name)')
-      $(file > $(temp_config_store_name),$(configuration))
+      $(shell $(RM) '$(hidden_dir_name)/$(last_config_store_name)')
+      $(file > $(hidden_dir_name)/$(temp_config_store_name),$(configuration))
     endif
     ifndef silent_mode
       $(info $(prompt))
@@ -475,7 +487,7 @@ $(srcfakescpp) $(srcfakescc):
 
 # when no configuration file exists, this rule and all depending rules are forced to run
 $(last_config_store_target):
-	-@$(MV) '$(temp_config_store_name)' '$@'
+	-@$(MV) '$(hidden_dir_name)/$(temp_config_store_name)' '$@'
 	$(call conditional_echo,Configuration file $@ written\n)
 
 $(gen_db_frag_file): $(makefile_this)
@@ -489,9 +501,10 @@ clean:
 
 purge: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
-	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
+	-$(RM) '$(hidden_dir_name)/$(last_config_store_name)' '$(hidden_dir_name)/$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
 	-$(RM) $(foreach var,$(srcfakescpp) $(srcfakescc),'$(var)')
+	-$(RMDIR) '$(hidden_dir_name)'
 	$(call conditional_echo,)
 
 show:

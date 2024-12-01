@@ -108,9 +108,9 @@ checkBuildOutput() {
 
 checkBuildOutput2() {
 	if [[ -n $EXPECT_CONFIG_STORE ]]; then
-		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Configuration file mks_last_config_store written*'
+		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Configuration file .mktsimple/mks_last_config_store written*'
 	else
-		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'false' '*Configuration file mks_last_config_store written*'
+		linewisePatternMatchInterceptAndError "${TT_evaluationFile}" 'false' '*Configuration file .mktsimple/mks_last_config_store written*'
 	fi
 	if [[ -n $EXPECT_COMPILE_DB ]]; then
 		linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \

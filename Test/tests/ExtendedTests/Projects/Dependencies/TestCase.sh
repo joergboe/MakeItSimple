@@ -22,7 +22,7 @@ BA2='m2.o'
 BA3=''
 BA4="${TTRO_variantCase}"
 COPMP_DB='compile_commands.json'
-CONF_DB='mks_last_config_store'
+CONF_DB='.mktsimple/mks_last_config_store'
 NO_CONF_DB_GENERATED=''
 CLEAN=''
 
@@ -72,7 +72,7 @@ esac
 PREPS=(
 	'cp -r "${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/"* .'
 	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
-	'echoAndExecute make ${OPTIONS} all'
+	"echoAndExecute make ${OPTIONS} all"
 	"cp -p ${BUILDDIR}${BA1} buildartefact1"
 	"cp -p ${BUILDDIR}${BA2} buildartefact2"
 	'[ -z ${BA3} ] || cp -p "${BUILDDIR}${BA3}" buildartefact3'
