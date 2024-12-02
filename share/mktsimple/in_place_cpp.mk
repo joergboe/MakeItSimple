@@ -43,7 +43,9 @@ Optional customization variables:
   INCSYSDIRS:         Space separated list of external include directories used with compiler option
                       -I. Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
-  MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
+  MAKEFILE_WARN:      The name of the file with specific warning options. The default is 'mktsimple/warnings.xxxx.mk'
+                      for a 'known' compiler or 'warnings.mk' for a unknown compiler. 'Known' compilers
+                      are: g++-7, g++-12..14 and clang-13,14,17,18,19
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
   COMP_FLAGS_RUN:     Compiler optimization level and debug option with BUILD_MODE = run.
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
