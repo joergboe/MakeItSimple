@@ -34,18 +34,23 @@
 # Generated executables and more
 /OneToOne/m1
 /OneToOne/m2
+/OneToOne/Makefile
 /ProjectInPlaceBuild/program
 /ProjectInPlaceBuild/ProjectInPlaceBuild
+/ProjectInPlaceBuild/Makefile
 /ProjectOutPlaceBuild/debug/
 /ProjectOutPlaceBuild/run/
+/ProjectOutPlaceBuild/Makefile
 /ProjectOutPlaceBuild2/debug/
 /ProjectOutPlaceBuild2/run/
+/ProjectOutPlaceBuild2/Makefile
 /ProjectOutPlaceBuildC/debug/
 /ProjectOutPlaceBuildC/run/
-mks_last_config_store
-.mks_temp_config_store
-mks_gen_db_frag.sh
+/ProjectOutPlaceBuildC/Makefile
+compile_commands.json
+.mktsimple/
 *.mks.tmp
+
 
 # test artifacts
 /Test/scripts/
@@ -74,5 +79,4 @@ mks_gen_db_frag.sh
 .vscode/
 
 # clangd files
-compile_commands.json
 .cache/

@@ -49,7 +49,7 @@ and run it. The release package is a self extracting script. Execute it and foll
 You can install the tool into an arbitrary place. The preferred way is to run this script as root user
 and to install the tool into a system directory.
 * The default installation place for the root user is '/usr/local'
-* The default installation place or other users is '~/mktsimple'
+* The default installation place for other users is '~/mktsimple'
 
 ## Quick Start
 
