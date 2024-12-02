@@ -415,6 +415,7 @@ if [[ -z ${out_place_project_type} ]]; then
 		exit 2
 	fi
 	module_name="${project_dir}/hello.c"
+	module_temp_name="${project_dir}/.hello.x"
 else
 	if [[ -z $src_dir ]]; then
 		echo "ERROR: No source directory specified but project is out place type ${pr_type}" >&2
@@ -430,6 +431,7 @@ else
 		break
 	done
 	module_name="${project_dir}/${first_src_dir}/hello.c"
+	module_temp_name="${project_dir}/${first_src_dir}/.hello.x"
 fi
 if [[ ${pr_type} == *cpp ]]; then
 	module_name="${module_name}pp"
@@ -441,13 +443,14 @@ inc_dir_required=
 [[ (${target_name} != "${defaul_target_name}") && (${pr_type} != oto*) ]] && target_name_required='true'
 [[ (-n $out_place_project_type) && ($src_dir != 'src') ]] && src_dir_required='true'
 [[ ( -n $out_place_project_type ) && ( "$inc_dir" != 'include' ) && ! ( "$inc_dir" =~ ^[[:blank:]][[:blank:]]*$ ) ]] && inc_dir_required='true'
-project_mk_required='true'		# if true an existing project.mk is backuped
+project_mk_required=
 [[ -n $target_name_required || -n $src_dir_required || -n $inc_dir_required ]] && project_mk_required='true'
 
 # check if some files already exists
 makefile_name="${project_dir}/Makefile"
 warndir_name="${project_dir}/${mkts}"
 project_mk_name="${project_dir}/project.mk"
+project_mk_temp_name="${project_dir}/.project.mk"
 overwrite_makefile=
 overwrite_project_mk=
 overwrite_module=
@@ -520,9 +523,6 @@ if [[ -n ${execute_all} ]]; then
 	# create project directory
 	mkdir -p "${project_dir}" || abort_func
 	# Makefile
-	if [[ -a "${makefile_name}" ]]; then
-		mv -v "${makefile_name}" "${makefile_name}.bak" || abort_func
-	fi
 	case ${pr_type} in
 		otocpp)
 			src_name='one_to_one_cpp.mk';;
@@ -535,7 +535,7 @@ if [[ -n ${execute_all} ]]; then
 		opb)
 			src_name='out_place.mk'
 	esac
-	cp -v "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
+	cp -v --backup=numbered "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
 	# create dirs
 	if [[ -n ${out_place_project_type} ]]; then
 		for temp in ${src_dir}; do
@@ -550,33 +550,33 @@ if [[ -n ${execute_all} ]]; then
 	# project.mk
 	if [[ -n "${project_mk_required}" ]]; then
 		if [[ -a "${project_mk_name}" ]]; then
-			mv -v "${project_mk_name}" "${project_mk_name}.bak" || abort_func
+			cp -p "${project_mk_name}" "${project_mk_temp_name}" || abort_func
 		fi
+		echo -e "\n# *** Section created by mktsimple ***" >> "${project_mk_temp_name}" || abort_func
 		if [[ -n $target_name_required ]]; then
-			echo -e "# Name of the executable\nTARGET := ${target_name}\n" >> "${project_mk_name}" || abort_func
+			echo -e "# Name of the executable\nTARGET := ${target_name}\n" >> "${project_mk_temp_name}" || abort_func
 			echo "TARGET := ${target_name} >> ${project_mk_name}"
 		fi
 		if [[ -n $src_dir_required ]]; then
-			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dir}\n" >> "${project_mk_name}" || abort_func
+			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dir}\n" >> "${project_mk_temp_name}" || abort_func
 			echo "SRCDIRS := ${src_dir} >> ${project_mk_name}"
 		fi
 		if [[ -n $inc_dir_required ]]; then
-			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dir}\n" >> "${project_mk_name}" || abort_func
+			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dir}\n" >> "${project_mk_temp_name}" || abort_func
 			echo "INCDIRS := ${inc_dir} >> ${project_mk_name}"
 		fi
+		mv -v --backup=numbered "${project_mk_temp_name}" "${project_mk_name}" || abort_func
 	fi
 	# hello
 	if [[ -n "${hello_world}" ]]; then
-		if [[ -a "${module_name}" ]]; then
-			mv -v "${module_name}" "${module_name}.bak" || abort_func
-		fi
 		if [[ ${pr_type} == *cpp ]]; then
-			echo -e "#include <iostream>\nint main() {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}\n" > "${module_name}" || abort_func
+			echo -e "#include <iostream>\nint main() {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}\n" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		else
-			echo -e "#include <stdio.h>\nint main() {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}\n" > "${module_name}" || abort_func
+			echo -e "#include <stdio.h>\nint main() {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}\n" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		fi
+		mv -v --backup=numbered "${module_temp_name}" "${module_name}" || abort_func
 	fi
 	# warn directory
 	if [[ -n "${copy_warn}" ]]; then

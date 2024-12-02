@@ -41,16 +41,16 @@
 /ProjectOutPlaceBuild/debug/
 /ProjectOutPlaceBuild/run/
 /ProjectOutPlaceBuild/Makefile
-/ProjectOutPlaceBuild2/debug/
-/ProjectOutPlaceBuild2/run/
-/ProjectOutPlaceBuild2/Makefile
+/ProjectOutPlaceBuildCpp/debug/
+/ProjectOutPlaceBuildCpp/run/
+/ProjectOutPlaceBuildCpp/Makefile
 /ProjectOutPlaceBuildC/debug/
 /ProjectOutPlaceBuildC/run/
 /ProjectOutPlaceBuildC/Makefile
 compile_commands.json
 .mktsimple/
 *.mks.tmp
-
+*.~*~
 
 # test artifacts
 /Test/scripts/

@@ -61,6 +61,26 @@ and to install the tool into a system directory.
 of the 'warning.xxx.mk files it is necessary to add the option '-I' with the path to the include directory
 of your installation e. g.: 'make -I ~/mktsimple/include'
 
+## Samples
+
+Samples are available in the source repository.
+
+The directories
+* OneToOne
+* ProjectInPlaceBuild
+* ProjectOutPlaceBuildCpp
+* ProjectOutPlaceBuildC
+* ProjectOutPlaceBuild
+contain sample projects.
+
+Use the following commands to complete these project fragments withe the project wizard:
+    cd OneToOne; ../bin/mktsimple --project-dir . --type otocpp --noprompt --overwrite; make all
+    cd ProjectInPlaceBuild; ../bin/mktsimple --project-dir . --type ipbcpp --noprompt --overwrite; make all
+    cd ProjectOutPlaceBuildCpp; ../bin/mktsimple --project-dir . --type opbcpp --noprompt --overwrite; make all
+    cd ProjectOutPlaceBuildC; ../bin/mktsimple --project-dir . --type opbc --noprompt --overwrite; make all
+    cd ProjectOutPlaceBuild; ../bin/mktsimple --project-dir . --type opb --noprompt --overwrite; make all
+
+
 If you have any suggestions or bug reports please write a Github Issue.
 
 Learn more about MakeItSimple [here](https://www.joergboe.de/makeitsimple.html).
