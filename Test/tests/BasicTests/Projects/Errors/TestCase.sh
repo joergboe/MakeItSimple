@@ -1,4 +1,4 @@
-#--variantList='default_goal all_goal clean_goal purge_goal show_goal help_goal cleanall__goal'
+#--variantList='default_goal all_goal compdb_goal build_goal clean_goal purge_goal show_goal help_goal cleanall__goal'
 
 printInfo "Test makefile if hidden directory can not be created."
 
@@ -10,6 +10,10 @@ case ${TTRO_variantCase} in
 		: ;;
 	all_goal)
 		GOALS='all';;
+	compdb_goal)
+		GOALS='compdb';;
+	build_goal)
+		GOALS='build';;
 	clean_goal)
 		GOALS='clean'
 		EXPECT_SUCCESS='true';;
