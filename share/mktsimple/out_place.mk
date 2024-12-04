@@ -294,7 +294,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq ($(oldlist),$(MAKEFILE_LIST))
-  $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I 'install_dir' ?)
+  $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I <WarninsIncludeDir> ? (e.g.: -I ~/mktsimple/include))
   makefile_warn_used :=
 else
   makefile_warn_used := $(lastword $(MAKEFILE_LIST))
