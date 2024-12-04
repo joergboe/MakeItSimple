@@ -1,6 +1,6 @@
-#ifndef DEFINITIONS_HPP_
-#define DEFINITIONS_HPP_
+#ifndef DEFINITIONS_H_
+#define DEFINITIONS_H_
 
-const int maxcount = 3;
+static const int maxcount = 4;
 
-#endif /* DEFINITIONS_HPP_ */
+#endif /* DEFINITIONS_H_ */

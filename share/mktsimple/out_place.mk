@@ -50,8 +50,12 @@ Optional customization variables:
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
-  MAKEFILE_WARN:      The name of the file with specific warning options. Default: 'warnings.mk'
-  MAKEFILE_WARN_C:    The name of the file with C-specific warning options. Default: 'warnings_c.mk'
+  MAKEFILE_WARN:      The name of the file with specific warning options. The default is 'mktsimple/warnings.xxxx.mk'
+                      for a 'known' compiler or 'warnings.mk' for a unknown compiler. 'Known' compilers
+                      are: g++-7, g++-12..14 and clang-13,14,17,18,19
+  MAKEFILE_WARN_C:    The name of the file with C-specific warning options. The default is 'mktsimple/warnings.xxxx.mk'
+                      for a 'known' compiler or 'warnings.mk' for a unknown compiler. 'Known' compilers
+                      are: gcc-7, gcc-12..14 and clang-13,14,17,18,19
   BUILD_MODE:         Build mode set to 'run' or 'debug'. Default: 'debug'
   COMP_FLAGS_RUN:     Compiler optimization level and debug option with BUILD_MODE = run.
                       Default: -O2 -g1 (clang: -Og -gline-tables-only)
@@ -134,9 +138,9 @@ ifneq (,$(findstring show,$(MAKECMDGOALS)))
 
 Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS)
 
-Sources found : $(allsources)
+Sources found : $(sort $(allsources))
 
-Objects to build : $(objectscpp) $(objectscc) $(objectsc) $(objectsas)
+Objects to build : $(sort $(objectscpp) $(objectscc) $(objectsc) $(objectsas))
 
 All include directories (-iquote): $(INCDIRS)
 
@@ -185,7 +189,7 @@ $(if $(makefile_warn_used),Used is file: $(makefile_warn_used))
 The active C warning include file is: $(MAKEFILE_WARN_C) $(if $(makefile_warn_c_used),, - does not exist!)
 $(if $(makefile_warn_c_used),Used is file: $(makefile_warn_c_used))
 
-All generated dependecies: $(depfiles)
+All generated dependecies: $(sort $(depfiles))
 
 Make It Simple version : $(mktsimple_version)
 
@@ -197,7 +201,7 @@ endif
 min_make_version = 4.2
 ifeq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
 else
-  $(error required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
+  $(error ERROR: Required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
 endif
 
 production_goals = all build compdb
@@ -219,12 +223,13 @@ MV = mv -f
 RMDIR = rm -rf
 MKDIR = mkdir -p
 
+hidden_dir_name := .mktsimple
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 compile_database_name :=  compile_commands.json
 last_config_store_name := mks_last_config_store
-temp_config_store_name := .mks_temp_config_store
-gen_db_frag_file := mks_gen_db_frag.sh
+temp_config_store_name := mks_temp_config_store
+gen_db_frag_file := $(hidden_dir_name)/mks_gen_db_frag.sh
 
 single_make_options := $(firstword -$(MAKEFLAGS))
 ifeq (s,$(findstring s,$(single_make_options)))
@@ -248,7 +253,7 @@ get_comp_name_version = $(shell\
 ifndef MAKEFILE_WARN
   cc_name_vers := $(call get_comp_name_version,$(CXX))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning Unknown compiler version $(CXX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
+    $(warning WARNING: Unknown compiler version $(CXX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
     MAKEFILE_WARN := warnings.mk
   else
     MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -258,7 +263,7 @@ $(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
 ifndef MAKEFILE_WARN_C
   cc_name_vers := $(call get_comp_name_version,$(CC))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN_C=warnings_c.mk)
+    $(warning WARNING: Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN_C=warnings_c.mk)
     MAKEFILE_WARN_C := warnings_c.mk
   else
     MAKEFILE_WARN_C := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -281,7 +286,7 @@ else
 endif
 AS_FLAGS_RUN ?= -O2
 AS_FLAGS_DEBUG ?= -g
-AS_FLAGS_LIST ?= -asli=$(@:%.o=%.lst)
+AS_FLAGS_LIST ?= -asl=$(@:%.o=%.lst)
 formatflags ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
@@ -289,7 +294,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq ($(oldlist),$(MAKEFILE_LIST))
-  $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I 'install_dir' ?)
+  $(warning WARNING: Warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I <WarninsIncludeDir> ? (e.g.: -I ~/mktsimple/include))
   makefile_warn_used :=
 else
   makefile_warn_used := $(lastword $(MAKEFILE_LIST))
@@ -299,7 +304,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN_C)
 makefile_warn_c_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq (,$(makefile_warn_c_used))
-  $(warning warnings file $(MAKEFILE_WARN_C) does not exist! Did you forget the option -I 'install_dir' ?)
+  $(warning WARNING: Warnings file $(MAKEFILE_WARN_C) does not exist! Did you forget the option -I 'install_dir' ?)
 else
   $(call conditional_info,Using C warnings from $(makefile_warn_c_used))
 endif
@@ -360,7 +365,7 @@ else ifeq ($(WARN_LEVEL),5)
   cwarnings := $(cwarn1) $(cwarn2) $(cwarn3) $(cwarn4) $(cwarn5)
   aswarnings := --warn
 else
-  $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
+  $(error ERROR: Invalid WARN_LEVEL=$(WARN_LEVEL))
 endif
 
 ifeq ($(BUILD_MODE),run)
@@ -374,7 +379,7 @@ else ifeq ($(BUILD_MODE),debug)
   asbmodeflags := $(AS_FLAGS_DEBUG)
   modeinfostring := Building with debug information
 else
-  $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
+  $(error ERROR: Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
 endif
 
 # allowed special characters in filenames are:
@@ -382,7 +387,7 @@ endif
 # disallowed are:
 # # ' " % : ; ( ) and all kind of white space
 # call name_has_char,name,char
-name_has_char = $(if $(findstring $(2),$(1)),$(error Invalid char $(2) in filename $(1)))
+name_has_char = $(if $(findstring $(2),$(1)),$(error ERROR: Invalid char $(2) in filename $(1)))
 hs := \#
 # call check_name,names
 # quotes are paired to satisfy the syntax highlighter
@@ -434,13 +439,13 @@ current_cleanup_goals = $(filter $(cleanup_goals),$(goals))
 ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
   ifneq (,$(current_cleanup_goals))
     ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-      $(error Cleanup and production is not allowed with parallel make enabled!)
+      $(error ERROR: Cleanup and production is not allowed with parallel make enabled!)
     endif
   endif
 endif
 ifeq (purge,$(findstring purge,$(goals)))
   ifneq (,$(filter-out purge,$(goals)))
-    $(error purge must be the only goal!)
+    $(error ERROR: purge must be the only goal!)
   endif
 endif
 
@@ -460,7 +465,7 @@ ifndef silent_mode
     $(info )
     $(info Build target '$(BINDIR)/$(TARGET)' from *.cpp, *.cc, *.c and *.s sourcefiles in source directories : $(SRCDIRS))
     $(info )
-    $(info Sources found : $(allsources))
+    $(info Sources found : $(sort $(allsources)))
     $(info )
     $(info All include directories : $(INCDIRS) $(INCSYSDIRS))
     $(info )
@@ -511,19 +516,28 @@ $(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
 End.
 endef
 
+# Make hidden directory
+ifneq (,$(or $(current_production_goals),$(current_target_goals)))
+  $(shell $(MKDIR) '$(hidden_dir_name)')
+  ifneq (0,$(.SHELLSTATUS))
+    $(error ERROR: Can not create $(hidden_dir_name))
+  endif
+endif
+
+# check configuration
 ifdef DISABLE_CONFIG_CHECK
   last_config_store_target =
 else
-  last_config_store_target = $(last_config_store_name)
+  last_config_store_target = $(hidden_dir_name)/$(last_config_store_name)
   # check for configuration changes only for production goals
   ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-    compare_configuration := $(file < $(last_config_store_name))
+    compare_configuration := $(file < $(hidden_dir_name)/$(last_config_store_name))
     prompt := No configuration change detected.
     ifneq ($(compare_configuration),$(configuration))
       # if configuration has changed: remove the configuration storage and store the temp_config_store
       prompt := Configuration has changed!
-      $(shell $(RM) '$(last_config_store_name)')
-      $(file > $(temp_config_store_name),$(configuration))
+      $(shell $(RM) '$(hidden_dir_name)/$(last_config_store_name)')
+      $(file > $(hidden_dir_name)/$(temp_config_store_name),$(configuration))
     endif
     ifndef silent_mode
       $(info $(prompt))
@@ -656,7 +670,7 @@ $(srcfakescpp) $(srcfakescc) $(srcfakesc): | $(builddirs)
 
 # when no configuration file exists, this rule and all depending rules are forced to run
 $(last_config_store_target):
-	-@$(MV) '$(temp_config_store_name)' '$@'
+	-@$(MV) '$(hidden_dir_name)/$(temp_config_store_name)' '$@'
 	$(call conditional_echo,Configuration file $@ written\n)
 
 $(gen_db_frag_file): $(makefile_this)
@@ -670,8 +684,9 @@ clean:
 
 purge: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
-	-$(RM) '$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
+	-$(RM) '$(hidden_dir_name)/$(last_config_store_name)' '$(hidden_dir_name)/$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RMDIR) '$(BUILDDIR)' '$(BINDIR)' debug run
+	-$(RMDIR) '$(hidden_dir_name)'
 	$(call conditional_echo,)
 
 show:

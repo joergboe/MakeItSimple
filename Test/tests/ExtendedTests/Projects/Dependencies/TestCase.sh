@@ -22,7 +22,7 @@ BA2='m2.o'
 BA3=''
 BA4="${TTRO_variantCase}"
 COPMP_DB='compile_commands.json'
-CONF_DB='mks_last_config_store'
+CONF_DB='.mktsimple/mks_last_config_store'
 NO_CONF_DB_GENERATED=''
 CLEAN=''
 
@@ -70,13 +70,14 @@ case ${TTRO_variantCase} in
 esac
 
 PREPS=(
-	'cp -r "${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/"* .'
+	"cp -r \"${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/\"* ."
 	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
-	'echoAndExecute make ${OPTIONS} all'
+	'sleep 2'
+	"make ${OPTIONS} all"
 	"cp -p ${BUILDDIR}${BA1} buildartefact1"
 	"cp -p ${BUILDDIR}${BA2} buildartefact2"
-	'[ -z ${BA3} ] || cp -p "${BUILDDIR}${BA3}" buildartefact3'
-	'[ -z ${BA4} ] || cp -p "${BINDIR}${BA4}" buildartefact4'
+	"[ -z \"${BA3}\" ] || cp -p \"${BUILDDIR}${BA3}\" buildartefact3"
+	"[ -z \"${BA4}\" ] || cp -p \"${BINDIR}${BA4}\" buildartefact4"
 	"cp -p ${COPMP_DB} buildartifact_comp_db"
 	"[ -n \"${NO_CONF_DB_GENERATED}\" ] || cp -p ${CONF_DB} buildartifact_conf_db"
 	'sleep 2'
@@ -89,11 +90,11 @@ fi
 
 # The main test run
 STEPS=(
-	'executeLogAndSuccess make ${OPTIONS} ${OPTIONS2} ${GOALS}'
-	'ls --full-time buildartefact1 ${BUILDDIR}${BA1}'
-	'ls --full-time buildartefact2 ${BUILDDIR}${BA2}'
-	'[ -z ${BA3} ] || ls --full-time buildartefact3 "${BUILDDIR}${BA3}"'
-	'[ -z ${BA4} ] || ls --full-time buildartefact4 "${BINDIR}${BA4}"'
+	"executeLogAndSuccess make ${OPTIONS} ${OPTIONS2} ${GOALS}"
+	"ls --full-time buildartefact1 \"${BUILDDIR}${BA1}\""
+	"ls --full-time buildartefact2 \"${BUILDDIR}${BA2}\""
+	"[ -z \"${BA3}\" ] || ls --full-time buildartefact3 \"${BUILDDIR}${BA3}\""
+	"[ -z \"${BA4}\" ] || ls --full-time buildartefact4 \"${BINDIR}${BA4}\""
 	"ls --full-time buildartifact_comp_db ${COPMP_DB}"
 	"[ -n \"${NO_CONF_DB_GENERATED}\" ] || ls --full-time buildartifact_conf_db ${CONF_DB}"
 	'checkOutput'
