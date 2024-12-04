@@ -201,7 +201,7 @@ endif
 min_make_version = 4.2
 ifeq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
 else
-  $(error required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
+  $(error ERROR: Required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
 endif
 
 production_goals = all build compdb
@@ -253,7 +253,7 @@ get_comp_name_version = $(shell\
 ifndef MAKEFILE_WARN
   cc_name_vers := $(call get_comp_name_version,$(CXX))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning Unknown compiler version $(CXX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
+    $(warning WARNING: Unknown compiler version $(CXX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
     MAKEFILE_WARN := warnings.mk
   else
     MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -263,7 +263,7 @@ $(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
 ifndef MAKEFILE_WARN_C
   cc_name_vers := $(call get_comp_name_version,$(CC))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN_C=warnings_c.mk)
+    $(warning WARNING: Unknown compiler version $(CC) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN_C=warnings_c.mk)
     MAKEFILE_WARN_C := warnings_c.mk
   else
     MAKEFILE_WARN_C := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -294,7 +294,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN)
 makefile_warn_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq ($(oldlist),$(MAKEFILE_LIST))
-  $(warning warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I <WarninsIncludeDir> ? (e.g.: -I ~/mktsimple/include))
+  $(warning WARNING: Warnings file $(MAKEFILE_WARN) does not exist! Did you forget the option -I <WarninsIncludeDir> ? (e.g.: -I ~/mktsimple/include))
   makefile_warn_used :=
 else
   makefile_warn_used := $(lastword $(MAKEFILE_LIST))
@@ -304,7 +304,7 @@ oldlist := $(MAKEFILE_LIST)
 -include $(MAKEFILE_WARN_C)
 makefile_warn_c_used := $(intcmp $(words $(MAKEFILE_LIST)),$(words $(oldlist)),,,$(lastword $(MAKEFILE_LIST)))
 ifeq (,$(makefile_warn_c_used))
-  $(warning warnings file $(MAKEFILE_WARN_C) does not exist! Did you forget the option -I 'install_dir' ?)
+  $(warning WARNING: Warnings file $(MAKEFILE_WARN_C) does not exist! Did you forget the option -I 'install_dir' ?)
 else
   $(call conditional_info,Using C warnings from $(makefile_warn_c_used))
 endif
@@ -365,7 +365,7 @@ else ifeq ($(WARN_LEVEL),5)
   cwarnings := $(cwarn1) $(cwarn2) $(cwarn3) $(cwarn4) $(cwarn5)
   aswarnings := --warn
 else
-  $(error Invalid WARN_LEVEL=$(WARN_LEVEL))
+  $(error ERROR: Invalid WARN_LEVEL=$(WARN_LEVEL))
 endif
 
 ifeq ($(BUILD_MODE),run)
@@ -379,7 +379,7 @@ else ifeq ($(BUILD_MODE),debug)
   asbmodeflags := $(AS_FLAGS_DEBUG)
   modeinfostring := Building with debug information
 else
-  $(error Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
+  $(error ERROR: Build mode $(BUILD_MODE) is not supported. Use 'debug' or 'run')
 endif
 
 # allowed special characters in filenames are:
@@ -387,7 +387,7 @@ endif
 # disallowed are:
 # # ' " % : ; ( ) and all kind of white space
 # call name_has_char,name,char
-name_has_char = $(if $(findstring $(2),$(1)),$(error Invalid char $(2) in filename $(1)))
+name_has_char = $(if $(findstring $(2),$(1)),$(error ERROR: Invalid char $(2) in filename $(1)))
 hs := \#
 # call check_name,names
 # quotes are paired to satisfy the syntax highlighter
@@ -439,13 +439,13 @@ current_cleanup_goals = $(filter $(cleanup_goals),$(goals))
 ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
   ifneq (,$(current_cleanup_goals))
     ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-      $(error Cleanup and production is not allowed with parallel make enabled!)
+      $(error ERROR: Cleanup and production is not allowed with parallel make enabled!)
     endif
   endif
 endif
 ifeq (purge,$(findstring purge,$(goals)))
   ifneq (,$(filter-out purge,$(goals)))
-    $(error purge must be the only goal!)
+    $(error ERROR: purge must be the only goal!)
   endif
 endif
 
@@ -520,7 +520,7 @@ endef
 ifneq (,$(or $(current_production_goals),$(current_target_goals)))
   $(shell $(MKDIR) '$(hidden_dir_name)')
   ifneq (0,$(.SHELLSTATUS))
-    $(error Can not create $(hidden_dir_name))
+    $(error ERROR: Can not create $(hidden_dir_name))
   endif
 endif
 
