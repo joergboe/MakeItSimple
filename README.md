@@ -48,18 +48,18 @@ If you want to install the tool, download the installation script of the latest 
 and run it. The release package is a self extracting script. Execute it and follow the instructions on the screen.
 You can install the tool into an arbitrary place. The preferred way is to run this script as root user
 and to install the tool into a system directory.
-* The default installation place for the root user is '/usr/local'
-* The default installation place for other users is '~/mktsimple'
+* The default installation place for the root user is `/usr/local`
+* The default installation place for other users is `~/mktsimple`
 
 ## Quick Start
 
-* After installation you can start the project wizard 'mktsimple' from your installation directory.
+* After installation you can start the project wizard `mktsimple` from your installation directory.
 * Follow the instructions and select the option 'Create a hello world project'.
-* Then open the created project directory in a shell and execute 'make all'.
-* To find out more about the possible options of the tool execute 'make help'
-* If the tool is not installed in the default location ('/usr/local') and the project has no local copy
-of the 'warning.xxx.mk files it is necessary to add the option '-I' with the path to the include directory
-of your installation e. g.: 'make -I ~/mktsimple/include'
+* Then open the created project directory in a shell and execute `make all`.
+* To find out more about the possible options of the tool execute `make help`
+* If the tool is not installed in the default location (`/usr/local`) and the project has no local copy
+of the `warning.xxx.mk` files it is necessary to add the option `-I` with the path to the include directory
+of your installation e. g.: `make -I ~/mktsimple/include`
 
 ## Samples
 
@@ -74,10 +74,15 @@ The directories
 contain sample projects.
 
 Use the following commands to complete these project fragments withe the project wizard:
+
     cd OneToOne; ../bin/mktsimple --project-dir . --type otocpp --noprompt --overwrite; make all
+
     cd ProjectInPlaceBuild; ../bin/mktsimple --project-dir . --type ipbcpp --noprompt --overwrite; make all
+
     cd ProjectOutPlaceBuildCpp; ../bin/mktsimple --project-dir . --type opbcpp --noprompt --overwrite; make all
+
     cd ProjectOutPlaceBuildC; ../bin/mktsimple --project-dir . --type opbc --noprompt --overwrite; make all
+
     cd ProjectOutPlaceBuild; ../bin/mktsimple --project-dir . --type opb --noprompt --overwrite; make all
 
 

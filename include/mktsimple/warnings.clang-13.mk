@@ -1,6 +1,6 @@
 # This file contains the compiler warning definitions tailored for clang/clang++ version 13 or higher
 
-cxxwarn3 = -Wpedantic -Wvariadic-macros
+cxxwarn3 = -Wextra -Wpedantic
 
 cxxwarn4 = -Wabstract-vbase-init -Wanon-enum-enum-conversion -Warc-repeated-use-of-weak -Warray-bounds-pointer-arithmetic\
   -Wassign-enum -Watomic-properties -Wbad-function-cast -Wbinary-literal -Wbind-to-temporary-copy\
@@ -15,7 +15,7 @@ cxxwarn4 = -Wabstract-vbase-init -Wanon-enum-enum-conversion -Warc-repeated-use-
   -Wincomplete-module -Winconsistent-missing-destructor-override\
   -Winvalid-or-nonexistent-directory -Wloop-analysis -Wmain\
   -Wmissing-noreturn -Wmissing-variable-declarations\
-  -Wsign-compare -Wconversion -Wnullable-to-nonnull-conversion -Wold-style-cast -Wover-aligned\
+  -Wconversion -Wnullable-to-nonnull-conversion -Wold-style-cast -Wover-aligned\
   -Woverriding-method-mismatch -Wunguarded-availability -Wpointer-arith\
   -Wredundant-parens -Wsuggest-destructor-override -Wsuggest-override\
   -Wsuper-class-method-mismatch -Wtautological-constant-in-range-compare\
