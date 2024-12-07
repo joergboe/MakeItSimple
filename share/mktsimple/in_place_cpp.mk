@@ -40,8 +40,8 @@ Files:
 Optional customization variables:
   TARGET              Name of the executable to build. Default value is the last path component of
                       this Makefile.
-  INCSYSDIRS:         Space separated list of external include directories used with compiler option
-                      -I. Default: empty.
+  INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
+                      Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
   MAKEFILE_WARN:      The name of the file with specific warning options. The default is 'mktsimple/warnings.xxxx.mk'
                       for a 'known' compiler or 'warnings.mk' for a unknown compiler. 'Known' compilers
@@ -132,6 +132,8 @@ Custom compiler options: $(CXXFLAGS)
 
 Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings)
 
+Warning level 0 includes : $(cxxwarn0)
+
 Warning level 1 includes : $(cxxwarn1)
 
 Warning level 2 adds : $(cxxwarn2)
@@ -199,7 +201,7 @@ endif
 # call $1 - info string
 conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 compiler command
+# call $1 - compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
   if [[ "$${ins}" =~ (gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
@@ -334,7 +336,7 @@ STRIPPED_TARGET = $(@:$(temp_suffix)=)
 STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
-MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))_FLAGS
+MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(subst ./,,$(STRIPPED_PREREQ1))))_FLAGS
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 

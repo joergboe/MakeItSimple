@@ -25,8 +25,8 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  purge     Clean up executables and all generated build artifacts, the compilation database
-            and the configuration store.
+  purge     Clean up executable, all generated build artifacts, the compilation database and the
+            configuration store.
   show      Print project info.
   help      Print this help text.
   dir/%.o   Build this object file if a coresponding source file exists.
@@ -34,8 +34,8 @@ Goals:
 Files:
   Makefile        This make script
   $(makefile_defs)      This optional script contains the project customizations.
-  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
-                  specific warning options and will be included from Makefile.
+  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be
+                  used to define specific warning options and will be included from Makefile.
 
 Optional customization variables:
   TARGET              Name of the executable to build. Default value is the last path component of
@@ -146,6 +146,8 @@ Custom compiler options: $(CFLAGS)
 
 Building with WARN_LEVEL=$(WARN_LEVEL) : $(cwarnings)
 
+Warning level 0 includes : $(cxxwarn0)
+
 Warning level 1 includes : $(cwarn1)
 
 Warning level 2 adds : $(cwarn2)
@@ -213,14 +215,14 @@ endif
 # call $1 - info string
 conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 compiler command
+# call $1 - compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
   if [[ "$${ins}" =~ (gcc|cc|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
     echo "$${BASH_REMATCH[1]} $${BASH_REMATCH[2]}";\
   fi)
 
-# and add the defaults for the unset variables
+# add the defaults
 ifndef MAKEFILE_WARN
   cc_name_vers := $(call get_comp_name_version,$(CC))
   ifneq (2,$(words $(cc_name_vers)))

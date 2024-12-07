@@ -25,8 +25,8 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  purge     Clean up executables and all generated build artifacts, the compilation database
-            and the configuration store.
+  purge     Clean up executable, all generated build artifacts, the compilation database and the
+            configuration store.
   show      Print project info.
   help      Print this help text.
   dir/%.o   Build this object file if a coresponding source file exists.
@@ -34,8 +34,8 @@ Goals:
 Files:
   Makefile        This make script
   $(makefile_defs)      This optional script contains the project customizations.
-  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
-                  specific warning options and will be included from Makefile.
+  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be
+                  used to define specific warning options and will be included from Makefile.
   $$(MAKEFILE_WARN_C) The optional file specific warning options for the C-compiler.
 
 Optional customization variables:
@@ -46,7 +46,7 @@ Optional customization variables:
   INCDIRS:            Space separated list of project internal include directories for the quote form
                       of the include directive (-iquote) Omit this variable, if header and source files
                       are placed in the source directories. The default value is 'include' if this
-                      directory exists or the empty string if the directories not exists.
+                      directory exists or the empty string if the directory not exists.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
@@ -169,6 +169,9 @@ Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings)
 
 C-Warning flags : $(cwarnings)
 
+Warning level 0 includes : $(cxxwarn0)
+C-Warning flags : $(cwarn0)
+
 Warning level 1 includes : $(cxxwarn1)
 C-Warning flags : $(cwarn1)
 
@@ -237,20 +240,20 @@ ifeq (s,$(findstring s,$(single_make_options)))
   silent_mode = 1
 endif
 
-# call $1 - info string
-conditional_info = $(if $(silent_mode),,$(info $1))
-# include optional project specific definitions
+# include project specific definitions if any
 -include $(makefile_defs)
 
+# call $1 - info string
+conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 compiler command
+# call $1 - compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
   if [[ "$${ins}" =~ (cc|gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
     echo "$${BASH_REMATCH[1]} $${BASH_REMATCH[2]}";\
   fi)
 
-# and add the defaults for the unset variables
+# add the defaults
 ifndef MAKEFILE_WARN
   cc_name_vers := $(call get_comp_name_version,$(CXX))
   ifneq (2,$(words $(cc_name_vers)))

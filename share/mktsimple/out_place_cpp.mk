@@ -25,8 +25,8 @@ Goals:
   build     Build or update the target executable.
   compdb    Build or update the JSON Compilation Database if neccessary.
   clean     Clean up the target executable, object-files and dep-files of the current BUILD_MODE.
-  purge     Clean up executables and all generated build artifacts, the compilation database
-            and the configuration store.
+  purge     Clean up executable, all generated build artifacts, the compilation database and the
+            configuration store.
   show      Print project info.
   help      Print this help text.
   dir/%.o   Build this object file if a coresponding source file exists.
@@ -34,8 +34,8 @@ Goals:
 Files:
   Makefile        This make script
   $(makefile_defs)      This optional script contains the project customizations.
-  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be used to define
-                  specific warning options and will be included from Makefile.
+  $$(MAKEFILE_WARN) If the default warning options are not sufficient, this optional file can be
+                  used to define specific warning options and will be included from Makefile.
 
 Optional customization variables:
   TARGET              Name of the executable to build. Default value is the last path component of
@@ -44,8 +44,8 @@ Optional customization variables:
                       Default value is 'src' (Use '.' for the project dir)
   INCDIRS:            Space separated list of project internal include directories for the quote form
                       of the include directive (-iquote) Omit this variable, if header and source files
-                      are placed in the source directories. The default value is 'include' if the
-                      directory exists, or the empty string if the directories not exists.
+                      are placed in the source directories. The default value is 'include' if this
+                      directory exists, or the empty string if the directory not exists.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
@@ -146,6 +146,8 @@ Custom compiler options: $(CXXFLAGS)
 
 Building with WARN_LEVEL=$(WARN_LEVEL) : $(cxxwarnings)
 
+Warning level 0 includes : $(cxxwarn0)
+
 Warning level 1 includes : $(cxxwarn1)
 
 Warning level 2 adds : $(cxxwarn2)
@@ -213,18 +215,18 @@ endif
 # call $1 - info string
 conditional_info = $(if $(silent_mode),,$(info $1))
 # get compiler name and version
-# call $1 compiler command
+# call $1 - compiler command
 get_comp_name_version = $(shell\
   ins=$$($1 --version);\
   if [[ "$${ins}" =~ (gcc|g\+\+|clang).*[[:blank:]]+([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.* ]]; then\
     echo "$${BASH_REMATCH[1]} $${BASH_REMATCH[2]}";\
   fi)
 
-# and add the defaults for the unset variables
+# add the defaults
 ifndef MAKEFILE_WARN
   cc_name_vers := $(call get_comp_name_version,$(CXX))
   ifneq (2,$(words $(cc_name_vers)))
-    $(warning WARNING: Unknown compiler version $(CCX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
+    $(warning WARNING: Unknown compiler version $(CXX) (cc_name_vers=$(cc_name_vers)) - using MAKEFILE_WARN=warnings.mk)
     MAKEFILE_WARN := warnings.mk
   else
     MAKEFILE_WARN := mktsimple/warnings.$(firstword $(cc_name_vers))-$(lastword $(cc_name_vers)).mk
@@ -329,8 +331,6 @@ srcfakescc := $(addsuffix $(temp_suffix),$(sourcescc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectscpp) $(objectscc) $(BINDIR)/$(TARGET)
 
-$(info $(objectscpp) $(objectscc))
-$(info $(dbfragmentscpp) $(dbfragmentscc))
 # check goals
 goals := $(MAKECMDGOALS)
 ifeq (,$(goals))

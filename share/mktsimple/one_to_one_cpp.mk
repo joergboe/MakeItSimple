@@ -76,7 +76,7 @@ Description:
   If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
   The variable WARN_LEVEL can assign warning levels from 0 .. 5.
-  The default warning level is 3 and activates a comprehensive set of warnings (for gcc and clang).
+  The default warning level is 4 and activates a comprehensive set of warnings (for gcc and clang).
 
   By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
 
@@ -328,7 +328,7 @@ STRIPPED_TARGET = $(@:$(temp_suffix)=)
 STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
-MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))_FLAGS
+MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(subst ./,,$(STRIPPED_PREREQ1))))_FLAGS
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME))\
   $(cxxwarnings) $(formatflags) $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
 depflags = -MMD -MF '$(STRIPPED_TARGET:%=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
