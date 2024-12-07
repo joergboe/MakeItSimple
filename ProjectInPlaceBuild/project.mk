@@ -9,4 +9,4 @@ CXXFLAGS := -std=c++11
 CPPFLAGS=-D 'MYHELLO="External define!"'
 
 # define one source file specific variable
-SRCm1_cppFLAGS = -D 'MYHELLO2="Hello World \#2"'
+SRC_m1_cpp_FLAGS = -D 'MYHELLO2="Hello World \#2"'

@@ -53,7 +53,7 @@ Optional customization variables:
                       Default: -Og -g3
   CPPFLAGS:           Extra compiler preprocessor options.
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
-  SRCxxxxFLAGS        Flags for one specific source file. xxxx stands for the name of the source file,
+  SRC_xxxx_FLAGS      Flags for one specific source file. xxxx stands for the path of the source file,
                       where periods and slashes are replaced by underscores.
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
@@ -334,7 +334,7 @@ STRIPPED_TARGET = $(@:$(temp_suffix)=)
 STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
-MODUL_VAR_NAME = SRC$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))FLAGS
+MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))_FLAGS
 allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 
@@ -375,7 +375,7 @@ OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cxxwarnings=$(strip $(cxxwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
-$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value $(var))$(nl))
+$(foreach var,$(filter SRC_%_FLAGS,$(.VARIABLES)),$(nl)$(var)=$(value $(var)))
 End.
 endef
 

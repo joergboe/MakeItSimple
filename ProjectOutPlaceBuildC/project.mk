@@ -18,5 +18,5 @@ CPPFLAGS=-D 'MYHELLO="External define!"'
 CFLAGS := -std=c11
 
 # define one source file specific variable
-# add 2 underscores because the real source name is ./m1.c
-SRC__m1_cFLAGS = -D 'MYHELLO2="Hello World \#2"'
+# do not add 2 underscores because ./ is stripped from the real source name ./m1.cpp
+SRC_m1_c_FLAGS = -D 'MYHELLO2="Hello World \#2"'

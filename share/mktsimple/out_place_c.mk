@@ -63,7 +63,7 @@ Optional customization variables:
                       Default: run or debug
   CPPFLAGS:           Extra compiler preprocessor options.
   CFLAGS:             Extra c compiler options (use for linker and compiler).
-  SRCxxxxFLAGS        Flags for one specific source file. xxxx stands for the name of the source file,
+  SRC_xxxx_FLAGS      Flags for one specific source file. xxxx stands for the path of the source file,
                       where periods and slashes are replaced by underscores.
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
@@ -356,7 +356,7 @@ STRIPPED_TARGET = $(@:$(temp_suffix)=)
 STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
-MODUL_VAR_NAME = SRC$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))FLAGS
+MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(subst ./,,$(STRIPPED_PREREQ1))))_FLAGS
 allflags = $(CFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 
@@ -401,7 +401,7 @@ OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cwarnings=$(strip $(cwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
-$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value $(var))$(nl))
+$(foreach var,$(filter SRC_%_FLAGS,$(.VARIABLES)),$(nl)$(var)=$(value $(var)))
 End.
 endef
 
@@ -463,7 +463,7 @@ else
   conditional_echo =
 endif
 # compile command string
-compile_source_cmd = $(CXX) $(OUTPUT_OPTION) '$(STRIPPED_PREREQ1)' $(allflags) $(depflags)
+compile_source_cmd = $(CC) $(OUTPUT_OPTION) '$(STRIPPED_PREREQ1)' $(allflags) $(depflags)
 
 # rules:
 all: compdb build

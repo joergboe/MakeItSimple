@@ -20,6 +20,6 @@ CXXFLAGS := -std=c++11
 
 # define one source file specific variable
 # the real source name is src/m1.cpp
-SRCsrc_m1_cppFLAGS = -D "MYHELLO2=\"MYHELLO2: Hello World from m1 \#2\""
-SRCsrc_m2_cFLAGS = -D 'HELLOM2="HELLOM2: Hello World from m2 \#2"'
-SRCsrc_m3_ccFLAGS = -D HELLOM3=\"HELLOM3:\ Hello\ World\ from\ m3\ \#2\"
+SRC_src_m1_cpp_FLAGS = -D "MYHELLO2=\"MYHELLO2: Hello World from m1 \#2\""
+SRC_src_m2_c_FLAGS = -D 'HELLOM2="HELLOM2: Hello World from m2 \#2"'
+SRC_src_m3_cc_FLAGS = -D HELLOM3=\"HELLOM3:\ Hello\ World\ from\ m3\ \#2\"

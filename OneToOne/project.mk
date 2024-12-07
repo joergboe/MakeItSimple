@@ -1,7 +1,4 @@
 # sample project file
 
 # define one source file specific variable
-SRCm1_cppFLAGS = -D MYHELLO2="\"Just anoter greeting!\""
-
-# define one source file specific variable
-SRCm1_cppFLAGS = -D 'MYHELLO2="Hello World \#2 Danger: '\''.mks.tmp'\'' is in string!"'
+SRC_m1_cpp_FLAGS = -D MYHELLO=\"Alternative\ external\ Hello!\" -D 'MYHELLO2="Hello World \#2 Danger: '\''.mks.tmp'\'' is in string!"'
