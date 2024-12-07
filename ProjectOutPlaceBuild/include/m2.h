@@ -1,6 +1,6 @@
-#ifndef M2_HPP_
-#define M2_HPP_
+#ifndef M2_H_
+#define M2_H_
 
 void hellom2(void);
 
-#endif /* M2_HPP_ */
+#endif /* M2_H_ */

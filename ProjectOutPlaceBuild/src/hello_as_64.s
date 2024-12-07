@@ -6,7 +6,7 @@
 .text
 
 # Constant data may be defined in the text section
-mess:	.ascii	"Hello World!\n"
+mess:	.ascii	"Hello World! - hello_as_64.s\n"
 len	= . - mess    # determine message lenght
 
 	.globl	greetings

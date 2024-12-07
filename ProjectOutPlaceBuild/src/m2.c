@@ -8,5 +8,9 @@ void hellom2(void) {
 		puts("Hello World Program m2 !!!");
 		fflush(stdout);
 	}
+#	ifdef HELLOM2
+	puts(HELLOM2);
+	fflush(stdout);
+#	endif
 	return;
 }
