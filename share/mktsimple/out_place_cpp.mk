@@ -194,6 +194,7 @@ RMDIR = rm -rf
 MKDIR = mkdir -p
 
 hidden_dir_name := .mktsimple
+temp_suffix := .mks.tmp
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 compile_database_name :=  compile_commands.json
@@ -321,10 +322,10 @@ $(foreach var,$(allsources),$(call check_name,$(var)))
 objectscpp := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.o))
 objectscc := $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.o))
 depfiles := $(addprefix $(BUILDDIR)/,$(sourcescpp:.cpp=.dep)) $(addprefix $(BUILDDIR)/,$(sourcescc:.cc=.dep))
-dbfragmentscpp := $(addsuffix .mks.tmp,$(objectscpp))
-dbfragmentscc := $(addsuffix .mks.tmp,$(objectscc))
-srcfakescpp := $(addsuffix .mks.tmp,$(sourcescpp))
-srcfakescc := $(addsuffix .mks.tmp,$(sourcescc))
+dbfragmentscpp := $(addsuffix $(temp_suffix),$(objectscpp))
+dbfragmentscc := $(addsuffix $(temp_suffix),$(objectscc))
+srcfakescpp := $(addsuffix $(temp_suffix),$(sourcescpp))
+srcfakescc := $(addsuffix $(temp_suffix),$(sourcescc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectscpp) $(objectscc) $(BINDIR)/$(TARGET)
 
@@ -353,8 +354,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
-  $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
@@ -398,7 +398,7 @@ OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cxxwarnings=$(strip $(cxxwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
-$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
+$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value $(var))$(nl))
 End.
 endef
 
@@ -438,19 +438,19 @@ gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
 '{'$$'\n'\
 '	echo "	{"'$$'\n'\
 '	echo "		\"directory\": \"$${curdir}\","'$$'\n'\
-'	echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
+'	echo "		\"file\": \"$${4%$(temp_suffix)}\","'$$'\n'\
 '	echo -n "		\"arguments\": [ "'$$'\n'\
 '	seq='\'\'$$'\n'\
 '	declare -i i'$$'\n'\
-'	for ((i=1; i<$$\#; i++)); do'$$'\n'\
+'	for ((i=1; i<=$$\#; i++)); do'$$'\n'\
 '		if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
 '		seq=1'$$'\n'\
 '		eval x="\$${$${i}}"'$$'\n'\
-'		y="$${x//.mks.tmp/}"'$$'\n'\
+'		y="$${x//$(temp_suffix)/}"'$$'\n'\
 '		echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
 '	done'$$'\n'\
 '	echo " ],"'$$'\n'\
-'	echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
+'	echo "		\"output\": \"$${3%$(temp_suffix)}\""'$$'\n'\
 '	echo -n "	}"'$$'\n'\
 '} > "$${3}"'$$'\n'
 
@@ -462,9 +462,11 @@ else
 endif
 # depflags, output option and source are single quoted
 compile_source = $(CXX)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+    $(foreach var,$(depflags),'$(var)')
 gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CXX)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$(subst $(temp_suffix),,$<)))FLAGS)\
+    $(foreach var,$(depflags),'$(var)')
 
 # rules:
 all: compdb build
@@ -508,11 +510,11 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	@echo -e "\n]" >> '$@'
 	$(call conditional_echo,Finished database $@\n)
 
-$(dbfragmentscpp): $(BUILDDIR)/%.o.mks.tmp: %.cpp.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscpp): $(BUILDDIR)/%.o$(temp_suffix): %.cpp$(temp_suffix) $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
-$(dbfragmentscc): $(BUILDDIR)/%.o.mks.tmp: %.cc.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentscc): $(BUILDDIR)/%.o$(temp_suffix): %.cc$(temp_suffix) $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 

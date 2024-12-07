@@ -194,6 +194,7 @@ RMDIR = rm -rf
 MKDIR = mkdir -p
 
 hidden_dir_name := .mktsimple
+temp_suffix := .mks.tmp
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
 compile_database_name :=  compile_commands.json
@@ -323,8 +324,8 @@ $(foreach var,$(allsources),$(call check_name,$(var)))
 
 objectsc := $(addprefix $(BUILDDIR)/,$(sourcesc:.c=.o))
 depfiles := $(addprefix $(BUILDDIR)/,$(sourcesc:.c=.dep))
-dbfragmentsc := $(addsuffix .mks.tmp,$(objectsc))
-srcfakesc := $(addsuffix .mks.tmp,$(sourcesc))
+dbfragmentsc := $(addsuffix $(temp_suffix),$(objectsc))
+srcfakesc := $(addsuffix $(temp_suffix),$(sourcesc))
 incflags := $(addprefix -iquote,$(INCDIRS)) $(addprefix -I,$(INCSYSDIRS))
 alltargets := $(objectsc) $(BINDIR)/$(TARGET)
 
@@ -353,8 +354,7 @@ endif
 # call OUTPUT_OPTION,outfile
 OUTPUT_OPTION = -o $(1)
 # OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
-  $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
+allflags = $(CFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
 depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
 
 # prints info only if not silent (-s option) and not help goal or show goal
@@ -398,7 +398,7 @@ OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cwarnings=$(strip $(cwarnings))
 depflags=$(value depflags)
 formatflags=$(value formatflags)
-$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value var)$(nl))
+$(foreach var,$(filter SRC%FLAGS,$(.VARIABLES)),$(var)=$(value $(var))$(nl))
 End.
 endef
 
@@ -438,19 +438,19 @@ gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
 '{'$$'\n'\
 '	echo "	{"'$$'\n'\
 '	echo "		\"directory\": \"$${curdir}\","'$$'\n'\
-'	echo "		\"file\": \"$${4%.mks.tmp}\","'$$'\n'\
+'	echo "		\"file\": \"$${4%$(temp_suffix)}\","'$$'\n'\
 '	echo -n "		\"arguments\": [ "'$$'\n'\
 '	seq='\'\'$$'\n'\
 '	declare -i i'$$'\n'\
-'	for ((i=1; i<$$\#; i++)); do'$$'\n'\
+'	for ((i=1; i<=$$\#; i++)); do'$$'\n'\
 '		if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
 '		seq=1'$$'\n'\
 '		eval x="\$${$${i}}"'$$'\n'\
-'		y="$${x//.mks.tmp/}"'$$'\n'\
+'		y="$${x//$(temp_suffix)/}"'$$'\n'\
 '		echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
 '	done'$$'\n'\
 '	echo " ],"'$$'\n'\
-'	echo "		\"output\": \"$${3%.mks.tmp}\""'$$'\n'\
+'	echo "		\"output\": \"$${3%$(temp_suffix)}\""'$$'\n'\
 '	echo -n "	}"'$$'\n'\
 '} > "$${3}"'$$'\n'
 
@@ -462,9 +462,11 @@ else
 endif
 # depflags, output option and source are single quoted
 compile_source = $(CC)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
+    $(foreach var,$(depflags),'$(var)')
 gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CC)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(foreach var,$(depflags),'$(var)')
+  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$(subst $(temp_suffix),,$<)))FLAGS)\
+    $(foreach var,$(depflags),'$(var)')
 
 # rules:
 all: compdb build
@@ -503,7 +505,7 @@ $(compile_database_name): $(dbfragmentsc)
 	@echo -e "\n]" >> '$@'
 	$(call conditional_echo,Finished database $@\n)
 
-$(dbfragmentsc): $(BUILDDIR)/%.o.mks.tmp: %.c.mks.tmp $(gen_db_frag_file) $(last_config_store_target)
+$(dbfragmentsc): $(BUILDDIR)/%.o$(temp_suffix): %.c$(temp_suffix) $(gen_db_frag_file) $(last_config_store_target)
 	@$(gen_db_fragment)
 	$(call conditional_echo,Finished database fragment $@)
 
