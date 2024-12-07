@@ -329,11 +329,14 @@ ifeq (purge,$(findstring purge,$(goals)))
   endif
 endif
 
-# call OUTPUT_OPTION,outfile
-OUTPUT_OPTION = -o $(1)
-# OUTPUT_OPTION, allxxxflags and depflags go into the compilation database
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
-depflags = -MMD -MF $(@:%.o=%.dep) -MP -MT $@
+# all automatic variables must cut off the .mks.tmp suffix !
+STRIPPED_TARGET = $(@:$(temp_suffix)=)
+STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
+# all file and path values should be quoted
+OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
+MODUL_VAR_NAME = SRC$(subst /,_,$(subst .,_,$(STRIPPED_PREREQ1)))FLAGS
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
+depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 
 # prints info only if not silent (-s option) and not help goal or show goal
 ifndef silent_mode
@@ -412,7 +415,7 @@ gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
 '{'$$'\n'\
 '	echo "	{"'$$'\n'\
 '	echo "		\"directory\": \"$${curdir}\","'$$'\n'\
-'	echo "		\"file\": \"$${4%$(temp_suffix)}\","'$$'\n'\
+'	echo "		\"file\": \"$$4\","'$$'\n'\
 '	echo -n "		\"arguments\": [ "'$$'\n'\
 '	seq='\'\'$$'\n'\
 '	declare -i i'$$'\n'\
@@ -420,13 +423,12 @@ gen_db_frag_var = 'curdir="$${1}"'$$'\n'\
 '		if [[ -n "$$seq" ]]; then echo -n ", "; fi'$$'\n'\
 '		seq=1'$$'\n'\
 '		eval x="\$${$${i}}"'$$'\n'\
-'		y="$${x//$(temp_suffix)/}"'$$'\n'\
-'		echo -n "\"$${y//\"/\\\"}\""'$$'\n'\
+'		echo -n "\"$${x//\"/\\\"}\""'$$'\n'\
 '	done'$$'\n'\
 '	echo " ],"'$$'\n'\
-'	echo "		\"output\": \"$${3%$(temp_suffix)}\""'$$'\n'\
+'	echo "		\"output\": \"$$3\""'$$'\n'\
 '	echo -n "	}"'$$'\n'\
-'} > "$${3}"'$$'\n'
+'} > "$${3}$(temp_suffix)"'$$'\n'
 
 # call conditional_echo,string
 ifndef silent_mode
@@ -434,13 +436,8 @@ ifndef silent_mode
 else
   conditional_echo =
 endif
-# depflags, output option and source are single quoted
-compile_source = $(CXX)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$<))FLAGS)\
-    $(foreach var,$(depflags),'$(var)')
-gen_db_fragment = $(SHELL) -e $(gen_db_frag_file) '$(CURDIR)' $(CXX)\
-  $(foreach var,$(call OUTPUT_OPTION,$@) $<,'$(var)') $(allflags) $(SRC$(subst /,_,$(subst .,_,$(subst $(temp_suffix),,$<)))FLAGS)\
-    $(foreach var,$(depflags),'$(var)')
+# compile command string
+compile_source_cmd = $(CXX) $(OUTPUT_OPTION) '$(STRIPPED_PREREQ1)' $(allflags) $(depflags)
 
 # rules:
 all: compdb build
@@ -454,12 +451,12 @@ $(TARGET): $(objectscpp) $(objectscc)
 
 %.o: %.cpp
 $(objectscpp): %.o: %.cpp %.dep $(makefile_this) $(last_config_store_target)
-	$(compile_source)
+	$(compile_source_cmd)
 	$(call conditional_echo,Finished building: $<\n)
 
 %.o: %.cc
 $(objectscc): %.o: %.cc %.dep $(makefile_this) $(last_config_store_target)
-	$(compile_source)
+	$(compile_source_cmd)
 	$(call conditional_echo,Finished building: $<\n)
 
 $(depfiles):
@@ -479,11 +476,11 @@ $(compile_database_name): $(dbfragmentscpp) $(dbfragmentscc)
 	$(call conditional_echo,Finished database $@\n)
 
 $(dbfragmentscpp): %.o$(temp_suffix): %.cpp$(temp_suffix) $(gen_db_frag_file) $(last_config_store_target)
-	@$(gen_db_fragment)
+	@$(gen_db_frag_file) '$(CURDIR)' $(compile_source_cmd)
 	$(call conditional_echo,Finished database fragment $@)
 
 $(dbfragmentscc): %.o$(temp_suffix): %.cc$(temp_suffix) $(gen_db_frag_file) $(last_config_store_target)
-	@$(gen_db_fragment)
+	@$(gen_db_frag_file) '$(CURDIR)' $(compile_source_cmd)
 	$(call conditional_echo,Finished database fragment $@)
 
 $(srcfakescpp) $(srcfakescc):
@@ -496,6 +493,7 @@ $(last_config_store_target):
 
 $(gen_db_frag_file): $(makefile_this)
 	@echo $(gen_db_frag_var) > '$@'
+	@chmod +x '$@'
 	$(call conditional_echo,Script file $@ written\n)
 
 clean:
