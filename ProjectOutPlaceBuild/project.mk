@@ -14,7 +14,7 @@ INCDIRS := include
 TARGET := program1
 
 # Optionale definitions
-CPPFLAGS=-D 'MYHELLO="Alternative external Hello World!"'
+CPPFLAGS=-D 'MYHELLO="Alternative external Hello World! Danger: '\''.mks.tmp'\'' is in string!"'
 
 CXXFLAGS := -std=c++11
 
