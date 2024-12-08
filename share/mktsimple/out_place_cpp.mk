@@ -108,7 +108,7 @@ Description:
   NOTE: xFLAGS that contain spaces, quotation marks, or other special shell characters must be
   quoted. If they are given as command line arguments, they must be qouted twice according to the
   rules of your shell! Example (for bash):
-  CPPFLAGS='-D MYHELLO="\"External define!\"" -MJ$$@.jj -D MYHELLO2="\"Hello World #2\""' CXX=clang++
+  CPPFLAGS='-DMYHELLO="\"External define!\"" -MJ$$@.jj -DMYHELLO2="\"Hello World #2\""' CXX=clang++
 
 Some useful make-options:
   -h, --help                      Display help.
