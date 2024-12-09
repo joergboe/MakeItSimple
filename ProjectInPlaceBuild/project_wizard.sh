@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-../bin/mktsimple --project-dir . --type ipbcpp --overwrite --no-prompt
+../bin/mktsimple --project-dir . --type ipbcpp --kate-project --overwrite --no-prompt

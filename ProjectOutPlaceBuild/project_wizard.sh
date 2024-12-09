@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-../bin/mktsimple --project-dir . --type opb --overwrite --no-prompt
+../bin/mktsimple --project-dir . --type opb --kate-project --overwrite --no-prompt

@@ -47,6 +47,7 @@
 /ProjectOutPlaceBuildC/debug/
 /ProjectOutPlaceBuildC/run/
 /ProjectOutPlaceBuildC/Makefile
+/*/.kateproject*
 compile_commands.json
 .mktsimple/
 *.mks.tmp
