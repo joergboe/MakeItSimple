@@ -29,6 +29,8 @@ Goals:
   show      Print project info.
   help      Print this help text.
   %         Build or update this target file if a coresponding sorce file exists.
+  inc_warn_level  Increment the current warning level and store the new value.
+  dec_warn_level  Decrement the current warning level and store the new value.
 
 Files:
   Makefile        This make script
@@ -158,7 +160,7 @@ endif
 
 production_goals = all build compdb
 cleanup_goals = clean purge
-action_goals = $(production_goals) $(cleanup_goals)
+action_goals = $(production_goals) $(cleanup_goals) inc_warn_level dec_warn_level
 phony_goals = $(action_goals) show help
 
 .SUFFIXES:        # deletes the old fashioned suffix rules from database (speedup)
@@ -179,9 +181,10 @@ hidden_dir_name := .mktsimple
 temp_suffix := .mks.tmp
 makefile_this := $(lastword $(MAKEFILE_LIST))
 makefile_defs := project.mk
+makefile_temp_settings := $(hidden_dir_name)/settings.mk
 compile_database_name :=  compile_commands.json
 last_config_store_name := mks_last_config_store
-temp_config_store_name := mks_temp_config_store
+temp_config_store_name := .mks_temp_config_store
 gen_db_frag_file := $(hidden_dir_name)/mks_gen_db_frag.sh
 
 single_make_options := $(firstword -$(MAKEFLAGS))
@@ -191,6 +194,7 @@ endif
 
 # include project specific definitions if any
 -include $(makefile_defs)
+-include $(makefile_temp_settings)
 
 # call $1 - info string
 conditional_info = $(if $(silent_mode),,$(info $1))
@@ -260,7 +264,8 @@ else ifeq ($(WARN_LEVEL),4)
 else ifeq ($(WARN_LEVEL),5)
   cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4) $(cxxwarn5)
 else
-  $(error ERROR: Invalid WARN_LEVEL=$(WARN_LEVEL))
+  $(warning WARNING: Invalid WARN_LEVEL=$(WARN_LEVEL) - Use default 4)
+  WARN_LEVEL = 4
 endif
 
 ifeq ($(BUILD_MODE),run)
@@ -338,8 +343,8 @@ ifndef silent_mode
   ifeq (,$(or $(findstring help,$(MAKECMDGOALS)),$(findstring show,$(MAKECMDGOALS))))
     $(info )
     $(info Sources found : $(sort $(allsources)))
-    $(info )
     $(info All include (system) directories : $(INCSYSDIRS))
+    $(info WARN_LEVEL : $(WARN_LEVEL))
     $(info )
   endif
 endif
@@ -371,14 +376,6 @@ $(foreach var,$(filter SRC_%_FLAGS,$(.VARIABLES)),$(nl)$(var)=$(value $(var)))
 End.
 endef
 
-# Make hidden directory
-ifneq (,$(or $(current_production_goals),$(current_target_goals)))
-  $(shell $(MKDIR) '$(hidden_dir_name)')
-  ifneq (0,$(.SHELLSTATUS))
-    $(error ERROR: Can not create $(hidden_dir_name))
-  endif
-endif
-
 # check configuration
 ifdef DISABLE_CONFIG_CHECK
   last_config_store_target =
@@ -392,7 +389,7 @@ else
       # if configuration has changed: remove the configuration storage and store the temp_config_store
       prompt := Configuration has changed!
       $(shell $(RM) '$(hidden_dir_name)/$(last_config_store_name)')
-      $(file > $(hidden_dir_name)/$(temp_config_store_name),$(configuration))
+      $(file > $(temp_config_store_name),$(configuration))
     endif
     ifndef silent_mode
       $(info $(prompt))
@@ -474,11 +471,11 @@ $(srcfakescpp) $(srcfakescc):
 	@touch '$@'
 
 # when no configuration file exists, this rule and all depending rules are forced to run
-$(last_config_store_target):
-	-@$(MV) '$(hidden_dir_name)/$(temp_config_store_name)' '$@'
+$(last_config_store_target): | $(hidden_dir_name)
+	-@$(MV) '$(temp_config_store_name)' '$@'
 	$(call conditional_echo,Configuration file $@ written\n)
 
-$(gen_db_frag_file): $(makefile_this)
+$(gen_db_frag_file): $(makefile_this) | $(hidden_dir_name)
 	@echo $(gen_db_frag_var) > '$@'
 	@chmod +x '$@'
 	$(call conditional_echo,Script file $@ written\n)
@@ -490,7 +487,7 @@ clean:
 
 purge: clean
 	$(call conditional_echo,Cleanup configuration store and compilation database)
-	-$(RM) '$(hidden_dir_name)/$(last_config_store_name)' '$(hidden_dir_name)/$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
+	-$(RM) '$(hidden_dir_name)/$(last_config_store_name)' '$(temp_config_store_name)' '$(compile_database_name)' '$(gen_db_frag_file)'
 	-$(RM) $(foreach var,$(dbfragmentscpp) $(dbfragmentscc),'$(var)')
 	-$(RM) $(foreach var,$(srcfakescpp) $(srcfakescc),'$(var)')
 	-$(RMDIR) '$(hidden_dir_name)'
@@ -503,3 +500,14 @@ show:
 
 help:
 	$(info $(helpstring))
+
+inc_warn_level: | $(hidden_dir_name)
+	@wl=$$(($(WARN_LEVEL) + 1 )); if [[ $${wl} -gt 5 ]]; then wl=5; fi;\
+	echo "WARN_LEVEL ?= $${wl}" > $(makefile_temp_settings); echo "new WARN_LEVEL is $${wl}"
+
+dec_warn_level: | $(hidden_dir_name)
+	@wl=$$(($(WARN_LEVEL) - 1 )); if [[ $${wl} -lt 0 ]]; then wl=0; fi;\
+	echo "WARN_LEVEL ?= $${wl}" > $(makefile_temp_settings); echo "new WARN_LEVEL is $${wl}"
+
+$(hidden_dir_name):
+	$(MKDIR) '$@'

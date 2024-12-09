@@ -9,8 +9,9 @@ case ${TTRO_variantCase} in
 		EXPECT_CONFIG_STORE='true'
 		EXPECT_COMPILE_DB='true';;
 	invalidWarn)
-		EXPECT_FAILURE='true'
-		OPTIONS='WARN_LEVEL=6';;
+		OPTIONS='WARN_LEVEL=6'
+		EXPECT_CONFIG_STORE='true'
+		EXPECT_COMPILE_DB='true';;
 	invalidBuildMode)
 		EXPECT_FAILURE='true'
 		OPTIONS='BUILD_MODE=4';;
@@ -68,7 +69,7 @@ STEPS+=('checkBuildOutput0' 'checkBuildOutput' 'checkBuildOutput2')
 
 checkBuildOutput0() {
 	case ${TTRO_variantCase} in
-		default|cxxFlags|cppFlages|incsysdir)
+		default|cxxFlags|cppFlages|incsysdir|invalidWarn)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' \
 				'Finished building: *m1.c*' \
 				'Finished building: *m2.c*'
@@ -82,7 +83,7 @@ checkBuildOutput() {
 		default)
 			: ;;
 		invalidWarn)
-			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Invalid WARN_LEVEL*';;
+			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*WARNING: Invalid WARN_LEVEL*';;
 		invalidBuildMode)
 			linewisePatternMatchInterceptAndSuccess "${TT_evaluationFile}" 'true' '*Build mode 4 is not supported*';;
 		cxxFlags)
