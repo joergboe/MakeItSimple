@@ -52,7 +52,7 @@ EOF
 readonly mkts='mktsimple'
 readonly valid_types='otocpp ipbcpp opbc opbcpp opb'
 readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
-pr3=(
+readonly -a pr3=(
 	'opbc   -- C project     Out Place Build'$'\n''    Build one executable from all %.c source files in all project source directories.'$'\n'
 	'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
 	'opb    -- C/C++ project Out Place Build'$'\n''    Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
@@ -60,24 +60,39 @@ pr3=(
 	'otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
 	'exit'
 )
-readonly pr3
+
+col_red=
+col_yel=
+col_norm=
+if [[ -t 2 ]]; then
+	col_red="\033[31m"
+	col_yel="\033[33m"
+	col_norm="\033[0m"
+fi
+echoerr() {
+	echo -e "${col_red}ERROR: $*${col_norm}" >&2
+}
+echowarn() {
+	echo -e "${col_yel}WARNING: $*${col_norm}" >&2
+}
+
+typehelp() {
+	local -i i
+	for ((i=0; i<${#pr3[*]}; i++)); do
+		if [[ "${pr3[$i]}" != exit* ]]; then
+			echo "${pr3[$i]}"
+		fi
+	done
+}
 
 # check whether directory $1 contains valid install files
 check_install_dir() {
-	if [[ $# -ne 1 ]]; then
-		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
-		exit 1
-	fi
-	if [[ -z $1 ]]; then
-		echo "ERROR: Empty string for source dir"
-		return 1
-	fi
 	local mypath="${1}/share/${mkts}"
 	local x
 	for x in ${all_install_files}; do
 		#echo "checking: ${mypath}/${x}"
 		if [[ ! -f "${mypath}/${x}" ]]; then
-			echo "ERROR: Source dir '$1' is not a valid installation!"
+			echoerr "Source dir '$1' is not a valid installation!"
 			return 1
 		fi
 	done
@@ -86,12 +101,8 @@ check_install_dir() {
 
 # check whether directory $1 is valid
 check_project_dir() {
-	if [[ $# -ne 1 ]]; then
-		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
-		exit 1
-	fi
 	if [[ -z $1 ]]; then
-		echo "ERROR: Empty string for project dir"
+		echoerr "Empty string for project dir"
 		return 1
 	fi
 	return 0
@@ -99,10 +110,6 @@ check_project_dir() {
 
 # check whether $1 is a valid project type
 check_type() {
-	if [[ $# -ne 1 ]]; then
-		echo "ERROR: Wrong invocation ${FUNCNAME[0]}" >&2
-		exit 1
-	fi
 	local x
 	local is_valid=
 	for x in $valid_types; do
@@ -114,13 +121,13 @@ check_type() {
 	if [[ -n "$is_valid" ]]; then
 		return 0
 	else
-		echo -e "ERROR: Invalid project type: $1\nValid types are: $valid_types"
+		echoerr "Invalid project type: $1\nValid types are: $valid_types"
 		return 1
 	fi
 }
 
 abort_func() {
-	echo "ERROR: Something went wrong!" >&2
+	echoerr "Something went wrong!"
 	exit 1
 }
 
@@ -171,6 +178,32 @@ read_value() {
 	echo
 }
 
+# Scan the project.mk and return values in:
+target_scan=
+src_dirs_scan=
+inc_dirs_scan=
+scan_project_mk() {
+	echo "Reading project file: ${project_mk_name} ..."
+	target_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(TARGET))\n' 2> /dev/null)
+	src_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(SRCDIRS))\n' 2> /dev/null)
+	inc_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(INCDIRS))\n' 2> /dev/null)
+	[[ -z "${target_scan}" ]] || echo "TARGET: '$target_scan'"
+	[[ -z "${src_dirs_scan}" ]] || echo echo "SRCDIRS: '$src_dirs_scan'"
+	[[ -z "${inc_dirs_scan}" ]] || echo echo "INCDIRS: '$inc_dirs_scan'"
+	echo
+	return 0
+}
+
+# remove trailing slashes
+# $1 - name of in/out
+remove_trailing_slash() {
+	declare -ln ref=$1
+	while [[ "${ref}" != '/' && "${ref}" == */ ]]; do
+		ref="${ref%/}"
+	done
+	return 0
+}
+
 invalid_parameter=
 missing_value=
 helprequest=
@@ -180,13 +213,14 @@ mkts_install_dir=
 project_dir=
 pr_type=
 target_name=
-src_dir=
-inc_dir=
+src_dirs=
+inc_dirs=
 hello_world=
 kateproject=
 copy_warn=
 overwrite=
 
+echo
 # get parameters
 while [[ $# -gt 0 ]]; do
 	one_more_shift=''
@@ -232,10 +266,10 @@ while [[ $# -gt 0 ]]; do
 	'-s'|'--src'|'--src-dir')
 		if [[ $# -gt 1 ]]; then
 			one_more_shift='true'
-			if [[ -z ${src_dir} ]]; then
-				src_dir="$2"
+			if [[ -z ${src_dirs} ]]; then
+				src_dirs="$2"
 			else
-				src_dir+=" $2"
+				src_dirs+=" $2"
 			fi
 		else
 			missing_value='true'
@@ -249,10 +283,10 @@ while [[ $# -gt 0 ]]; do
 			else
 				temp="$2"
 			fi
-			if [[ -z ${inc_dir} ]]; then
-				inc_dir="$2"
+			if [[ -z ${inc_dirs} ]]; then
+				inc_dirs="$2"
 			else
-				inc_dir+=" $2"
+				inc_dirs+=" $2"
 			fi
 		else
 			missing_value='true'
@@ -271,58 +305,43 @@ while [[ $# -gt 0 ]]; do
 		break;;
 	esac
 	shift
-	if [[ -n $one_more_shift ]]; then shift; fi
+	if [[ -n ${one_more_shift} ]]; then shift; fi
 done
 
-if [[ -n $invalid_parameter ]]; then
-	echo -e "\nERROR: Invalid parameter $1\n" >&2
-	usage >&2
-	exit 2
-fi
-if [[ -n $missing_value ]]; then
-	echo -e "\nERROR: Missing value for parameter $1\n" >&2
-	usage >&2
-	exit 2
-fi
+[[ -n ${invalid_parameter} ]] && { echoerr "Invalid parameter $1\n"; usage; exit 2; } >&2
+[[ -n ${missing_value} ]] && { echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
 
 # handle help requests
-[[ -n $helprequest ]] && usage
+[[ -n ${helprequest} ]] && { usage; exit 0; }
+[[ -n ${typehelprequest} ]] && { typehelp; exit 0; }
 
-if [[ -n ${typehelprequest} ]]; then
-	declare -i i
-	for ((i=0; i<${#pr3[*]}; i++)); do
-		if [[ "${pr3[$i]}" != exit* ]]; then
-			echo "${pr3[$i]}"
-		fi
-	done
-fi
-if [[ -n ${helprequest} || -n ${typehelprequest} ]]; then
-	exit 0
-fi
-
-echo -e "\nMake It Simple installation in: ${my_install_dir}\n"
+echo -e "Make It Simple installation found in: ${my_install_dir}\n"
 
 # request and validate mkts installation directory
 if [[ -z ${no_prompt} ]]; then
 	read_value "Enter the base directory of the ${mkts} installation."$'\n' 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
 else
-	# lookup for an installation
-	if [[ -z ${mkts_install_dir} ]]; then
-		mkts_install_dir="${my_install_dir}"
-	fi
+	[[ -z ${mkts_install_dir} ]] && mkts_install_dir="${my_install_dir}"
 fi
+remove_trailing_slash 'mkts_install_dir'
+! check_install_dir "${mkts_install_dir}" >&2 && exit 2
 
-if ! check_install_dir "${mkts_install_dir}" >&2; then
-	exit 2
-fi
-mkts_install_dir="${mkts_install_dir%/}"
-# request project directory
+# request and validate project directory
 if [[ -z ${no_prompt} ]]; then
 	read_value "Enter the project directory" 'project_dir' 'project1' 'check_project_dir'
 fi
-if ! check_project_dir >&2 "${project_dir}"; then
-	exit 2
-fi
+! check_project_dir "${project_dir}" >&2 && exit 2
+
+# define required file names
+readonly makefile_name="${project_dir}/Makefile"
+readonly warndir_name="${project_dir}/${mkts}"
+readonly project_mk_name="${project_dir}/project.mk"
+readonly project_mk_temp_name="${project_dir}/.project.mk"
+readonly kateproject_name="${project_dir}/.kateproject"
+readonly kateproject_temp_name="${project_dir}/kateproject.tmp"
+
+# scan project file if any
+[[ -r "${project_mk_name}" ]] && scan_project_mk
 
 # request and validate the type of the installation
 if [[ -z ${no_prompt} ]]; then
@@ -341,13 +360,12 @@ if [[ -z ${no_prompt} ]]; then
 	fi
 	echo
 fi
-if ! check_type "$pr_type" >&2; then
-	exit 2
-fi
+! check_type "$pr_type" >&2 && exit 2
+
 out_place_project_type=
 [[ ${pr_type} == opb* ]] && out_place_project_type='true'
 
-# request target name - check target name
+# determination of default target name from project directory
 if [[ ${project_dir} == '.' ]]; then
 	temp="${PWD}"
 else
@@ -356,46 +374,65 @@ else
 fi
 temp="${temp%/}"
 defaul_target_name="${temp##*/}"
+# or from project.mk scan
+if [[ -z "${target_scan}" ]]; then
+	def_targ="${defaul_target_name}"
+else
+	def_targ="${target_scan}"
+fi
+# request target name - check target name
 if [[ -z "${no_prompt}" ]]; then
 	if [[ "${pr_type}" == oto* ]]; then
 		target_name=
 	else
-		read_value "Name of the executable to build?" 'target_name' "${defaul_target_name}" 'true'
+		read_value "Name of the executable to build?" 'target_name' "${def_targ}" 'true'
 	fi
 else
 	if [[ "${pr_type}" == oto* ]]; then
 		target_name=
 	else
-		[[ -z ${target_name} ]] && target_name="${defaul_target_name}"
+		[[ -z ${target_name} ]] && target_name="${def_targ}"
 	fi
 fi
 if [[ "${pr_type}" == oto* ]]; then
-	if [[ -n ${target_name} ]]; then
-		echo "ERROR: No target name allowed in One To One project type" >&2
-		exit 2
-	fi
+	[[ -n ${target_name} ]] && { echoerr "No target name allowed in One To One project type"; exit 2; }
 else
-	if [[ -z ${target_name} ]]; then
-		echo "ERROR: No target name!" >&2
-		exit 2
-	fi
+	[[ -z ${target_name} ]] && { echoerr "No target name!"; exit 2; }
 fi
 
 if [[ -n ${out_place_project_type} ]]; then
+	# determination of default src dir list
+	if [[ -z "${src_dirs_scan}" ]]; then
+		def_src='src'
+	else
+		def_src="${src_dirs_scan}"
+	fi
 	# request source dir list
 	if [[ -z "${no_prompt}" ]]; then
-		read_value "Enter a space separated source directory list." 'src_dir' 'src' 'true'
+		read_value "Enter a space separated source directory list." 'src_dirs' "${def_src}" 'true'
 	else
-		[[ -z ${src_dir} ]] && src_dir='src'
+		[[ -z ${src_dirs} ]] && src_dirs="${def_src}"
 	fi
 
+	# determination of default inc dir list
+	if [[ -z "${inc_dirs_scan}" ]]; then
+		def_inc='include'
+	else
+		def_inc="${inc_dirs_scan}"
+	fi
 	# request include dir list
 	if [[ -z "${no_prompt}" ]]; then
-		read_value "Enter a space separated include directory list."$'\n'"Enter a single space charater for 'no include dir'." 'inc_dir' 'include' 'true'
-	elif [[ -z ${inc_dir} ]]; then
-		inc_dir='include'
-	elif [[ "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
-		inc_dir=' '
+		read_value "Enter a space separated include directory list."$'\n'\
+$'Enter a single space character if header and source files are placed in the source directory\n(no include dir).' 'inc_dirs' "${def_inc}" 'true'
+		if [[ "${inc_dirs}" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+			inc_dirs=' '
+		fi
+	else
+		if [[ -z ${inc_dirs} ]]; then
+			inc_dirs="${def_inc}"
+		elif [[ "${inc_dirs}" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
+			inc_dirs=' '
+		fi
 	fi
 fi
 
@@ -416,27 +453,27 @@ fi
 
 # check src dir and project type
 if [[ -z ${out_place_project_type} ]]; then
-	if [[ -n $src_dir ]]; then
-		echo "ERROR: Source directory '${src_dir}'specified but project is in place type ${pr_type}" >&2
+	if [[ -n $src_dirs ]]; then
+		echoerr "Source directory '${src_dirs}'specified but project is in place type ${pr_type}"
 		exit 2
 	fi
-	if [[ -n $inc_dir ]]; then
-		echo "ERROR: Include directory '${inc_dir}'specified but project is in place type ${pr_type}" >&2
+	if [[ -n $inc_dirs ]]; then
+		echoerr "Include directory '${inc_dirs}'specified but project is in place type ${pr_type}"
 		exit 2
 	fi
 	module_name="${project_dir}/hello.c"
 	module_temp_name="${project_dir}/.hello.x"
 else
-	if [[ -z $src_dir ]]; then
-		echo "ERROR: No source directory specified but project is out place type ${pr_type}" >&2
+	if [[ -z $src_dirs ]]; then
+		echoerr "No source directory specified but project is out place type ${pr_type}"
 		exit 2
 	fi
-	if [[ -z $inc_dir ]]; then
-		echo "ERROR: No include directory specified but project is in place type ${pr_type}" >&2
+	if [[ -z $inc_dirs ]]; then
+		echoerr "No include directory specified but project is in place type ${pr_type}"
 		exit 2
 	fi
 	first_src_dir=
-	for temp in ${src_dir}; do
+	for temp in ${src_dirs}; do
 		first_src_dir="${temp}"
 		break
 	done
@@ -447,23 +484,34 @@ if [[ ${pr_type} == *cpp ]]; then
 	module_name="${module_name}pp"
 fi
 
+# find out if a new project.mk entry is required
 target_name_required=
-src_dir_required=
-inc_dir_required=
-[[ (${target_name} != "${defaul_target_name}") && (${pr_type} != oto*) ]] && target_name_required='true'
-[[ (-n $out_place_project_type) && ($src_dir != 'src') ]] && src_dir_required='true'
-[[ ( -n $out_place_project_type ) && ( "$inc_dir" != 'include' ) && ! ( "$inc_dir" =~ ^[[:blank:]][[:blank:]]*$ ) ]] && inc_dir_required='true'
+src_dirs_required=
+inc_dirs_required=
+if [[ ${pr_type} != oto* ]]; then
+	if [[ -z "${target_scan}" ]]; then
+		[[ "${target_name}" != "${defaul_target_name}" ]] && target_name_required='true'
+	else
+		[[ "${target_name}" != "${target_scan}" ]] && target_name_required='true'
+	fi
+fi
+if [[ -n ${out_place_project_type} ]]; then
+	if [[ -z "${src_dirs_scan}" ]]; then
+		[[ "${src_dirs}" != 'src' ]] && src_dirs_required='true'
+	else
+		[[  "${src_dirs}" != "${src_dirs_scan}" ]] && src_dirs_required='true'
+	fi
+
+	if [[ -z "${inc_dirs_scan}" ]]; then
+		[[ ( ( "${inc_dirs}" != 'include' ) && ( "${inc_dirs}" != ' ' ) ) ]] && inc_dirs_required='true'
+	else
+		[[ "${inc_dirs}" != "${inc_dirs_scan}" ]] && inc_dirs_required='true'
+	fi
+fi
 project_mk_required=
-[[ -n $target_name_required || -n $src_dir_required || -n $inc_dir_required ]] && project_mk_required='true'
+[[ -n $target_name_required || -n $src_dirs_required || -n $inc_dirs_required ]] && project_mk_required='true'
 
 # check if some files already exists
-makefile_name="${project_dir}/Makefile"
-warndir_name="${project_dir}/${mkts}"
-project_mk_name="${project_dir}/project.mk"
-project_mk_temp_name="${project_dir}/.project.mk"
-kateproject_name="${project_dir}/.kateproject"
-kateproject_temp_name="${project_dir}/kateproject.tmp"
-
 overwrite_makefile=
 overwrite_project_mk=
 overwrite_module=
@@ -482,11 +530,11 @@ if [[ -z "${no_prompt}" ]]; then
 	fi
 fi
 if [[ -z ${overwrite} && -n ${overwrite_necessary} ]]; then
-	[[ -n "${overwrite_makefile}" ]] && echo "ERROR: Makefile ${makefile_name} already exists" >&2
-	[[ -n "${overwrite_project_mk}" ]] && echo "ERROR: Projectfile ${project_mk_name} already exists" >&2
-	[[ -n "${overwrite_module}" ]] && echo "ERROR: Project modul ${module_name} already exists" >&2
-	[[ -n "${overwrite_warn_dir}" ]] && echo "ERROR: Warnings ${warndir_name} already exists" >&2
-	[[ -n "${overwrite_kateproject}" ]] && echo "ERROR: kateproject file ${kateproject_name} already exists" >&2
+	[[ -n "${overwrite_makefile}" ]] && echoerr "Makefile ${makefile_name} already exists"
+	[[ -n "${overwrite_project_mk}" ]] && echoerr "Projectfile ${project_mk_name} already exists"
+	[[ -n "${overwrite_module}" ]] && echoerr "Project modul ${module_name} already exists"
+	[[ -n "${overwrite_warn_dir}" ]] && echoerr "Warnings ${warndir_name} already exists"
+	[[ -n "${overwrite_kateproject}" ]] && echoerr "kateproject file ${kateproject_name} already exists"
 	exit 1
 fi
 
@@ -512,8 +560,8 @@ if [[ ${pr_type} != oto* ]]; then
 	echo "Name of the executable to build: ${target_name}"
 fi
 if [[ -n ${out_place_project_type} ]]; then
-	echo "Directories with the source files: ${src_dir}"
-	echo "Include directories: ${inc_dir}"
+	echo "Directories with the source files: ${src_dirs}"
+	echo "Include directories: ${inc_dirs}"
 fi
 [[ -n "${hello_world}" ]] && echo "Create hello world program module ${module_name}"
 [[ -n "${copy_warn}" ]] && echo "Copy warnings into project directory."
@@ -556,11 +604,11 @@ if [[ -n ${execute_all} ]]; then
 	cp -v --backup=numbered "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
 	# create dirs
 	if [[ -n ${out_place_project_type} ]]; then
-		for temp in ${src_dir}; do
+		for temp in ${src_dirs}; do
 			mkdir -pv "${project_dir}/${temp}" || abort_func
 		done
 		if [[ ! "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
-			for temp in ${inc_dir}; do
+			for temp in ${inc_dirs}; do
 				mkdir -pv "${project_dir}/${temp}" || abort_func
 			done
 		fi
@@ -572,26 +620,26 @@ if [[ -n ${execute_all} ]]; then
 		fi
 		echo -e "\n# *** Section created by mktsimple ***" >> "${project_mk_temp_name}" || abort_func
 		if [[ -n $target_name_required ]]; then
-			echo -e "# Name of the executable\nTARGET := ${target_name}\n" >> "${project_mk_temp_name}" || abort_func
+			echo -e "# Name of the executable\nTARGET := ${target_name}" >> "${project_mk_temp_name}" || abort_func
 			echo "TARGET := ${target_name} >> ${project_mk_name}"
 		fi
-		if [[ -n $src_dir_required ]]; then
-			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dir}\n" >> "${project_mk_temp_name}" || abort_func
-			echo "SRCDIRS := ${src_dir} >> ${project_mk_name}"
+		if [[ -n $src_dirs_required ]]; then
+			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dirs}" >> "${project_mk_temp_name}" || abort_func
+			echo "SRCDIRS := ${src_dirs} >> ${project_mk_name}"
 		fi
-		if [[ -n $inc_dir_required ]]; then
-			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dir}\n" >> "${project_mk_temp_name}" || abort_func
-			echo "INCDIRS := ${inc_dir} >> ${project_mk_name}"
+		if [[ -n $inc_dirs_required ]]; then
+			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dirs}" >> "${project_mk_temp_name}" || abort_func
+			echo "INCDIRS := ${inc_dirs} >> ${project_mk_name}"
 		fi
 		mv -v --backup=numbered "${project_mk_temp_name}" "${project_mk_name}" || abort_func
 	fi
 	# hello
 	if [[ -n "${hello_world}" ]]; then
 		if [[ ${pr_type} == *cpp ]]; then
-			echo -e "#include <iostream>\nint main() {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}\n" > "${module_temp_name}" || abort_func
+			echo -e "#include <iostream>\nint main(int argc, char* argv[]) {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		else
-			echo -e "#include <stdio.h>\nint main() {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}\n" > "${module_temp_name}" || abort_func
+			echo -e "#include <stdio.h>\nint main(int argc, char* argv[]) {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		fi
 		mv -v --backup=numbered "${module_temp_name}" "${module_name}" || abort_func
@@ -610,15 +658,15 @@ if [[ -n ${execute_all} ]]; then
 		fi
 		case ${pr_type} in
 		otocpp)
-			 targetstr=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all"\n\t\t\t},\n'
-			targetstr+=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all"\n\t\t\t},';;
+			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all"\n\t\t\t},'
+			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all"\n\t\t\t},';;
 		ipbcpp)
-			 targetstr=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},\n'
-			targetstr+=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},';;
+			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},'
+			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},';;
 		*)
-			 targetstr=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./debug/'"${target_name}"$'"\n\t\t\t},\n'
-			targetstr+=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./run/'"${target_name}"$'"\n\t\t\t},';;
-	esac
+			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./debug/'"${target_name}"$'"\n\t\t\t},'
+			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./run/'"${target_name}"$'"\n\t\t\t},';;
+		esac
 		cat >> "${kateproject_temp_name}" <<EOF
 {
 	"name": "${defaul_target_name}",
@@ -628,9 +676,11 @@ if [[ -n ${execute_all} ]]; then
 	"exclude_patterns" : [
 		"^debug/build/.*",
 		"^run/build/.*",
-		"*.mks.tmp",
-		"compile_commands.json",
-		"*.~*"
+		".*\\\\.o",
+		".*\\\\.dep",
+		".*\\\\.mks\\\\.tmp",
+		"compile_commands\\\\.json",
+		".*\\\\.~.*"
 	],
 	"build": {
 		"directory": ".",
@@ -638,10 +688,15 @@ if [[ -n ${execute_all} ]]; then
 		"clean": "make clean",
 		"install": "make install",
 		"targets": [
-${targetstr}
+${targetstr1}
 			{
-				"name": "clean",
+				"name": "clean debug",
 				"build_cmd": "make ${invocation_opt}clean"
+			},
+${targetstr2}
+			{
+				"name": "clean run",
+				"build_cmd": "make ${invocation_opt}BUILD_MODE=run clean"
 			},
 			{
 				"name": "Increment warning level",
@@ -660,6 +715,10 @@ ${targetstr}
 				"build_cmd": "make ${invocation_opt}show"
 			},
 			{
+				"name": "Project Info run",
+				"build_cmd": "make ${invocation_opt}BUILD_MODE=run show"
+			},
+			{
 				"name": "Help",
 				"build_cmd": "make ${invocation_opt}help"
 			}
@@ -668,6 +727,15 @@ ${targetstr}
 }
 EOF
 		mv -v --backup=numbered "${kateproject_temp_name}" "${kateproject_name}" || abort_func
+		local_kateproject_files=
+		for x in "${project_dir}/".kateproject.[^~]*; do
+			local_kateproject_files=" $x"
+		done
+		if [[ "${local_kateproject_files}" != " ${project_dir}/.kateproject.[^~]*" ]]; then
+			echowarn "There are other (probably generated) .kateproject files:${local_kateproject_files}"\
+			"\nThe just created file ${kateproject_name} is probably effectless!"\
+			"\nConsider deleting those files."
+		fi
 	fi
 
 	echo "**** All done ****"
