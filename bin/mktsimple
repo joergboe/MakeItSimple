@@ -480,7 +480,9 @@ else
 	module_name="${project_dir}/${first_src_dir}/hello.c"
 	module_temp_name="${project_dir}/${first_src_dir}/.hello.x"
 fi
-if [[ ${pr_type} == *cpp ]]; then
+cpp_project_type=
+if [[ ( ${pr_type} == *cpp ) || ( ${pr_type} == 'opb' ) ]]; then
+	cpp_project_type='true'
 	module_name="${module_name}pp"
 fi
 
@@ -635,7 +637,7 @@ if [[ -n ${execute_all} ]]; then
 	fi
 	# hello
 	if [[ -n "${hello_world}" ]]; then
-		if [[ ${pr_type} == *cpp ]]; then
+		if [[ -n ${cpp_project_type} ]]; then
 			echo -e "#include <iostream>\nint main(int argc, char* argv[]) {\n	std::cout << \"Hello World !!!\" << std::endl;\n	return 0;\n}" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		else
