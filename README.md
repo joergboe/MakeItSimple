@@ -17,6 +17,8 @@ support code completion and code navigation in the best possible and interactive
 An interactive project wizard allows a convenient and quick creation of the project skeleton for 5
 different project types.
 
+The project wizard can generate artifacts for full integration into the Kate Editor build plugin.
+
 Make automatically determines which pieces of a program need to be recompiled, and issues commands
 to recompile them. For maximum performance, all make scripts support parallel build.
 
