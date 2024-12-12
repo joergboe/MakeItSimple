@@ -88,6 +88,21 @@ Use the following commands to complete these project fragments withe the project
     cd ProjectOutPlaceBuild; ../bin/mktsimple --project-dir . --type opb --noprompt --overwrite; make all
 
 
+## Kate integration
+
+The Build Utility provides files that allow you to take full advantage of the Clang Language Server.
+To do this, you need to install the following plugins in 'Kate':
+* Build & Run,
+* LSP Client,
+* Project Plugin,
+* Terminal
+When creating a new project skeleton with the project wizard 'mktsimple', activate the option: 
+'Create a Kate Project'. The project wizard can also be used to add the Kate-Project-File to an existing 
+C/C++ project.
+The first build attempt creates the compilation database that is needed by the Language Server, even 
+if the build itself fails. From now on, all the functions of the Language Server are available.
+
+
 If you have any suggestions or bug reports please write a Github Issue.
 
 Learn more about MakeItSimple [here](https://www.joergboe.de/makeitsimple.html).
