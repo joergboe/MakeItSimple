@@ -90,7 +90,8 @@ Use the following commands to complete these project fragments withe the project
 
 ## Kate integration
 
-The Build Utility provides files that allow you to take full advantage of the Clang Language Server.
+The Build Utility provides files that allow you to take full advantage of the Clang Language Server with 
+the Kate Editor.
 To do this, you need to install the following plugins in 'Kate':
 * Build & Run,
 * LSP Client,
