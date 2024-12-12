@@ -204,6 +204,10 @@ remove_trailing_slash() {
 	return 0
 }
 
+# get the number of active cores
+number_cores=$(getconf _NPROCESSORS_ONLN)
+readonly number_cores
+
 invalid_parameter=
 missing_value=
 helprequest=
@@ -554,6 +558,7 @@ done
 # final summary check
 echo '**********************************************************************************'
 echo "Make It Simple installing directory ${mkts_install_dir}"
+echo "${number_cores} cores online found"
 echo
 echo "Project directory ${project_dir}"
 echo "Type of the makefile to install ${pr_type}"
@@ -660,14 +665,14 @@ if [[ -n ${execute_all} ]]; then
 		fi
 		case ${pr_type} in
 		otocpp)
-			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all"\n\t\t\t},'
-			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all"\n\t\t\t},';;
+			run_cmd_deb=
+			run_cmd_run=;;
 		ipbcpp)
-			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},'
-			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n\t\t\t},';;
+			run_cmd_deb=$',\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n'
+			run_cmd_run=$',\n\t\t\t\t"run_cmd": "./'"${target_name}"$'"\n';;
 		*)
-			targetstr1=$'\t\t\t{\n\t\t\t\t"name": "debug",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'all",\n\t\t\t\t"run_cmd": "./debug/'"${target_name}"$'"\n\t\t\t},'
-			targetstr2=$'\t\t\t{\n\t\t\t\t"name": "run",\n\t\t\t\t"build_cmd": "make '"${invocation_opt}"$'BUILD_MODE=run all",\n\t\t\t\t"run_cmd": "./run/'"${target_name}"$'"\n\t\t\t},';;
+			run_cmd_deb=$',\n\t\t\t\t"run_cmd": "debug/'"${target_name}"$'"\n'
+			run_cmd_run=$',\n\t\t\t\t"run_cmd": "run/'"${target_name}"$'"\n'
 		esac
 		cat >> "${kateproject_temp_name}" <<EOF
 {
@@ -690,14 +695,24 @@ if [[ -n ${execute_all} ]]; then
 		"clean": "make clean",
 		"install": "make install",
 		"targets": [
-${targetstr1}
 			{
-				"name": "clean debug",
+				"name": "Build debug config",
+				"build_cmd": "make ${invocation_opt}-j ${number_cores} --output-sync=target all"${run_cmd_deb}
+			},
+			{
+				"name": "Clean debug config",
 				"build_cmd": "make ${invocation_opt}clean"
 			},
-${targetstr2}
 			{
-				"name": "clean run",
+				"name": "Clean Build debug config",
+				"build_cmd": "make ${invocation_opt}clean; make ${invocation_opt}-j ${number_cores} --output-sync=target all"${run_cmd_deb}
+			},
+			{
+				"name": "Build run config",
+				"build_cmd": "make ${invocation_opt}clean; make ${invocation_opt}BUILD_MODE=run -j ${number_cores} --output-sync=target all"${run_cmd_run}
+			},
+			{
+				"name": "Clean run config",
 				"build_cmd": "make ${invocation_opt}BUILD_MODE=run clean"
 			},
 			{
@@ -709,15 +724,15 @@ ${targetstr2}
 				"build_cmd": "make ${invocation_opt}dec_warn_level"
 			},
 			{
-				"name": "purge",
+				"name": "Purge",
 				"build_cmd": "make ${invocation_opt}purge"
 			},
 			{
-				"name": "Project Info",
+				"name": "Project Info debug config",
 				"build_cmd": "make ${invocation_opt}show"
 			},
 			{
-				"name": "Project Info run",
+				"name": "Project Info run config",
 				"build_cmd": "make ${invocation_opt}BUILD_MODE=run show"
 			},
 			{
