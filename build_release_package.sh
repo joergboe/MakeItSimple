@@ -6,7 +6,7 @@ declare -r releasedir='releases'
 declare -r docdir='doc'
 declare -r mks='mktsimple'
 
-temp="$(grep "${mks}_version =" share/mktsimple/one_to_one_cpp.mk)"
+temp="$(grep "${mks}_version :=" share/mktsimple/one_to_one_cpp.mk)" || { echo "ERROR: No version" >&2; exit 1; }
 release_version="${temp##* }"
 
 echo
@@ -25,7 +25,7 @@ while [[ ("${response}" != 'y') && ("${response}" != 'yes') ]]; do
 done
 
 for x in in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place.mk; do
-	temp="$(grep "${mks}_version =" share/mktsimple/${x})"
+	temp="$(grep "${mks}_version :=" share/mktsimple/${x})" || { echo "ERROR: No version in ${x}" >&2; exit 1; }
 	release_version_x="${temp##* }"
 	if [[ "${release_version}" != "${release_version_x}" ]]; then
 		echo "ERROR: Version info ${release_version_x} of ${x} does not match!" >&2
