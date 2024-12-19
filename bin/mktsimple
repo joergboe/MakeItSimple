@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+readonly version='4.4.2_dev'
+
 # guess the base directory of the mkts installation
 my_install_dir=
 my_command="${0##*/}"
@@ -38,6 +40,7 @@ OPTIONS:
 	--no-kate-project              : Do not create a kate project.
 	-o|--overwrite                 : Overwrite (and backup) existing files in project destination.
 	-n|--no-prompt|--noprompt      : Do not enter the interactive mode and use the command line options only.
+	-v|--version                   : Print version and exit.
 	--mkts-install-dir VALUE       : The base directory of the mktsimple installation. The default
 	                                 value is detected from the location of the ${my_command} script.
 
@@ -186,15 +189,32 @@ read_value() {
 # Scan the project.mk and return values in:
 target_scan=
 src_dirs_scan=
+src_dirs_defined_scan=
 inc_dirs_scan=
+inc_dirs_defined_scan=
 scan_project_mk() {
+	local temp
 	echo "Reading project file: ${project_mk_name} ..."
 	target_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(TARGET))\n' 2> /dev/null)
 	src_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(SRCDIRS))\n' 2> /dev/null)
+	temp=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\nSRCDIRS ?= ******\n$(info $(SRCDIRS))\n' 2> /dev/null)
+	if [[ "${src_dirs_scan}" == "${temp}" ]]; then
+		src_dirs_defined_scan='true'
+	fi
 	inc_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(INCDIRS))\n' 2> /dev/null)
+	temp=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\nINCDIRS ?= ******\n$(info $(INCDIRS))\n' 2> /dev/null)
+	if [[ "${inc_dirs_scan}" == "${temp}" ]]; then
+		inc_dirs_defined_scan='true'
+	fi
 	[[ -z "${target_scan}" ]] || echo "TARGET: '$target_scan'"
-	[[ -z "${src_dirs_scan}" ]] || echo echo "SRCDIRS: '$src_dirs_scan'"
-	[[ -z "${inc_dirs_scan}" ]] || echo echo "INCDIRS: '$inc_dirs_scan'"
+	if [[ -n "${src_dirs_defined_scan}" || -n "${src_dirs_scan}" ]]; then
+		echo "SRCDIRS: ’$src_dirs_scan’"
+		echo "variable in project file: ${src_dirs_defined_scan}"
+	fi
+	if [[ -n "${inc_dirs_defined_scan}" || -n "${inc_dirs_scan}" ]]; then
+		echo "INCDIRS: '$inc_dirs_scan'"
+		echo "variable in project file: ${inc_dirs_defined_scan}"
+	fi
 	echo
 	return 0
 }
@@ -213,10 +233,12 @@ remove_trailing_slash() {
 number_cores=$(getconf _NPROCESSORS_ONLN)
 readonly number_cores
 
-invalid_parameter=
-missing_value=
-helprequest=
-typehelprequest=
+declare -rA single_options=([no_prompt]='-n --no-prompt --noprompt' [hello_world]='--hello-world'\
+	[no_kateproject]='--no-kate-project' [copy_warn]='-c --copy-warn' [overwrite]='-o --overwrite')
+declare -rA value_options=([mkts_install_dir]='--mkts-install-dir' [project_dir]='-p --project-dir'\
+	[pr_type]='-y --type --project-type' [target_name]='-t --target-name')
+declare -rA repeatable_options=([src_dirs]='-s --src --src-dir' [inc_dirs]='-i --inc --include-dir')
+
 no_prompt=
 mkts_install_dir=
 project_dir=
@@ -232,97 +254,70 @@ overwrite=
 echo
 # get parameters
 while [[ $# -gt 0 ]]; do
-	one_more_shift=''
 	case "$1" in
 	'-h'|'--help')
-		helprequest='true';;
+		usage
+		exit 0;;
 	'--help=type')
-		typehelprequest='true';;
-	'--mkts-install-dir')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			mkts_install_dir="$2"
-		else
-			missing_value='true'
-			break
-		fi;;
-	'-p'|'--project-dir')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			project_dir="$2"
-		else
-			missing_value='true'
-			break
-		fi;;
-	'-y'|'--type'|'--project-type')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			pr_type="$2"
-		else
-			missing_value='true'
-			break
-		fi;;
-	'-c'|'--copy-warn')
-		copy_warn='true';;
-	'-t'|'--target-name')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			target_name="$2"
-		else
-			missing_value='true'
-			break
-		fi;;
-	'-s'|'--src'|'--src-dir')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			if [[ -z ${src_dirs} ]]; then
-				src_dirs="$2"
-			else
-				src_dirs+=" $2"
-			fi
-		else
-			missing_value='true'
-			break
-		fi;;
-	'-i'|'--inc'|'--include-dir')
-		if [[ $# -gt 1 ]]; then
-			one_more_shift='true'
-			if [[ -z $2 ]]; then
-				temp=' '
-			else
-				temp="$2"
-			fi
-			if [[ -z ${inc_dirs} ]]; then
-				inc_dirs="$2"
-			else
-				inc_dirs+=" $2"
-			fi
-		else
-			missing_value='true'
-			break
-		fi;;
-	'--hello-world')
-		hello_world='true';;
-	'--no-kate-project')
-		no_kateproject='true';;
-	'-o'|'--overwrite')
-		overwrite='true';;
-	'-n'|'--no-prompt'|'--noprompt')
-		no_prompt='true';;
+		typehelp
+		exit 0;;
+	'-v'|'--version')
+		echo "${my_command} ${version}"
+		exit 0;;
 	*)
-		invalid_parameter='true'
-		break;;
+		found=
+		for name in "${!single_options[@]}"; do
+			for opt in ${single_options[${name}]}; do
+				if [[ "$1" == "${opt}" ]]; then
+					declare -n ref="${name}"
+					ref='true'
+					found='true'
+					break 2
+				fi
+			done
+		done
+		if [[ -z "${found}" ]]; then
+			for name in "${!value_options[@]}"; do
+				for opt in ${value_options[${name}]}; do
+					if [[ "$1" == "${opt}" ]]; then
+						if [[ $# -gt 1 ]]; then
+							shift
+							declare -n ref="${name}"
+							ref="$1"
+							found='true'
+							break 2
+						else
+							{ echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
+						fi
+					fi
+				done
+			done
+		fi
+		if [[ -z "${found}" ]]; then
+			for name in "${!repeatable_options[@]}"; do
+				for opt in ${repeatable_options[${name}]}; do
+					if [[ "$1" == "${opt}" ]]; then
+						if [[ $# -gt 1 ]]; then
+							shift
+							declare -n ref="${name}"
+							if [[ -z "${ref}" ]]; then
+								ref="$1"
+							else
+								ref+=" $1"
+							fi
+							found='true'
+							break 2
+						else
+							{ echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
+						fi
+					fi
+				done
+			done
+		fi
+		[[ -z "${found}" ]] && { echoerr "Invalid parameter $1\n"; usage; exit 2; } >&2
 	esac
 	shift
-	if [[ -n ${one_more_shift} ]]; then shift; fi
 done
-
-[[ -n ${invalid_parameter} ]] && { echoerr "Invalid parameter $1\n"; usage; exit 2; } >&2
-[[ -n ${missing_value} ]] && { echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
-
-# handle help requests
-[[ -n ${helprequest} ]] && { usage; exit 0; }
-[[ -n ${typehelprequest} ]] && { typehelp; exit 0; }
 
 echo -e "Make It Simple installation found in: ${my_install_dir}\n"
 
@@ -515,13 +510,13 @@ if [[ ${pr_type} != oto* ]]; then
 	fi
 fi
 if [[ -n ${out_place_project_type} ]]; then
-	if [[ -z "${src_dirs_scan}" ]]; then
+	if [[ -z "${src_dirs_defined_scan}" ]]; then
 		[[ "${src_dirs}" != 'src' ]] && src_dirs_required='true'
 	else
 		[[  "${src_dirs}" != "${src_dirs_scan}" ]] && src_dirs_required='true'
 	fi
 
-	if [[ -z "${inc_dirs_scan}" ]]; then
+	if [[ -z "${inc_dirs_defined_scan}" ]]; then
 		[[ ( ( "${inc_dirs}" != 'include' ) && ( "${inc_dirs}" != ' ' ) ) ]] && inc_dirs_required='true'
 	else
 		[[ "${inc_dirs}" != "${inc_dirs_scan}" ]] && inc_dirs_required='true'
