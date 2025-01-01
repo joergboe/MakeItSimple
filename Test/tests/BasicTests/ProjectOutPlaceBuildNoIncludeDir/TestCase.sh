@@ -25,7 +25,7 @@ esac
 
 PREPS=(
 	'copyOnly'
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt -i ' '"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt -i ''"
 )
 
 # Make the project before cleanup tests

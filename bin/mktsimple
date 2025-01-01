@@ -12,25 +12,19 @@ unset -f command
 set -o posix; set -o nounset;
 shopt -s globstar
 
+# logical command (link name)
+logical_cmd="${0##*/}"
 # guess the base directory of the mkts installation
-my_install_dir=
-my_command="${0##*/}"
-if [[ "$0" == /* ]]; then
-	my_install_dir="${0%"/bin/${my_command}"}"
-elif [[ "$0" == "${my_command}" ]]; then
-	x="$(which "${my_command}")"
-	my_install_dir="${x%"/bin/${my_command}"}"
-else
-	x="$(pwd -P)/$0"
-	my_install_dir="${x%"/bin/${my_command}"}"
-fi
+full_command=$(realpath --physical "$0")
+physical_cmd="${full_command##*/}"
+my_install_dir="${full_command%"/bin/${physical_cmd}"}"
 
 usage() {
 	cat <<EOF
 
 The Make It Simple project wizard - generate the makefile.
 
-Usage: ${my_command} [option..]
+Usage: ${logical_cmd} [option..]
 
 OPTIONS:
 	-h|--help                      : Display this help.
@@ -60,7 +54,7 @@ OPTIONS:
 	-n|--no-prompt|--noprompt      : Do not enter the interactive mode and use the command line options only.
 	-v|--version                   : Print version and exit.
 	--mkts-install-dir VALUE       : The base directory of the mktsimple installation. The default
-	                                 value is detected from the location of the ${my_command} script.
+	                                 value is detected from the location of the ${logical_cmd} script.
 	-d|--debug                     : Print debug information.
 
 RETURNS:
@@ -304,12 +298,12 @@ done
 # Result in map project_entry_required
 check_project_entry_req() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
-	declare -p scan_result
 	if defined_in_scan_res "$1"; then
 		[[ "$2" != "${scan_result["$1"]}" ]] && project_entry_required["$1"]='true'
 	else
 		[[ "$2" != "$3" ]] && project_entry_required["$1"]='true'
 	fi
+	return 0
 }
 
 # make a entry in project mk if required
@@ -318,21 +312,10 @@ check_project_entry_req() {
 # $3 - comment
 make_project_entry() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
-	if [[ -n "${project_entry_required['$1']}" ]]; then
+	if [[ -n "${project_entry_required["$1"]}" ]]; then
 		echo -e "# $3\n$1 := $2" >> "${project_mk_temp_name}" || abort_func
 		echo "$1 := $2 >> ${project_mk_name}"
 	fi
-	return 0
-}
-
-# remove trailing slashes
-# $1 - name of in/out
-remove_trailing_slash() {
-	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
-	declare -ln ref=$1
-	while [[ "${ref}" != '/' && "${ref}" == */ ]]; do
-		ref="${ref%/}"
-	done
 	return 0
 }
 
@@ -383,7 +366,7 @@ while [[ $# -gt 0 ]]; do
 		typehelp
 		exit 0;;
 	'-v'|'--version')
-		echo "${my_command} ${version}"
+		echo "${logical_cmd} ${version}"
 		exit 0;;
 	*)
 		found=
@@ -448,13 +431,16 @@ echo -e "Make It Simple installation found in: ${my_install_dir}\n"
 if defined_in_options 'mkts_install_dir'; then
 	mkts_install_dir="${options[mkts_install_dir]}"
 else
-	if [[ -z ${no_prompt} ]]; then
-		read_value "Enter the base directory of the ${mkts} installation." 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
-	else
+	if check_install_dir "${my_install_dir}"; then
 		mkts_install_dir="${my_install_dir}"
+	else
+		if [[ -z ${no_prompt} ]]; then
+			read_value "Enter the base directory of the ${mkts} installation." 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
+		else
+			mkts_install_dir="${my_install_dir}"
+		fi
 	fi
 fi
-remove_trailing_slash 'mkts_install_dir'
 ! check_install_dir "${mkts_install_dir}" >&2 && exit 2
 
 # request and validate project directory
@@ -548,10 +534,8 @@ if [[ -n ${out_place_project_type} ]]; then
 fi
 
 # request incsysdirs
-if [[ "${pr_type}" == oto* ]]; then
-	determine_item 'incsysdirs' 'INCSYSDIRS' '' \
+determine_item 'incsysdirs' 'INCSYSDIRS' '' \
 	"Enter a space separated list of external include directories used with compiler option -I." 'true'
-fi
 
 # request c compiler
 default_c_compiler=$(make --dry-run -f /dev/null --eval $'\n$(info $(CC))\n' 2> /dev/null) || true
@@ -635,10 +619,6 @@ if [[ -z ${out_place_project_type} ]]; then
 else
 	if [[ -z $src_dirs ]]; then
 		echoerr "No source directory specified but project is out place type ${pr_type}"
-		exit 2
-	fi
-	if [[ -z $inc_dirs ]]; then
-		echoerr "No include directory specified but project is in place type ${pr_type}"
 		exit 2
 	fi
 	first_src_dir=
@@ -751,8 +731,14 @@ if [[ -n ${out_place_project_type} ]]; then
 	echo "Directories with the source files: ${src_dirs}"
 	echo "Include directories: ${inc_dirs}"
 fi
+[[ -n "${incsysdirs}" ]] && echo "External include dirs: ${incsysdirs}"
 [[ -n "${c_project_type}" ]] && echo "C compiler: ${c_compiler}"
 [[ -n "${cpp_project_type}" ]] && echo "C++ compiler: ${cpp_compiler}"
+[[ -n "${cppflags}" ]] && echo "Preprocessor flags: ${cppflags}"
+[[ -n "${cflags}" ]] && echo "C compiler flags: ${cflags}"
+[[ -n "${cxxflags}" ]] && echo "C++ compiler flags: ${cxxflags}"
+[[ -n "${ldflags}" ]] && echo "Linker flags: ${ldflags}"
+[[ -n "${ldlibs}" ]] && echo "Linker libraries: ${ldlibs}"
 [[ -n "${hello_world}" ]] && echo "Create hello world program module ${module_name}"
 [[ -n "${copy_warn}" ]] && echo "Copy warnings into project directory."
 [[ -z "${no_kateproject}" ]] && echo "Create a Kate project file ${kateproject_name}"
