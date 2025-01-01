@@ -2,6 +2,16 @@
 
 readonly version='4.4.2_dev'
 
+#some setup to be save
+IFS=$' \t\n'
+#some recommended security settings
+unset -f unalias
+\unalias -a
+unset -f command
+#more setting to be save
+set -o posix; set -o nounset;
+shopt -s globstar
+
 # guess the base directory of the mkts installation
 my_install_dir=
 my_command="${0##*/}"
@@ -36,6 +46,14 @@ OPTIONS:
 	-i|--inc|--include-dir VALUE   : The project internal include directory for the quote form of the include directive (-iquote).
 	                                 If header and source files are placed in the source directories, enter an empty string or a single space.
 	                                 This option may be repeated. The default value is 'include'
+	--cc|--CC VALUE                : C compiler to be used.
+	--cxx|--cpp|--CXX VALUE        : C++ compiler to be used.
+	--cppflags|--CPPFLAGS          : Extra compiler preprocessor options.
+	--cflags|--CFLAGS              : Extra c compiler options.
+	--cxxflags|--CXXFLAGS          : Extra c++ compiler options.
+	--incsysdirs|--INCSYSDIRS      : Space separated list of external include directories used with compiler option -I.
+	--ldflags|--LDFLAGS            : Extra linker options, such as -L
+	--ldlibs|--LDLIBS              : Space separated list of libraries given to the linker.
 	--hello-world                  : Create a hello world project.
 	--no-kate-project              : Do not create a kate project.
 	-o|--overwrite                 : Overwrite (and backup) existing files in project destination.
@@ -43,6 +61,7 @@ OPTIONS:
 	-v|--version                   : Print version and exit.
 	--mkts-install-dir VALUE       : The base directory of the mktsimple installation. The default
 	                                 value is detected from the location of the ${my_command} script.
+	-d|--debug                     : Print debug information.
 
 RETURNS:
 	0    : Success
@@ -78,6 +97,9 @@ echoerr() {
 echowarn() {
 	echo -e "${col_yel}WARNING: $*${col_norm}" >&2
 }
+echodeb() {
+	echo -e "${col_yel}DEBUG: $*${col_norm}" >&2
+}
 
 typehelp() {
 	local -i i
@@ -88,8 +110,22 @@ typehelp() {
 	done
 }
 
+declare -A options=()
+# Is item defined options
+# $1 - varname
+# options - input
+defined_in_options() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	local temp
+	for temp in "${!options[@]}"; do
+		[[ "${temp}" == "$1" ]] && return 0
+	done
+	return 1
+}
+
 # check whether directory $1 contains valid install files
 check_install_dir() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local mypath="${1}/share/${mkts}"
 	local x
 	for x in ${all_install_files}; do
@@ -104,6 +140,7 @@ check_install_dir() {
 
 # check whether directory $1 is valid
 check_project_dir() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	if [[ -z $1 ]]; then
 		echoerr "Empty string for project dir"
 		return 1
@@ -113,20 +150,15 @@ check_project_dir() {
 
 # check whether $1 is a valid project type
 check_type() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local x
-	local is_valid=
 	for x in $valid_types; do
 		if [[ "$1" == "$x" ]]; then
-			is_valid='true'
-			break
+			return 0
 		fi
 	done
-	if [[ -n "$is_valid" ]]; then
-		return 0
-	else
-		echoerr "Invalid project type: $1\nValid types are: $valid_types"
-		return 1
-	fi
+	echoerr "Invalid project type: $1\nValid types are: $valid_types"
+	return 1
 }
 
 abort_func() {
@@ -140,6 +172,7 @@ abort_func() {
 # $3 - default value
 # start over when the referenced value is not empty
 read_yes_no() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local temp
 	declare -ln ref=$2
 	while [[ -z ${ref} ]]; do
@@ -169,59 +202,133 @@ read_yes_no() {
 # $4 - validator (evaluated)
 # start over when the referenced value is not empty
 read_value() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	declare -ln ref=$2
-	while [[ -z ${ref} ]]; do
-		read -r -p "$1 (^D to exit) [${3}] " || exit 3
-		if [[ -z ${REPLY} ]]; then
-			ref="${3}"
-			break
-		fi
+	while true; do
+		read -e -r -p "$1"$'\n' -i "$3" || exit 3
 		if eval "$4 \"${REPLY}\""; then
 			ref="${REPLY}"
 			break
-		else
-			ref=
 		fi
 	done
 	echo
 }
 
-# Scan the project.mk and return values in:
-target_scan=
-src_dirs_scan=
-src_dirs_defined_scan=
-inc_dirs_scan=
-inc_dirs_defined_scan=
-scan_project_mk() {
+# check command
+# $1 - command name
+check_command() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	if eval "$1" --version &> /dev/null; then
+		return 0
+	else
+		echowarn "No such command $1 installed!"
+		return 1
+	fi
+}
+
+declare -A scan_result=()
+# Is item defined in scan result (project file)
+# $1 - varname
+# scan_result - input
+defined_in_scan_res() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local temp
+	for temp in "${!scan_result[@]}"; do
+		[[ "${temp}" == "$1" ]] && return 0
+	done
+	return 1
+}
+
+# Scan item in project.mk
+# $1 - varname
+# store results in map scan_result
+scan_project_mk_item() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	local temp1 temp2
+	temp1=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $('"$1"$'))\n' 2> /dev/null)
+	temp2=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n'"$1 ?= ******"$'\n$(info $('"$1"$'))\n' 2> /dev/null)
+	if [[ "${temp1}" == "${temp2}" ]]; then
+		scan_result["$1"]="${temp1}"
+		echo "$1: ’${scan_result[$1]}’"
+		echo "Variable $1 is defined in project file."
+	fi
+}
+
+readonly project_entries_to_check='TARGET SRCDIRS INCDIRS CC CXX CPPFLAGS CFLAGS CXXFLAGS INCSYSDIRS LDFLAGS LDLIBS'
+# Scan the project.mk and return values in:
+scan_project_mk() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( )"
 	echo "Reading project file: ${project_mk_name} ..."
-	target_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(TARGET))\n' 2> /dev/null)
-	src_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(SRCDIRS))\n' 2> /dev/null)
-	temp=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\nSRCDIRS ?= ******\n$(info $(SRCDIRS))\n' 2> /dev/null)
-	if [[ "${src_dirs_scan}" == "${temp}" ]]; then
-		src_dirs_defined_scan='true'
-	fi
-	inc_dirs_scan=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(INCDIRS))\n' 2> /dev/null)
-	temp=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\nINCDIRS ?= ******\n$(info $(INCDIRS))\n' 2> /dev/null)
-	if [[ "${inc_dirs_scan}" == "${temp}" ]]; then
-		inc_dirs_defined_scan='true'
-	fi
-	[[ -z "${target_scan}" ]] || echo "TARGET: '$target_scan'"
-	if [[ -n "${src_dirs_defined_scan}" || -n "${src_dirs_scan}" ]]; then
-		echo "SRCDIRS: ’$src_dirs_scan’"
-		echo "variable in project file: ${src_dirs_defined_scan}"
-	fi
-	if [[ -n "${inc_dirs_defined_scan}" || -n "${inc_dirs_scan}" ]]; then
-		echo "INCDIRS: '$inc_dirs_scan'"
-		echo "variable in project file: ${inc_dirs_defined_scan}"
-	fi
+	local temp
+	for temp in ${project_entries_to_check}; do
+		scan_project_mk_item "${temp}"
+	done
 	echo
+	return 0
+}
+
+# determine a value
+# $1 - name of the value store e. g. cpp_compiler
+# $2 - name if the project file entry e.g CXX
+# $3 - default value
+# $4 - prompt
+# $5 - check function name
+determine_item() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	declare -ln ref=$1
+	if defined_in_options "$1"; then
+		ref=${options[$1]}
+	else
+		local tmp_def
+		if defined_in_scan_res "$2"; then
+			tmp_def="${scan_result[$2]}"
+		else
+			tmp_def="$3"
+		fi
+		if [[ -z "${no_prompt}" ]]; then
+			read_value "$4" "$1" "${tmp_def}" "$5"
+		else
+			[[ -z "${ref}" ]] && ref=${tmp_def}
+		fi
+	fi
+}
+
+declare -A project_entry_required=()
+for temp in ${project_entries_to_check}; do
+	project_entry_required[${temp}]=''
+done
+# check whether a entry in project.mk is required
+# $1 - var name
+# $2 - requested value
+# $3 - default value
+# Result in map project_entry_required
+check_project_entry_req() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	declare -p scan_result
+	if defined_in_scan_res "$1"; then
+		[[ "$2" != "${scan_result["$1"]}" ]] && project_entry_required["$1"]='true'
+	else
+		[[ "$2" != "$3" ]] && project_entry_required["$1"]='true'
+	fi
+}
+
+# make a entry in project mk if required
+# $1 - var name
+# $2 - value of the variable
+# $3 - comment
+make_project_entry() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	if [[ -n "${project_entry_required['$1']}" ]]; then
+		echo -e "# $3\n$1 := $2" >> "${project_mk_temp_name}" || abort_func
+		echo "$1 := $2 >> ${project_mk_name}"
+	fi
 	return 0
 }
 
 # remove trailing slashes
 # $1 - name of in/out
 remove_trailing_slash() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	declare -ln ref=$1
 	while [[ "${ref}" != '/' && "${ref}" == */ ]]; do
 		ref="${ref%/}"
@@ -234,10 +341,14 @@ number_cores=$(getconf _NPROCESSORS_ONLN)
 readonly number_cores
 
 declare -rA single_options=([no_prompt]='-n --no-prompt --noprompt' [hello_world]='--hello-world'\
-	[no_kateproject]='--no-kate-project' [copy_warn]='-c --copy-warn' [overwrite]='-o --overwrite')
+	[no_kateproject]='--no-kate-project' [copy_warn]='-c --copy-warn' [overwrite]='-o --overwrite'\
+	[debug]='-d --debug')
 declare -rA value_options=([mkts_install_dir]='--mkts-install-dir' [project_dir]='-p --project-dir'\
-	[pr_type]='-y --type --project-type' [target_name]='-t --target-name')
-declare -rA repeatable_options=([src_dirs]='-s --src --src-dir' [inc_dirs]='-i --inc --include-dir')
+	[pr_type]='-y --type --project-type' [target_name]='-t --target-name' [c_compiler]='--cc --CC'\
+	[cpp_compiler]='--cxx --cpp --CXX')
+declare -rA repeatable_options=([src_dirs]='-s --src --src-dir' [inc_dirs]='-i --inc --include-dir'\
+	[cppflags]='--cppflags --CPPFLAGS' [cflags]='--cflags --CFLAGS' [cxxflags]='--cxxflags --CXXFLAGS'\
+	[incsysdirs]='--incsysdirs --INCSYSDIRS' [ldflags]='--ldflags --LDFLAGS' [ldlibs]='--ldlibs --LDLIBS')
 
 no_prompt=
 mkts_install_dir=
@@ -246,12 +357,22 @@ pr_type=
 target_name=
 src_dirs=
 inc_dirs=
+c_compiler=
+cpp_compiler=
+cppflags=
+cflags=
+cxxflags=
+incsysdirs=
+ldflags=
+ldlibs=
 hello_world=
 no_kateproject=
 copy_warn=
 overwrite=
+debug=
 
 echo
+
 # get parameters
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -269,8 +390,7 @@ while [[ $# -gt 0 ]]; do
 		for name in "${!single_options[@]}"; do
 			for opt in ${single_options[${name}]}; do
 				if [[ "$1" == "${opt}" ]]; then
-					declare -n ref="${name}"
-					ref='true'
+					options[${name}]='true'
 					found='true'
 					break 2
 				fi
@@ -282,8 +402,7 @@ while [[ $# -gt 0 ]]; do
 					if [[ "$1" == "${opt}" ]]; then
 						if [[ $# -gt 1 ]]; then
 							shift
-							declare -n ref="${name}"
-							ref="$1"
+							options[${name}]="$1"
 							found='true'
 							break 2
 						else
@@ -299,11 +418,10 @@ while [[ $# -gt 0 ]]; do
 					if [[ "$1" == "${opt}" ]]; then
 						if [[ $# -gt 1 ]]; then
 							shift
-							declare -n ref="${name}"
-							if [[ -z "${ref}" ]]; then
-								ref="$1"
+							if defined_in_options "${name}"; then
+								options[${name}]+=" $1"
 							else
-								ref+=" $1"
+								options[${name}]="$1"
 							fi
 							found='true'
 							break 2
@@ -319,39 +437,43 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
+for name in "${!options[@]}"; do
+	declare -n ref="${name}"
+	ref="${options[${name}]}"
+done
+
 echo -e "Make It Simple installation found in: ${my_install_dir}\n"
 
 # request and validate mkts installation directory
-if [[ -z ${no_prompt} ]]; then
-	read_value "Enter the base directory of the ${mkts} installation."$'\n' 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
+if defined_in_options 'mkts_install_dir'; then
+	mkts_install_dir="${options[mkts_install_dir]}"
 else
-	[[ -z ${mkts_install_dir} ]] && mkts_install_dir="${my_install_dir}"
+	if [[ -z ${no_prompt} ]]; then
+		read_value "Enter the base directory of the ${mkts} installation." 'mkts_install_dir' "${my_install_dir}" 'check_install_dir'
+	else
+		mkts_install_dir="${my_install_dir}"
+	fi
 fi
 remove_trailing_slash 'mkts_install_dir'
 ! check_install_dir "${mkts_install_dir}" >&2 && exit 2
 
 # request and validate project directory
-if [[ -z ${no_prompt} ]]; then
-	read_value "Enter the project directory" 'project_dir' '.' 'check_project_dir'
+if defined_in_options 'project_dir'; then
+	project_dir="${options[project_dir]}"
 else
-	[[ -z "${project_dir}" ]] && project_dir='.'
+	if [[ -z ${no_prompt} ]]; then
+		read_value "Enter the project directory" 'project_dir' '.' 'check_project_dir'
+	else
+		[[ "${inc_dirs}" != "${scan_result['INCDIRS']}" ]] && project_entry_required['INCDIRS']='true'='.'
+	fi
 fi
 ! check_project_dir "${project_dir}" >&2 && exit 2
 
-# define required file names
-readonly makefile_name="${project_dir}/Makefile"
-readonly warndir_name="${project_dir}/${mkts}"
-readonly project_mk_name="${project_dir}/project.mk"
-readonly project_mk_temp_name="${project_dir}/.project.mk"
-readonly kateproject_name="${project_dir}/.kateproject"
-readonly kateproject_temp_name="${project_dir}/kateproject.tmp"
-
-# scan project file if any
-[[ -r "${project_mk_name}" ]] && scan_project_mk
-
 # request and validate the type of the installation
-if [[ -z ${no_prompt} ]]; then
-	if [[ -z $pr_type ]]; then
+if defined_in_options 'pr_type'; then
+	pr_type="${options[pr_type]}"
+else
+	if [[ -z ${no_prompt} ]]; then
 		echo "Enter the type of the project."
 		select x in "${pr3[@]}"; do
 			case $REPLY in
@@ -370,36 +492,47 @@ fi
 
 out_place_project_type=
 [[ ${pr_type} == opb* ]] && out_place_project_type='true'
+cpp_project_type=
+[[ "${pr_type}" == *cpp || "${pr_type}" == 'opb' ]] && cpp_project_type='true'
+c_project_type=
+[[ "${pr_type}" == 'opbc' || "${pr_type}" == 'opb' ]] && c_project_type='true'
+readonly cpp_project_type c_project_type
+
+# define required file names
+readonly makefile_name="${project_dir}/Makefile"
+readonly warndir_name="${project_dir}/${mkts}"
+readonly project_mk_name="${project_dir}/project.mk"
+readonly project_mk_temp_name="${project_dir}/.project.mk"
+readonly kateproject_name="${project_dir}/.kateproject"
+readonly kateproject_temp_name="${project_dir}/kateproject.tmp"
+
+# scan project file if any
+[[ -r "${project_mk_name}" ]] && scan_project_mk
 
 # determination of default target name from project directory
-if [[ ${project_dir} == '.' ]]; then
-	temp="${PWD}"
-else
-	temp="${project_dir}"
-
-fi
-temp="${temp%/}"
-defaul_target_name="${temp##*/}"
-# or from project.mk scan
-if [[ -z "${target_scan}" ]]; then
-	def_targ="${defaul_target_name}"
-else
-	def_targ="${target_scan}"
-fi
-# request target name - check target name
-if [[ -z "${no_prompt}" ]]; then
-	if [[ "${pr_type}" == oto* ]]; then
-		target_name=
-	else
-		read_value "Name of the executable to build?" 'target_name' "${def_targ}" 'true'
-	fi
+temp=$(realpath --canonicalize-missing --logical "${project_dir}")
+temp=${temp%/}
+defaul_target_name=${temp##*/}
+# request target name
+if defined_in_options 'target_name'; then
+	target_name="${options[target_name]}"
 else
 	if [[ "${pr_type}" == oto* ]]; then
 		target_name=
 	else
-		[[ -z ${target_name} ]] && target_name="${def_targ}"
+		if defined_in_scan_res 'TARGET'; then
+			tmp_def="${scan_result['TARGET']}"
+		else
+			tmp_def="${defaul_target_name}"
+		fi
+		if [[ -z "${no_prompt}" ]]; then
+			read_value "Name of the executable to build?" 'target_name' "${tmp_def}" 'true'
+		else
+			target_name="${tmp_def}"
+		fi
 	fi
 fi
+# check target name
 if [[ "${pr_type}" == oto* ]]; then
 	[[ -n ${target_name} ]] && { echoerr "No target name allowed in One To One project type"; exit 2; }
 else
@@ -407,63 +540,87 @@ else
 fi
 
 if [[ -n ${out_place_project_type} ]]; then
-	# determination of default src dir list
-	if [[ -z "${src_dirs_scan}" ]]; then
-		def_src='src'
-	else
-		def_src="${src_dirs_scan}"
-	fi
 	# request source dir list
-	if [[ -z "${no_prompt}" ]]; then
-		read_value "Enter a space separated source directory list." 'src_dirs' "${def_src}" 'true'
-	else
-		[[ -z ${src_dirs} ]] && src_dirs="${def_src}"
-	fi
+	determine_item 'src_dirs' 'SRCDIRS' 'src' "Enter a space separated source directory list." 'true'
 
-	# determination of default inc dir list
-	if [[ -z "${inc_dirs_scan}" ]]; then
-		def_inc='include'
-	else
-		def_inc="${inc_dirs_scan}"
-	fi
 	# request include dir list
-	if [[ -z "${no_prompt}" ]]; then
-		read_value "Enter a space separated include directory list."$'\n'\
-$'Enter a single space character if header and source files are placed in the source directory\n(no include dir).' 'inc_dirs' "${def_inc}" 'true'
-		if [[ "${inc_dirs}" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
-			inc_dirs=' '
-		fi
-	else
-		if [[ -z ${inc_dirs} ]]; then
-			inc_dirs="${def_inc}"
-		elif [[ "${inc_dirs}" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
-			inc_dirs=' '
-		fi
-	fi
+	determine_item 'inc_dirs' 'INCDIRS' 'include' "Enter a space separated include directory list." 'true'
 fi
 
+# request incsysdirs
+if [[ "${pr_type}" == oto* ]]; then
+	determine_item 'incsysdirs' 'INCSYSDIRS' '' \
+	"Enter a space separated list of external include directories used with compiler option -I." 'true'
+fi
+
+# request c compiler
+default_c_compiler=$(make --dry-run -f /dev/null --eval $'\n$(info $(CC))\n' 2> /dev/null) || true
+if [[ -n "${c_project_type}" ]]; then
+	determine_item 'c_compiler' 'CC' "${default_c_compiler}" "C-Compiler?" 'check_command'
+	check_command "${c_compiler}" || { echoerr "No such compiler ${c_compiler} installed!"; exit 2; }
+fi
+	
+
+# request cpp compiler
+default_cpp_compiler=$(make --dry-run -f /dev/null --eval $'\n$(info $(CXX))\n' 2> /dev/null) || true
+if [[ -n "${cpp_project_type}" ]]; then
+	determine_item 'cpp_compiler' 'CXX' "${default_cpp_compiler}" "C++-Compiler?" 'check_command'
+	check_command "${cpp_compiler}" || { echoerr "No such compiler ${cpp_compiler} installed!"; exit 2; }
+fi
+
+# request CPPFLAGS
+determine_item 'cppflags' 'CPPFLAGS' '' "Enter the prepocessor flags." 'true'
+
+# request CFLAGS
+if [[ -n "${c_project_type}" ]]; then
+	determine_item 'cflags' 'CFLAGS' '' "Enter the c compiler flags." 'true'
+fi
+
+# request CXXFLAGS
+if [[ -n "${cpp_project_type}" ]]; then
+	determine_item 'cxxflags' 'CXXFLAGS' '' "Enter the c++ compiler flags." 'true'
+fi
+
+# request LDFLAGS
+determine_item 'ldflags' 'LDFLAGS' '' "Enter extra linker options, such as -L" 'true'
+
+# request LDLIBS
+determine_item 'ldlibs' 'LDLIBS' '' "Enter space separated list of libraries given to the linker (including -l)" 'true'
+
 # request copy warnings local option
-if [[ -z "${no_prompt}" && -z "${copy_warn}" ]]; then
-	read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' 'no'
+if defined_in_options 'copy_warn'; then
+	copy_warn=${options['copy_warn']}
+else
+	if [[ -z "${no_prompt}" ]]; then
+		read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' 'no'
+	fi
 fi
 
 # request hello world
-if [[ -z "${no_prompt}" && -z "${hello_world}" ]]; then
-	read_yes_no "Create a hello world project?" 'hello_world' 'no'
-fi
-
-# request kateproject
-if [[ -z "${no_prompt}" && -z "${no_kateproject}" ]]; then
-	kateproject=
-	read_yes_no "Create a Kate project file?" 'kateproject' 'yes'
-	if [[ -z ${kateproject} ]]; then
-		no_kateproject='true'
-	else
-		no_kateproject=
+if defined_in_options 'hello_world'; then
+	hello_world=${options['hello_world']}
+else
+	if [[ -z "${no_prompt}" ]]; then
+		read_yes_no "Create a hello world project?" 'hello_world' 'no'
 	fi
 fi
 
-# check src dir and project type
+# request kateproject
+if defined_in_options 'no_kateproject'; then
+	no_kateproject=${options['no_kateproject']}
+else
+	if [[ -z "${no_prompt}" ]]; then
+		kateproject=
+		read_yes_no "Create a Kate project file?" 'kateproject' 'yes'
+		if [[ -z ${kateproject} ]]; then
+			no_kateproject='true'
+		else
+			no_kateproject=
+		fi
+	fi
+fi
+
+# check src dir list / inc dir list and project type
 if [[ -z ${out_place_project_type} ]]; then
 	if [[ -n $src_dirs ]]; then
 		echoerr "Source directory '${src_dirs}'specified but project is in place type ${pr_type}"
@@ -492,38 +649,49 @@ else
 	module_name="${project_dir}/${first_src_dir}/hello.c"
 	module_temp_name="${project_dir}/${first_src_dir}/.hello.x"
 fi
-cpp_project_type=
-if [[ ( ${pr_type} == *cpp ) || ( ${pr_type} == 'opb' ) ]]; then
-	cpp_project_type='true'
+if [[ -n "${cpp_project_type}" ]]; then
 	module_name="${module_name}pp"
 fi
 
-# find out if a new project.mk entry is required
-target_name_required=
-src_dirs_required=
-inc_dirs_required=
+# check if a project file entry is required
 if [[ ${pr_type} != oto* ]]; then
-	if [[ -z "${target_scan}" ]]; then
-		[[ "${target_name}" != "${defaul_target_name}" ]] && target_name_required='true'
-	else
-		[[ "${target_name}" != "${target_scan}" ]] && target_name_required='true'
-	fi
+	check_project_entry_req 'TARGET' "${target_name}" "${defaul_target_name}"
 fi
 if [[ -n ${out_place_project_type} ]]; then
-	if [[ -z "${src_dirs_defined_scan}" ]]; then
-		[[ "${src_dirs}" != 'src' ]] && src_dirs_required='true'
-	else
-		[[  "${src_dirs}" != "${src_dirs_scan}" ]] && src_dirs_required='true'
-	fi
+	check_project_entry_req 'SRCDIRS' "${src_dirs}" 'src'
 
-	if [[ -z "${inc_dirs_defined_scan}" ]]; then
-		[[ ( ( "${inc_dirs}" != 'include' ) && ( "${inc_dirs}" != ' ' ) ) ]] && inc_dirs_required='true'
-	else
-		[[ "${inc_dirs}" != "${inc_dirs_scan}" ]] && inc_dirs_required='true'
+	if defined_in_scan_res 'INCDIRS'; then
+		[[ "${inc_dirs}" != "${scan_result['INCDIRS']}" ]] && project_entry_required['INCDIRS']='true'
+	elif [[ "${inc_dirs}" == 'include' ]]; then
+		:	# dir will be created later
+	elif [[ -z "${inc_dirs}" ]]; then
+		if [[ -d "${project_dir}/include" ]]; then
+			echowarn "Directory include exists and will be used with -I option!\nConsider to delete the directory."
+		fi
+	else 
+		project_entry_required['INCDIRS']='true'
 	fi
 fi
+if [[ -n "${c_project_type}" ]]; then
+	check_project_entry_req 'CC' "${c_compiler}" "${default_c_compiler}"
+	check_project_entry_req 'CFLAGS' "${cflags}" ''
+fi
+if [[ -n "${cpp_project_type}" ]]; then
+	check_project_entry_req 'CXX' "${cpp_compiler}" "${default_cpp_compiler}"
+	check_project_entry_req 'CXXFLAGS' "${cxxflags}" ''
+fi
+check_project_entry_req 'CPPFLAGS' "${cppflags}" ''
+check_project_entry_req 'INCSYSDIRS' "${incsysdirs}" ''
+check_project_entry_req 'LDFLAGS' "${ldflags}" ''
+check_project_entry_req 'LDLIBS' "${ldlibs}" ''
+
 project_mk_required=
-[[ -n $target_name_required || -n $src_dirs_required || -n $inc_dirs_required ]] && project_mk_required='true'
+for temp in ${project_entries_to_check}; do
+	if [[ -n "${project_entry_required[${temp}]}" ]]; then
+		project_mk_required='true'
+		break
+	fi
+done
 
 # check if some files already exists
 overwrite_makefile=
@@ -583,6 +751,8 @@ if [[ -n ${out_place_project_type} ]]; then
 	echo "Directories with the source files: ${src_dirs}"
 	echo "Include directories: ${inc_dirs}"
 fi
+[[ -n "${c_project_type}" ]] && echo "C compiler: ${c_compiler}"
+[[ -n "${cpp_project_type}" ]] && echo "C++ compiler: ${cpp_compiler}"
 [[ -n "${hello_world}" ]] && echo "Create hello world program module ${module_name}"
 [[ -n "${copy_warn}" ]] && echo "Copy warnings into project directory."
 [[ -z "${no_kateproject}" ]] && echo "Create a Kate project file ${kateproject_name}"
@@ -615,17 +785,19 @@ if [[ -n ${execute_all} ]]; then
 		opb)
 			src_name='out_place.mk'
 	esac
-	cp -v --backup=numbered "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
+	if [[ -e ${makefile_name} ]] && diff "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" &> /dev/null; then
+		echo "Makefile is up to date."
+	else
+		cp -v --backup=numbered "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" || abort_func
+	fi
 	# create dirs
 	if [[ -n ${out_place_project_type} ]]; then
 		for temp in ${src_dirs}; do
 			mkdir -pv "${project_dir}/${temp}" || abort_func
 		done
-		if [[ ! "$x" =~ ^[[:blank:]][[:blank:]]*$ ]]; then
-			for temp in ${inc_dirs}; do
-				mkdir -pv "${project_dir}/${temp}" || abort_func
-			done
-		fi
+		for temp in ${inc_dirs}; do
+			mkdir -pv "${project_dir}/${temp}" || abort_func
+		done
 	fi
 	# project.mk
 	if [[ -n "${project_mk_required}" ]]; then
@@ -633,18 +805,18 @@ if [[ -n ${execute_all} ]]; then
 			cp -p "${project_mk_name}" "${project_mk_temp_name}" || abort_func
 		fi
 		echo -e "\n# *** Section created by mktsimple ***" >> "${project_mk_temp_name}" || abort_func
-		if [[ -n $target_name_required ]]; then
-			echo -e "# Name of the executable\nTARGET := ${target_name}" >> "${project_mk_temp_name}" || abort_func
-			echo "TARGET := ${target_name} >> ${project_mk_name}"
-		fi
-		if [[ -n $src_dirs_required ]]; then
-			echo -e "# Space separated list of directories with source files\nSRCDIRS := ${src_dirs}" >> "${project_mk_temp_name}" || abort_func
-			echo "SRCDIRS := ${src_dirs} >> ${project_mk_name}"
-		fi
-		if [[ -n $inc_dirs_required ]]; then
-			echo -e "# Space separated list of project internal include directories\nINCDIRS := ${inc_dirs}" >> "${project_mk_temp_name}" || abort_func
-			echo "INCDIRS := ${inc_dirs} >> ${project_mk_name}"
-		fi
+		make_project_entry 'TARGET' "${target_name}" 'Name of the executable'
+		make_project_entry 'SRCDIRS' "${src_dirs}" 'Space separated list of directories with source files'
+		make_project_entry 'INCDIRS' "${inc_dirs}" 'Space separated list of project internal include directories'
+		make_project_entry 'CC' "${c_compiler}" 'C compiler to be used'
+		make_project_entry 'CXX' "${cpp_compiler}" 'C++ compiler to be used'
+		make_project_entry 'CPPFLAGS' "${cppflags}" 'C preprocessor flags'
+		make_project_entry 'CFLAGS' "${cflags}" 'C compiler flags'
+		make_project_entry 'CXXFLAGS' "${cxxflags}" 'C++ compiler flags'
+		make_project_entry 'INCSYSDIRS' "${incsysdirs}" 'Space separated list of external include directories used with compiler option -I'
+		make_project_entry 'LDFLAGS' "${ldflags}" 'Extra linker options, such as -L'
+		make_project_entry 'LDLIBS' "${ldlibs}" 'Space separated list of libraries given to the linker (including -l)'
+		
 		mv -v --backup=numbered "${project_mk_temp_name}" "${project_mk_name}" || abort_func
 	fi
 	# hello
@@ -656,7 +828,12 @@ if [[ -n ${execute_all} ]]; then
 			echo -e "#include <stdio.h>\nint main(int argc, char* argv[]) {\n	printf(\"Hello World !!!\\\\n\");\n	return 0;\n}" > "${module_temp_name}" || abort_func
 			echo "Write ${module_name}"
 		fi
-		mv -v --backup=numbered "${module_temp_name}" "${module_name}" || abort_func
+		if [[ -e "${module_name}" ]] && diff "${module_temp_name}" "${module_name}" &> /dev/null; then
+			echo "${module_name} is up to date."
+			rm "${module_temp_name}"
+		else
+			mv -v --backup=numbered "${module_temp_name}" "${module_name}" || abort_func
+		fi
 	fi
 	# warn directory
 	if [[ -n "${copy_warn}" ]]; then
@@ -681,7 +858,7 @@ if [[ -n ${execute_all} ]]; then
 			run_cmd_deb=$',\n\t\t\t\t"run_cmd": "debug/'"${target_name}"$'"\n'
 			run_cmd_run=$',\n\t\t\t\t"run_cmd": "run/'"${target_name}"$'"\n'
 		esac
-		cat >> "${kateproject_temp_name}" <<EOF
+		cat > "${kateproject_temp_name}" <<EOF
 {
 	"name": "${defaul_target_name}",
 	"files": [
@@ -754,7 +931,12 @@ if [[ -n ${execute_all} ]]; then
 	}
 }
 EOF
-		mv -v --backup=numbered "${kateproject_temp_name}" "${kateproject_name}" || abort_func
+		if [[ -e "${kateproject_name}" ]] && diff "${kateproject_temp_name}" "${kateproject_name}" &> /dev/null; then
+			echo "${kateproject_name} is up to date."
+			rm "${kateproject_temp_name}"
+		else
+			mv -v --backup=numbered "${kateproject_temp_name}" "${kateproject_name}" || abort_func
+		fi
 		local_kateproject_files=
 		for x in "${project_dir}/".kateproject.[^~]*; do
 			local_kateproject_files=" $x"
