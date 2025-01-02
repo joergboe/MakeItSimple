@@ -239,8 +239,9 @@ defined_in_scan_res() {
 scan_project_mk_item() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local temp1 temp2
-	temp1=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $('"$1"$'))\n' 2> /dev/null)
-	temp2=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n'"$1 ?= ******"$'\n$(info $('"$1"$'))\n' 2> /dev/null)
+	temp1=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(value '"$1"$'))\n' 2> /dev/null)
+	temp2=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n'"$1 ?= ******"$'\n$(info $(value '"$1"$'))\n' 2> /dev/null)
+	echo "'$temp1' '$temp2'"
 	if [[ "${temp1}" == "${temp2}" ]]; then
 		scan_result["$1"]="${temp1}"
 		echo "$1: ’${scan_result[$1]}’"
@@ -313,8 +314,8 @@ check_project_entry_req() {
 make_project_entry() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	if [[ -n "${project_entry_required["$1"]}" ]]; then
-		echo -e "# $3\n$1 := $2" >> "${project_mk_temp_name}" || abort_func
-		echo "$1 := $2 >> ${project_mk_name}"
+		echo -e "# $3\n$1 = $2" >> "${project_mk_temp_name}" || abort_func
+		echo "$1 = $2 >> ${project_mk_name}"
 	fi
 	return 0
 }
@@ -450,7 +451,7 @@ else
 	if [[ -z ${no_prompt} ]]; then
 		read_value "Enter the project directory" 'project_dir' '.' 'check_project_dir'
 	else
-		[[ "${inc_dirs}" != "${scan_result['INCDIRS']}" ]] && project_entry_required['INCDIRS']='true'='.'
+		project_dir='.'
 	fi
 fi
 ! check_project_dir "${project_dir}" >&2 && exit 2
