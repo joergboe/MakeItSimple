@@ -42,12 +42,12 @@ OPTIONS:
 	                                 This option may be repeated. The default value is 'include'
 	--cc|--CC VALUE                : C compiler to be used.
 	--cxx|--cpp|--CXX VALUE        : C++ compiler to be used.
-	--cppflags|--CPPFLAGS          : Extra compiler preprocessor options.
-	--cflags|--CFLAGS              : Extra c compiler options.
-	--cxxflags|--CXXFLAGS          : Extra c++ compiler options.
-	--incsysdirs|--INCSYSDIRS      : Space separated list of external include directories used with compiler option -I.
-	--ldflags|--LDFLAGS            : Extra linker options, such as -L
-	--ldlibs|--LDLIBS              : Space separated list of libraries given to the linker.
+	--cppflags|--CPPFLAGS VALUE    : Extra compiler preprocessor options. This option may be repeated.
+	--cflags|--CFLAGS VALUE        : Extra c compiler options. This option may be repeated.
+	--cxxflags|--CXXFLAGS VALUE    : Extra c++ compiler options. This option may be repeated.
+	--incsysdirs|--INCSYSDIRS VALUE: Space separated list of external include directories used with compiler option -I. This option may be repeated.
+	--ldflags|--LDFLAGS VALUE      : Extra linker options, such as -L. This option may be repeated.
+	--ldlibs|--LDLIBS VALUE        : Space separated list of libraries given to the linker. This option may be repeated.
 	--hello-world                  : Create a hello world project.
 	--no-kate-project              : Do not create a kate project.
 	-o|--overwrite                 : Overwrite (and backup) existing files in project destination.
@@ -241,11 +241,10 @@ scan_project_mk_item() {
 	local temp1 temp2
 	temp1=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n$(info $(value '"$1"$'))\n' 2> /dev/null)
 	temp2=$(make --dry-run -f /dev/null --eval "include ${project_mk_name}"$'\n'"$1 ?= ******"$'\n$(info $(value '"$1"$'))\n' 2> /dev/null)
-	echo "'$temp1' '$temp2'"
+	[[ -z "${debug}" ]] || echodeb "'$temp1' '$temp2'"
 	if [[ "${temp1}" == "${temp2}" ]]; then
 		scan_result["$1"]="${temp1}"
-		echo "$1: ’${scan_result[$1]}’"
-		echo "Variable $1 is defined in project file."
+		echo "Variable $1 is defined in project file. Value: ${scan_result[$1]}"
 	fi
 }
 
