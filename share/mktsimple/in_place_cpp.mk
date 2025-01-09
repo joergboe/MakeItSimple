@@ -44,7 +44,7 @@ Optional customization variables:
                       this Makefile.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
-  WARN_LEVEL:         Warning level set 0 .. 5. Default: 4
+  WARN_LEVEL:         Warning level set 0 .. 5. Default: 3
   MAKEFILE_WARN:      The name of the file with specific warning options. The default is 'mktsimple/warnings.xxxx.mk'
                       for a 'known' compiler or 'warnings.mk' for a unknown compiler. 'Known' compilers
                       are: g++-7, g++-12..14 and clang-13,14,17,18,19
@@ -82,7 +82,7 @@ Description:
   If variable BUILD_MODE equals 'run', optimized executables without debug information are built.
 
   The variable WARN_LEVEL can assign warning levels from 0 .. 5.
-  The default warning level is 4 and activates a comprehensive set of warnings (for gcc and clang).
+  The default warning level is 3 and activates a comprehensive set of warnings (for gcc and clang).
 
   By default the g++ compiler is used. To use a different compiler, set variable CXX. E.g 'CXX=clang++'
 
@@ -223,7 +223,7 @@ ifndef MAKEFILE_WARN
   endif
 endif
 $(call conditional_info,Try using MAKEFILE_WARN=$(MAKEFILE_WARN))
-WARN_LEVEL ?= 4
+WARN_LEVEL ?= 3
 BUILD_MODE ?= debug
 COMP_FLAGS_RUN ?= -O2 -g1
 ifeq (,$(findstring clang,$(CXX)))
@@ -270,8 +270,8 @@ else ifeq ($(WARN_LEVEL),4)
 else ifeq ($(WARN_LEVEL),5)
   cxxwarnings := $(cxxwarn1) $(cxxwarn2) $(cxxwarn3) $(cxxwarn4) $(cxxwarn5)
 else
-  $(warning WARNING: Invalid WARN_LEVEL=$(WARN_LEVEL) - Use default 4)
-  WARN_LEVEL = 4
+  $(warning WARNING: Invalid WARN_LEVEL=$(WARN_LEVEL) - Use default 3)
+  WARN_LEVEL = 3
 endif
 
 ifeq ($(BUILD_MODE),run)
