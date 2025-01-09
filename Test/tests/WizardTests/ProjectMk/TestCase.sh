@@ -99,7 +99,7 @@ STEPS=(
 	'executeLogAndSuccess "${TTRO_installDir}/bin/mktsimple" ${OPTIONS} --debug ${OPTIONS2}'
 	'checkOutput'
 	"checkAllFilesExist \"mktsimple\" 'warnings.cc-12.mk warnings.cc-7.mk warnings.clang-17.mk warnings.g++-12.mk warnings.g++-7.mk warnings.gcc-14.mk warnings.cc-13.mk warnings.clang-13.mk warnings.clang-18.mk warnings.g++-13.mk warnings.gcc-12.mk warnings.gcc-7.mk warnings.cc-14.mk warnings.clang-14.mk warnings.clang-19.mk warnings.g++-14.mk warnings.gcc-13.mk'"
-	'THEFILES=$(echo project.mk.~* Makefile.~*)'
+	'THEFILES=$(echo Makefile.~*)'
 	'if [[ -n ${THEFILES} ]]; then setFailure "Backupfiles exist: ${THEFILES}"; fi'
 	'thirdTest'
 	'checkProjectMk'

@@ -49,6 +49,9 @@ STEPS=(
 if [[ ${TTRO_variantCase} == 'project1' ]]; then
 	STEPS+=( checkProjectMk )
 fi
+if [[ ${TTRO_variantCase} == 'default' ]]; then
+	STEPS+=( checkProjectMk0 )
+fi
 
 if [[ -n ${COPY_WARN} ]]; then
 	STEPS+=( "checkAllFilesExist \"${PROJECT_DIR}/mktsimple\" 'warnings.cc-12.mk warnings.cc-7.mk warnings.clang-17.mk warnings.g++-12.mk warnings.g++-7.mk warnings.gcc-14.mk warnings.cc-13.mk warnings.clang-13.mk warnings.clang-18.mk warnings.g++-13.mk warnings.gcc-12.mk warnings.gcc-7.mk warnings.cc-14.mk warnings.clang-14.mk warnings.clang-19.mk warnings.g++-14.mk warnings.gcc-13.mk'" )
@@ -67,6 +70,25 @@ checkOutput() {
 	return 0
 }
 
+checkProjectMk0() {
+	case ${TTRO_variantSuite} in
+		otocpp)
+			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true' 'project_type = otocpp';;
+		ipbcpp)
+			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true' 'project_type = ipbcpp';;
+		opbcpp)
+			if [[ -f "${PROJECT_DIR}/project.mk" ]]; then
+				setFailure "project.mk exists"
+			fi;;
+		opbc)
+			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true' 'project_type = opbc';;
+		opb)
+			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true' 'project_type = opb';;
+	*)
+		printErrorAndExit "Invalid suite variant ${TTRO_variantSuite}";;
+	esac
+}
+
 checkProjectMk() {
 	case ${TTRO_variantSuite} in
 		otocpp)
@@ -75,7 +97,9 @@ checkProjectMk() {
 			'CXXFLAGS = --std=c++11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt';;
+			'LDLIBS = -lrt'\
+			'project_type = otocpp'\
+			'copy_warnings = true';;
 		ipbcpp)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -83,7 +107,9 @@ checkProjectMk() {
 			'CXXFLAGS = --std=c++11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt';;
+			'LDLIBS = -lrt'\
+			'project_type = ipbcpp'\
+			'copy_warnings = true';;
 		opbcpp)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -93,7 +119,8 @@ checkProjectMk() {
 			'CXXFLAGS = --std=c++11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt';;
+			'LDLIBS = -lrt'\
+			'copy_warnings = true';;
 		opbc)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -104,7 +131,9 @@ checkProjectMk() {
 			'CFLAGS = --std=c11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt';;
+			'LDLIBS = -lrt'\
+			'project_type = opbc'\
+			'copy_warnings = true';;
 		opb)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -116,7 +145,9 @@ checkProjectMk() {
 			'CXXFLAGS = --std=c++11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt';;
+			'LDLIBS = -lrt'\
+			'project_type = opb'\
+			'copy_warnings = true';;
 	*)
 		printErrorAndExit "Invalid suite variant ${TTRO_variantSuite}";;
 	esac

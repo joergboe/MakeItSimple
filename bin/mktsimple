@@ -66,16 +66,21 @@ EOF
 }
 
 readonly mkts='mktsimple'
-readonly valid_types='opbcpp opbc opb ipbcpp otocpp'
 readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
+# the first word of each list entry is the type identifier
 readonly -a pr3=(
 	'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
 	'opbc   -- C project     Out Place Build'$'\n''    Build one executable from all %.c source files in all project source directories.'$'\n'
 	'opb    -- C/C++ project Out Place Build'$'\n''    Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
 	'ipbcpp -- C++ project   In Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
 	'otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
-	'exit'
 )
+declare -a valid_types
+for ((i=0; i<${#pr3[*]}; i++)); do
+	x="${pr3[i]}"
+	valid_types+=("${x%%\ *}")
+done
+readonly valid_types
 
 col_red=
 col_yel=
@@ -143,17 +148,51 @@ check_project_dir() {
 	return 0
 }
 
+# position number to type string
+# returns true if $1 was a digit
+#  result stores the type string or the nul string
+# returns false if $1 was not a digit
+type_str() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	if [[ $1 =~ ^[[:digit:]]$ ]]; then
+		local -i i=$(($1 - 1))
+		if (( i>=0 && i<${#valid_types[*]} )); then
+			result="${valid_types[i]}"
+		else
+			result=
+			echoerr "Invalid type number $1"
+		fi
+		return 0
+	else
+		return 1
+	fi
+}
 # check whether $1 is a valid project type
 check_type() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	local x
-	for x in $valid_types; do
+	for x in "${valid_types[@]}"; do
 		if [[ "$1" == "$x" ]]; then
 			return 0
 		fi
 	done
-	echoerr "Invalid project type: $1\nValid types are: $valid_types"
+	echoerr "Invalid project type: $1\nValid types are: ${valid_types[*]}"
 	return 1
+}
+# check whether $1 is a valid project type or a number from 1..5
+check_type_2() {
+	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	local result
+	if type_str "$1"; then
+		:
+	else
+		result="$1"
+	fi
+	if check_type "${result}"; then
+		return 0
+	else
+		return 1
+	fi
 }
 
 abort_func() {
@@ -168,6 +207,7 @@ abort_func() {
 # start over when the referenced value is not empty
 read_yes_no() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	echo
 	local temp
 	declare -ln ref=$2
 	while [[ -z ${ref} ]]; do
@@ -187,7 +227,6 @@ read_yes_no() {
 			ref=
 		fi
 	done
-	echo
 }
 
 # read a value from stdin
@@ -198,6 +237,7 @@ read_yes_no() {
 # start over when the referenced value is not empty
 read_value() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	echo
 	declare -ln ref=$2
 	while true; do
 		read -e -r -p "$1"$'\n' -i "$3" || exit 3
@@ -206,7 +246,6 @@ read_value() {
 			break
 		fi
 	done
-	echo
 }
 
 # check command
@@ -249,7 +288,7 @@ scan_project_mk_item() {
 	fi
 }
 
-readonly project_entries_to_check='TARGET SRCDIRS INCDIRS CC CXX CPPFLAGS CFLAGS CXXFLAGS INCSYSDIRS LDFLAGS LDLIBS'
+readonly project_entries_to_check='TARGET SRCDIRS INCDIRS CC CXX CPPFLAGS CFLAGS CXXFLAGS INCSYSDIRS LDFLAGS LDLIBS project_type copy_warnings'
 # Scan the project.mk and return values in:
 scan_project_mk() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( )"
@@ -314,7 +353,8 @@ check_project_entry_req() {
 make_project_entry() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	if [[ -n "${project_entry_required["$1"]}" ]]; then
-		echo -e "# $3\n$1 = $2" >> "${project_mk_temp_name}" || abort_func
+		local comment="# ${3//$'\n'/ }"
+		echo -e "${comment}\n$1 = $2" >> "${project_mk_temp_name}" || abort_func
 		echo "$1 = $2 >> ${project_mk_name}"
 	fi
 	return 0
@@ -454,35 +494,6 @@ else
 fi
 ! check_project_dir "${project_dir}" >&2 && exit 2
 
-# request and validate the type of the installation
-if defined_in_options 'pr_type'; then
-	pr_type="${options[pr_type]}"
-else
-	if [[ -z ${no_prompt} ]]; then
-		echo "Enter the type of the project."
-		select x in "${pr3[@]}"; do
-			case $REPLY in
-				1|2|3|4|5)
-					echo "$x"
-					pr_type="${x%%\ *}"
-					break;;
-				6)
-					exit 3;;
-			esac
-		done || exit 3
-	fi
-	echo
-fi
-! check_type "$pr_type" >&2 && exit 2
-
-out_place_project_type=
-[[ ${pr_type} == opb* ]] && out_place_project_type='true'
-cpp_project_type=
-[[ "${pr_type}" == *cpp || "${pr_type}" == 'opb' ]] && cpp_project_type='true'
-c_project_type=
-[[ "${pr_type}" == 'opbc' || "${pr_type}" == 'opb' ]] && c_project_type='true'
-readonly cpp_project_type c_project_type
-
 # define required file names
 readonly makefile_name="${project_dir}/Makefile"
 readonly warndir_name="${project_dir}/${mkts}"
@@ -493,6 +504,48 @@ readonly kateproject_temp_name="${project_dir}/kateproject.tmp"
 
 # scan project file if any
 [[ -r "${project_mk_name}" ]] && scan_project_mk
+
+# request and validate the type of the installation
+if defined_in_options 'pr_type'; then
+	pr_type="${options[pr_type]}"
+else
+	if defined_in_scan_res 'project_type'; then
+		tmp_def="${scan_result['project_type']}"
+	else
+		tmp_def='opbcpp'
+	fi
+	if [[ -z "${no_prompt}" ]]; then
+		temp=$'Enter the type of the project\n'
+		declare -i i=1
+		for x in "${pr3[@]}"; do
+			temp+="${i}) ${x}"
+			i+=1
+		done
+		tmp_def_num=
+		for ((i=0; i<${#valid_types[*]}; i++)); do
+			if [[ "${tmp_def}" == "${valid_types[i]}" ]]; then
+				tmp_def_num=$((i + 1))
+				break
+			fi
+		done
+		read_value "${temp}" 'pr_type' "${tmp_def_num}" check_type_2
+		if type_str "${pr_type}"; then
+			pr_type="${result}"
+		fi
+	else
+		pr_type="${tmp_def}"
+	fi
+fi
+! check_type "${pr_type}" >&2 && exit 2
+echo "Project type: ${pr_type}"
+
+out_place_project_type=
+[[ ${pr_type} == opb* ]] && out_place_project_type='true'
+cpp_project_type=
+[[ "${pr_type}" == *cpp || "${pr_type}" == 'opb' ]] && cpp_project_type='true'
+c_project_type=
+[[ "${pr_type}" == 'opbc' || "${pr_type}" == 'opb' ]] && c_project_type='true'
+readonly cpp_project_type c_project_type
 
 # determination of default target name from project directory
 temp=$(realpath --canonicalize-missing --logical "${project_dir}")
@@ -574,8 +627,17 @@ determine_item 'ldlibs' 'LDLIBS' '' "Enter space separated list of libraries giv
 if defined_in_options 'copy_warn'; then
 	copy_warn=${options['copy_warn']}
 else
+	if defined_in_scan_res 'copy_warnings'; then
+		if [[ -n ${scan_result['copy_warnings']} ]]; then
+			tmp_def='yes'
+		else
+			tmp_def='no'
+		fi
+	else
+		tmp_def='no'
+	fi
 	if [[ -z "${no_prompt}" ]]; then
-		read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' 'no'
+		read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' "${tmp_def}"
 	fi
 fi
 
@@ -663,6 +725,8 @@ check_project_entry_req 'CPPFLAGS' "${cppflags}" ''
 check_project_entry_req 'INCSYSDIRS' "${incsysdirs}" ''
 check_project_entry_req 'LDFLAGS' "${ldflags}" ''
 check_project_entry_req 'LDLIBS' "${ldlibs}" ''
+check_project_entry_req 'project_type' "${pr_type}" 'opbcpp'
+check_project_entry_req 'copy_warnings' "${copy_warn}" ''
 
 project_mk_required=
 for temp in ${project_entries_to_check}; do
@@ -801,6 +865,8 @@ if [[ -n ${execute_all} ]]; then
 		make_project_entry 'INCSYSDIRS' "${incsysdirs}" 'Space separated list of external include directories used with compiler option -I'
 		make_project_entry 'LDFLAGS' "${ldflags}" 'Extra linker options, such as -L'
 		make_project_entry 'LDLIBS' "${ldlibs}" 'Space separated list of libraries given to the linker (including -l)'
+		make_project_entry 'project_type' "${pr_type}" "${pr_type_info}"
+		make_project_entry 'copy_warnings' "${copy_warn}" 'Request local copy of the warning.mk files in the project directory'
 		
 		mv -v --backup=numbered "${project_mk_temp_name}" "${project_mk_name}" || abort_func
 	fi
