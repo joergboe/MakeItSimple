@@ -1,5 +1,7 @@
 # Provide the optional project specific settings here.
 
+# project_type= opbcpp is default
+
 # Space separated list of directories with c++ source files
 SRCDIRS := . src
 # Use this code to determine the source directories recursively

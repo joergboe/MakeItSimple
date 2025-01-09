@@ -1,5 +1,8 @@
 # Provide the optional project specific settings here.
 
+# ipbcpp -- C++ project   In Place Build     Build one executable from all %.cpp and %.cc source files in the project directory. 
+project_type = ipbcpp
+
 # Name of the executable
 #TARGET := program
 

@@ -1,5 +1,8 @@
 # Provide the optional project specific settings here.
 
+# opbc   -- C project     Out Place Build     Build one executable from all %.c source files in all project source directories. 
+project_type = opbc
+
 # Space separated list of directories with c++ source files
 SRCDIRS := . src
 # Use this code to determine the source directories recursively

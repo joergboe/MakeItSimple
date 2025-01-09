@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-../bin/mktsimple --type opb --overwrite --no-prompt
+../bin/mktsimple --overwrite --no-prompt

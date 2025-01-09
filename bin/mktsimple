@@ -30,7 +30,7 @@ OPTIONS:
 	-h|--help                      : Display this help.
 	--help=type                    : Print project type information.
 	-p|--project-dir VALUE         : The base directory of the C/C++ project. Default: current directory.
-	-y|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb.
+	-y|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb. Default: opbcpp
 	                                 To find out more about the types use option --help=type
 	-c|--copy-warn                 : Make a local copy of the warning.mk files in the project directory.
 	-t|--target-name VALUE         : Name of the executable to build. Default value is the last path component of
