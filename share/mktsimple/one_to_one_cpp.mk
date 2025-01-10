@@ -87,6 +87,8 @@ Description:
   If parallel execution is requested (-j n), the script disallowes the congruent execution of clean-
   and production-goals.
 
+  If the compilation of one module fails, the appropriate target file is removed.
+
   NOTE: The character set for file names is restricted. In particular, the following characters are
   not allowed in file names: whitespaces, #, ', ", %, :, ;, (, and )
   Allowed characters are: ?, *, $$, !, \, ~, &, ^, {, and }
@@ -435,11 +437,13 @@ build: $(targetscpp) $(targetscc)
 
 %: %.cpp
 $(targetscpp): %: %.cpp %.dep $(makefile_this) $(last_config_store_target)
+	@$(RM) '$@'
 	$(compile_source_cmd)
 	$(call conditional_echo,Finished building: $<\n)
 
 %: %.cc
 $(targetscc): %: %.cc %.dep $(makefile_this) $(last_config_store_target)
+	@$(RM) '$@'
 	$(compile_source_cmd)
 	$(call conditional_echo,Finished building: $<\n)
 

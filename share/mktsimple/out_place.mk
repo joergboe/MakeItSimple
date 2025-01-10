@@ -113,6 +113,8 @@ Description:
   If parallel execution is requested (-j n), the script disallowes the congruent execution of clean-
   and production-goals.
 
+  If the compilation of one module fails, the target file is removed.
+
   NOTE: The character set for file names is restricted. In particular, the following characters are
   not allowed in file names: whitespaces, #, ', ", %, :, ;, (, and )
   Allowed characters are: ?, *, $$, !, \, ~, &, ^, {, and }
@@ -209,7 +211,8 @@ else
   $(error ERROR: Required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
 endif
 
-production_goals = all build compdb
+phony_target_goals = all build
+production_goals = $(phony_target_goals) compdb
 cleanup_goals = clean purge
 action_goals = $(production_goals) $(cleanup_goals) inc_warn_level dec_warn_level
 phony_goals = $(action_goals) show help
@@ -443,6 +446,7 @@ ifeq (,$(goals))
 endif
 current_production_goals = $(filter $(production_goals),$(goals))
 current_target_goals = $(filter $(alltargets),$(goals))
+current_main_target_goals = $(filter $(phony_target_goals) $(TARGET),$(goals))
 current_cleanup_goals = $(filter $(cleanup_goals),$(goals))
 # option -j is in makeflags in word after the single character options
 ifeq (-j,$(findstring -j,$(filter -j%, $(MFLAGS))))
@@ -576,6 +580,12 @@ else
 endif
 # compile command string
 compile_source_cmd = $(my_cc) $(OUTPUT_OPTION) '$(STRIPPED_PREREQ1)' $(my_flags) $(my_depflags)
+# remove main target in case of compile error and if main target was requested
+ifneq (,$(current_main_target_goals))
+  remove_main_target = { $(RM) -v '$(BINDIR)/$(TARGET)'; exit 1; }
+else
+  remove_main_target = exit 1
+endif
 
 # rules:
 all: compdb build
@@ -584,6 +594,7 @@ build: $(BINDIR)/$(TARGET)
 
 %: %.o
 $(BINDIR)/$(TARGET): $(objectscpp) $(objectscc) $(objectsc) $(objectsas) | $(BINDIR)
+	@$(RM) '$@'
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(foreach var,$^,'$(var)') $(LDLIBS) -o '$@'
 	$(call conditional_echo,Finished linking target: $@\n)
 
@@ -592,7 +603,8 @@ $(objectscpp): my_cc = $(CXX)
 $(objectscpp): my_flags = $(allcxxflags)
 $(objectscpp): my_depflags = $(depflags)
 $(objectscpp): $(BUILDDIR)/%.o: %.cpp $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
-	$(compile_source_cmd)
+	@$(RM) '$@'
+	$(compile_source_cmd) || $(remove_main_target)
 	$(call conditional_echo,Finished building: $<\n)
 
 %.o: %.cc
@@ -600,7 +612,8 @@ $(objectscc): my_cc = $(CXX)
 $(objectscc): my_flags = $(allcxxflags)
 $(objectscc): my_depflags = $(depflags)
 $(objectscc): $(BUILDDIR)/%.o: %.cc $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
-	$(compile_source_cmd)
+	@$(RM) '$@'
+	$(compile_source_cmd) || $(remove_main_target)
 	$(call conditional_echo,Finished building: $<\n)
 
 %.o: %.c
@@ -608,7 +621,8 @@ $(objectsc): my_cc = $(CC)
 $(objectsc): my_flags = $(allcflags)
 $(objectsc): my_depflags = $(depflags)
 $(objectsc): $(BUILDDIR)/%.o: %.c $(BUILDDIR)/%.dep $(makefile_this) $(last_config_store_target) | $(builddirs)
-	$(compile_source_cmd)
+	@$(RM) '$@'
+	$(compile_source_cmd) || $(remove_main_target)
 	$(call conditional_echo,Finished building: $<\n)
 
 %.o: %.s
@@ -616,7 +630,8 @@ $(objectsas): my_cc = $(AS)
 $(objectsas): my_flags = $(allasflags)
 $(objectsas): my_depflags = $(AS_FLAGS_LIST)
 $(objectsas): $(BUILDDIR)/%.o: %.s $(makefile_this) $(last_config_store_target) | $(builddirs)
-	$(compile_source_cmd)
+	@$(RM) '$@'
+	$(compile_source_cmd) || $(remove_main_target)
 	$(call conditional_echo,Finished building: $<\n)
 
 $(builddirs):
