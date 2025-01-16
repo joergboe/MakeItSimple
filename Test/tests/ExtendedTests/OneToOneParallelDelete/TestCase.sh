@@ -6,10 +6,10 @@ readonly NO_CPUS
 
 ALL_SOURCE_FILE_NAMES=
 ALL_EXE_FILE_NAMES=
+ALL_GOOD_EXE_FILE_NAMES=
 
-OPTIONS='-s'
+OPTIONS=
 GOALS=
-RUN_RESULT='true'
 EXPECT_FAILURE=
 
 case ${TTRO_variantCase} in
@@ -36,17 +36,40 @@ PREPS=(
 )
 
 STEPS=(
+	"executeLogAndSuccess make -j ${NO_CPUS} $OPTIONS $GOALS"
+	'[[ -z $EXPECT_FAILURE ]] || { echo "bla dsds aaa" >> module3.cpp; echo "bla dsds aaa" >> module96.cc; }'
+	'checkAllFilesExist "." "${ALL_EXE_FILE_NAMES}"'
 	'[[ -n $EXPECT_FAILURE ]] || executeLogAndSuccess make $OPTIONS $GOALS'
 	'[[ -z $EXPECT_FAILURE ]] || executeLogAndError make $OPTIONS $GOALS'
 	'checkResult'
-	'[[ -z $RUN_RESULT ]] || runAll'
+	'runAll'
 )
 
-checkFileNotExists() {
-	if [[ -e "$1" ]]; then
-		setFailure "$1 exists"
+checkFileNotExistsAnd() {
+	while (($# > 0)); do
+		if [[ -e "$1" ]]; then
+			setFailure "$1 exists"
+		else
+			printInfo "$1 not exists and"
+		fi
+		shift
+	done
+}
+checkFileNotExistsOr() {
+	local file_not_found=
+	local files_exists=
+	while (($# > 0)); do
+		if [[ -e "$1" ]]; then
+			files_exists+="$1 "
+		else
+			file_not_found+="$1 "
+		fi
+		shift
+	done
+	if [[ -z "${file_not_found}" ]]; then
+		setFailure "All those files exist: ${files_exists}"
 	else
-		printInfo "$1 not exists"
+		printInfo "checkFileNotExistsOr: ${file_not_found} not exist"
 	fi
 }
 
@@ -55,12 +78,11 @@ checkResult() {
 		default|parallel)
 			checkAllFilesExist "." "${ALL_EXE_FILE_NAMES}";;
 		fail|parallelFail)
-			checkFileNotExists "module3"
-			checkFileNotExists "module96";;
+			checkAllFilesExist "." "${ALL_GOOD_EXE_FILE_NAMES}"
+			checkFileNotExistsOr "module3" "module96";;
 		failKeepGoing|parallelFailKeepGoing)
-			checkAllFilesExist "." "${ALL_EXE_FILE_NAMES}"
-			checkFileNotExists "module3"
-			checkFileNotExists "module96";;
+			checkAllFilesExist "." "${ALL_GOOD_EXE_FILE_NAMES}"
+			checkFileNotExistsAnd "module3" "module96";;
 	esac
 }
 
@@ -81,18 +103,19 @@ makeSourceFiles() {
 			src_suffix='cc'
 		fi
 		echo "${TEXT/module1./module${i}}" > "module${i}.${src_suffix}"
-		if [[ -n $EXPECT_FAILURE && ( $i -eq 3 || $i -eq 96 ) ]]; then
-			echo "dsfqr qrq r q" >> "module${i}.${src_suffix}"
+		ALL_SOURCE_FILE_NAMES+=" module${i}.${src_suffix}"
+		ALL_EXE_FILE_NAMES+=" module${i}"
+		if [[ -n ${EXPECT_FAILURE} && ( ${i} == 3 || ${i} == 96 ) ]]; then
+			:
 		else
-			ALL_SOURCE_FILE_NAMES+=" module${i}.${src_suffix}"
-			ALL_EXE_FILE_NAMES+=" module${i}"
+			ALL_GOOD_EXE_FILE_NAMES+=" module${i}"
 		fi
 	done
 }
 
 runAll() {
 	local -i i
-	for X in ${ALL_EXE_FILE_NAMES}; do
+	for X in ${ALL_GOOD_EXE_FILE_NAMES}; do
 		"./${X}"
 	done
 }

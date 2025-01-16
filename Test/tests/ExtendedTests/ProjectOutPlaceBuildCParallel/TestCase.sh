@@ -8,6 +8,7 @@ OPTIONS='-s'
 GOALS=
 RUN_RESULT='true'
 EXPECT_FAILURE=
+BINDIR='debug'
 
 case ${TTRO_variantCase} in
 	parallel)
@@ -31,14 +32,14 @@ esac
 
 PREPS=(
 	'makeSourceFiles'
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y ipbcpp --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbc --noprompt"
 )
 
 STEPS=(
 	'[[ -n $EXPECT_FAILURE ]] || executeLogAndSuccess make $OPTIONS $GOALS'
 	'[[ -z $EXPECT_FAILURE ]] || executeLogAndError make $OPTIONS $GOALS'
 	'checkResult'
-	'[[ -z $RUN_RESULT ]] || ./${TTRO_variantCase}'
+	'[[ -z $RUN_RESULT ]] || ${BINDIR}/${TTRO_variantCase}'
 )
 
 checkFileNotExists() {
@@ -52,47 +53,42 @@ checkFileNotExists() {
 checkResult() {
 	case ${TTRO_variantCase} in
 		default|parallel)
-			checkAllFilesExist "." "${ALL_DEP_FILE_NAMES}"
-			checkAllFilesExist "." "${ALL_OBJ_FILE_NAMES}"
-			checkAllFilesExist "." "${TTRO_variantCase}";;
+			checkAllFilesExist "${BINDIR}/build/src" "${ALL_DEP_FILE_NAMES}"
+			checkAllFilesExist "${BINDIR}/build/src" "${ALL_OBJ_FILE_NAMES}"
+			checkAllFilesExist "${BINDIR}" "${TTRO_variantCase}";;
 		fail|parallelFail)
-			checkFileNotExists "module3.o"
-			checkFileNotExists "module96.o"
-			checkFileNotExists "${TTRO_variantCase}";;
+			checkFileNotExists "${BINDIR}/build/src/module3.o"
+			checkFileNotExists "${BINDIR}/${TTRO_variantCase}";;
 		failKeepGoing|parallelFailKeepGoing)
-			checkAllFilesExist "." "${ALL_OBJ_FILE_NAMES}"
-			checkAllFilesExist "." "${ALL_DEP_FILE_NAMES}"
-			checkFileNotExists "module3.o"
-			checkFileNotExists "module96.o"
-			checkFileNotExists "${TTRO_variantCase}";;
+			checkAllFilesExist "${BINDIR}/build/src" "${ALL_OBJ_FILE_NAMES}"
+			checkAllFilesExist "${BINDIR}/build/src" "${ALL_DEP_FILE_NAMES}"
+			checkFileNotExists "${BINDIR}/build/src/module3.o"
+			checkFileNotExists "${BINDIR}/${TTRO_variantCase}";;
 	esac
 }
 
-HEADER_TEXT='#ifndef MODULE${i}_HPP_
-#define MODULE${i}_HPP_
+HEADER_TEXT='#ifndef MODULE${i}_H_
+#define MODULE${i}_H_
 
-void hellom${i}();
+void hellom${i}(void);
 
-#endif /* MODULE${i}_HPP_ */'
+#endif /* MODULE${i}_H_ */'
 
 MODULE_TEXT='
-#include \"module${i}.hpp\"
+#include \"module${i}.h\"
 
-#include <iostream>
+#include <stdio.h>
 
-using namespace std;
-
-void hellom${i}() {
-	cout << \"Hello World module${i} !!!\" << endl;
+void hellom${i}(void) {
+	printf(\"Hello World module${i} !!!\n\");
 	return;
 }'
 
-TEXT1='#include <iostream>
 
-using namespace std;
+TEXT1='#include <stdio.h>
 
 int main() {
-	cout << "Hello World Program m1 !!!" << endl;
+	printf("Hello World Program m1 !!!\n");
 '
 
 TEXT2='	return 0;
@@ -103,28 +99,25 @@ ALL_OBJ_FILE_NAMES=
 ALL_DEP_FILE_NAMES=
 
 makeSourceFiles() {
+	mkdir include src
 	local incl=
 	local call=
 	local -i i
-	local src_suffix='cpp'
 	for ((i=1; i<100; i++)); do
-		if ((i>50)); then
-			src_suffix='cc'
-		fi
-		eval echo "\"${HEADER_TEXT}\"" > "module${i}.hpp"
-		eval echo "\"${MODULE_TEXT}\"" > "module${i}.${src_suffix}"
-		incl+='#include "module'${i}'.hpp"'$'\n'
+		eval echo "\"${HEADER_TEXT}\"" > "include/module${i}.h"
+		eval echo "\"${MODULE_TEXT}\"" > "src/module${i}.c"
+		incl+='#include "module'${i}'.h"'$'\n'
 		call+=$'\t''hellom'${i}'();'$'\n'
-		if [[ -n $EXPECT_FAILURE && ( $i -eq 3 || $i -eq 96 ) ]]; then
-			echo "dsfqr qrq r q" >> "module${i}.${src_suffix}"
+		if [[ -n $EXPECT_FAILURE && $i -eq 3 ]]; then
+			echo "dsfqr qrq r q" >> "src/module${i}.c"
 		else
-			ALL_SOURCE_FILE_NAMES+=" module${i}.${src_suffix}"
+			ALL_SOURCE_FILE_NAMES+=" module${i}.c"
 			ALL_OBJ_FILE_NAMES+=" module${i}.o"
 			ALL_DEP_FILE_NAMES+=" module${i}.dep"
 		fi
 	done
-	echo "${incl}${TEXT1}${call}${TEXT2}" > prog.cpp
-	ALL_SOURCE_FILE_NAMES+=" prog.cpp"
+	echo "${incl}${TEXT1}${call}${TEXT2}" > src/prog.c
+	ALL_SOURCE_FILE_NAMES+=" prog.c"
 	ALL_OBJ_FILE_NAMES+=" prog.o"
 	ALL_DEP_FILE_NAMES+=" prog.dep"
 }
