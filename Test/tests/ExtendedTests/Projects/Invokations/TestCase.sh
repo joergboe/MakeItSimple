@@ -49,7 +49,7 @@ if [[ "${TTRO_variantSuite}" == ProjectOut* ]]; then
 fi
 PREPS=(
 	'cp -r ${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/* .'
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --copy-warn --noprompt"
 )
 
 # The main test run

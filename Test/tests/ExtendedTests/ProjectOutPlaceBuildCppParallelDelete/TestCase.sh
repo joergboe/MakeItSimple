@@ -35,7 +35,7 @@ case ${TTRO_variantCase} in
 esac
 
 PREPS=(
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opbcpp --noprompt --copy-warn"
 	'makeSourceFiles'
 )
 
