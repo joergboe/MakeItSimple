@@ -241,7 +241,7 @@ read_value() {
 	declare -ln ref=$2
 	while true; do
 		read -e -r -p "$1"$'\n' -i "$3" || exit 3
-		if eval "$4 \"${REPLY}\""; then
+		if eval "$4 \"\${REPLY}\""; then
 			ref="${REPLY}"
 			break
 		fi
