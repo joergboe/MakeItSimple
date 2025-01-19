@@ -167,32 +167,29 @@ type_str() {
 		return 1
 	fi
 }
-# check whether $1 is a valid project type
+
+# check whether $1 is a valid project type or a number from 1..5
+# if $2 is true, numbers are not accepted
 check_type() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
+	local result
+	if [[ $# -lt 2 || -z $2 ]]; then
+		if type_str "$1"; then
+			:
+		else
+			result="$1"
+		fi
+	else
+		result="$1"
+	fi
 	local x
 	for x in "${valid_types[@]}"; do
-		if [[ "$1" == "$x" ]]; then
+		if [[ "${result}" == "$x" ]]; then
 			return 0
 		fi
 	done
 	echoerr "Invalid project type: $1\nValid types are: ${valid_types[*]}"
 	return 1
-}
-# check whether $1 is a valid project type or a number from 1..5
-check_type_2() {
-	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
-	local result
-	if type_str "$1"; then
-		:
-	else
-		result="$1"
-	fi
-	if check_type "${result}"; then
-		return 0
-	else
-		return 1
-	fi
 }
 
 abort_func() {
@@ -204,7 +201,7 @@ abort_func() {
 # $1 - Prompt
 # $2 - name of in/output
 # $3 - default value
-# start over when the referenced value is not empty
+# start over when the referenced value is empty
 read_yes_no() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	echo
@@ -234,7 +231,6 @@ read_yes_no() {
 # $2 - name of in/output
 # $3 - default value
 # $4 - validator (evaluated)
-# start over when the referenced value is not empty
 read_value() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( $* )"
 	echo
@@ -288,7 +284,7 @@ scan_project_mk_item() {
 	fi
 }
 
-readonly project_entries_to_check='TARGET SRCDIRS INCDIRS CC CXX CPPFLAGS CFLAGS CXXFLAGS INCSYSDIRS LDFLAGS LDLIBS project_type copy_warnings'
+readonly project_entries_to_check='TARGET SRCDIRS INCDIRS CC CXX CPPFLAGS CFLAGS CXXFLAGS INCSYSDIRS LDFLAGS LDLIBS project_type'
 # Scan the project.mk and return values in:
 scan_project_mk() {
 	[[ -z "${debug}" ]] || echodeb "${FUNCNAME[0]} ( )"
@@ -528,7 +524,7 @@ else
 				break
 			fi
 		done
-		read_value "${temp}" 'pr_type' "${tmp_def_num}" check_type_2
+		read_value "${temp}" 'pr_type' "${tmp_def_num}" 'check_type'
 		if type_str "${pr_type}"; then
 			pr_type="${result}"
 		fi
@@ -536,7 +532,7 @@ else
 		pr_type="${tmp_def}"
 	fi
 fi
-! check_type "${pr_type}" >&2 && exit 2
+! check_type "${pr_type}" 'true' >&2 && exit 2
 echo "Project type: ${pr_type}"
 
 out_place_project_type=
@@ -627,17 +623,8 @@ determine_item 'ldlibs' 'LDLIBS' '' "Enter space separated list of libraries giv
 if defined_in_options 'copy_warn'; then
 	copy_warn=${options['copy_warn']}
 else
-	if defined_in_scan_res 'copy_warnings'; then
-		if [[ -n ${scan_result['copy_warnings']} ]]; then
-			tmp_def='yes'
-		else
-			tmp_def='no'
-		fi
-	else
-		tmp_def='no'
-	fi
 	if [[ -z "${no_prompt}" ]]; then
-		read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' "${tmp_def}"
+		read_yes_no "Make a local copy of the warning files in the project directory?" 'copy_warn' 'no'
 	fi
 fi
 
@@ -726,7 +713,6 @@ check_project_entry_req 'INCSYSDIRS' "${incsysdirs}" ''
 check_project_entry_req 'LDFLAGS' "${ldflags}" ''
 check_project_entry_req 'LDLIBS' "${ldlibs}" ''
 check_project_entry_req 'project_type' "${pr_type}" 'opbcpp'
-check_project_entry_req 'copy_warnings' "${copy_warn}" ''
 
 project_mk_required=
 for temp in ${project_entries_to_check}; do
@@ -866,7 +852,6 @@ if [[ -n ${execute_all} ]]; then
 		make_project_entry 'LDFLAGS' "${ldflags}" 'Extra linker options, such as -L'
 		make_project_entry 'LDLIBS' "${ldlibs}" 'Space separated list of libraries given to the linker (including -l)'
 		make_project_entry 'project_type' "${pr_type}" "${pr_type_info}"
-		make_project_entry 'copy_warnings' "${copy_warn}" 'Request local copy of the warning.mk files in the project directory'
 		
 		mv -v --backup=numbered "${project_mk_temp_name}" "${project_mk_name}" || abort_func
 	fi

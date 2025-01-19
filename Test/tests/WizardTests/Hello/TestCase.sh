@@ -98,8 +98,7 @@ checkProjectMk() {
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
 			'LDLIBS = -lrt'\
-			'project_type = otocpp'\
-			'copy_warnings = true';;
+			'project_type = otocpp';;
 		ipbcpp)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -108,8 +107,7 @@ checkProjectMk() {
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
 			'LDLIBS = -lrt'\
-			'project_type = ipbcpp'\
-			'copy_warnings = true';;
+			'project_type = ipbcpp';;
 		opbcpp)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -119,8 +117,7 @@ checkProjectMk() {
 			'CXXFLAGS = --std=c++11'\
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
-			'LDLIBS = -lrt'\
-			'copy_warnings = true';;
+			'LDLIBS = -lrt';;
 		opbc)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -132,8 +129,7 @@ checkProjectMk() {
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
 			'LDLIBS = -lrt'\
-			'project_type = opbc'\
-			'copy_warnings = true';;
+			'project_type = opbc';;
 		opb)
 			linewisePatternMatchInterceptAndSuccess "${PROJECT_DIR}/project.mk" 'true'\
 			'TARGET = prog1'\
@@ -146,8 +142,7 @@ checkProjectMk() {
 			'INCSYSDIRS = isys44'\
 			'LDFLAGS = -Ldd44'\
 			'LDLIBS = -lrt'\
-			'project_type = opb'\
-			'copy_warnings = true';;
+			'project_type = opb';;
 	*)
 		printErrorAndExit "Invalid suite variant ${TTRO_variantSuite}";;
 	esac
