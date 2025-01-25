@@ -129,7 +129,6 @@ check_install_dir() {
 	local mypath="${1}/share/${mkts}"
 	local x
 	for x in ${all_install_files}; do
-		#echo "checking: ${mypath}/${x}"
 		if [[ ! -f "${mypath}/${x}" ]]; then
 			echoerr "Source dir '$1' is not a valid installation!"
 			return 1
@@ -424,7 +423,7 @@ while [[ $# -gt 0 ]]; do
 							found='true'
 							break 2
 						else
-							{ echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
+							{ echoerr "Missing value for parameter $1\n"; usage >&2; exit 2; }
 						fi
 					fi
 				done
@@ -444,13 +443,13 @@ while [[ $# -gt 0 ]]; do
 							found='true'
 							break 2
 						else
-							{ echoerr "Missing value for parameter $1\n"; usage; exit 2; } >&2
+							{ echoerr "Missing value for parameter $1\n"; usage >&2; exit 2; }
 						fi
 					fi
 				done
 			done
 		fi
-		[[ -z "${found}" ]] && { echoerr "Invalid parameter $1\n"; usage; exit 2; } >&2
+		[[ -z "${found}" ]] && { echoerr "Invalid parameter $1\n"; usage >&2; exit 2; }
 	esac
 	shift
 done
@@ -476,7 +475,7 @@ else
 		fi
 	fi
 fi
-! check_install_dir "${mkts_install_dir}" >&2 && exit 2
+! check_install_dir "${mkts_install_dir}" && exit 2
 
 # request and validate project directory
 if defined_in_options 'project_dir'; then
@@ -488,7 +487,7 @@ else
 		project_dir='.'
 	fi
 fi
-! check_project_dir "${project_dir}" >&2 && exit 2
+! check_project_dir "${project_dir}" && exit 2
 
 # define required file names
 readonly makefile_name="${project_dir}/Makefile"
@@ -532,7 +531,7 @@ else
 		pr_type="${tmp_def}"
 	fi
 fi
-! check_type "${pr_type}" 'true' >&2 && exit 2
+! check_type "${pr_type}" 'true' && exit 2
 echo "Project type: ${pr_type}"
 
 out_place_project_type=
