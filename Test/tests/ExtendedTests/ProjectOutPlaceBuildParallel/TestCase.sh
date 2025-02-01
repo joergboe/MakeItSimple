@@ -32,7 +32,7 @@ esac
 
 PREPS=(
 	'makeSourceFiles'
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opb --noprompt --copy-warn"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y opb --include-dir include --noprompt --copy-warn"
 )
 
 STEPS=(

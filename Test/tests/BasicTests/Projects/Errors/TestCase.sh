@@ -32,9 +32,14 @@ case ${TTRO_variantCase} in
 		printErrorAndExit "Program Error variant ${TTRO_variantCase}";;
 esac
 
+INCDIROPT=
+if [[ "${TTRO_variantSuite}" = ProjectOutPlaceBuild* ]]; then
+	INCDIROPT+=' --include-dir include'
+fi
+
 PREPS=(
 	"cp -r \"${TTRO_inputDirSuite}/../../${TTRO_variantSuite}TestProject/\"* ."
-	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y \"${TTRO_projectType}\" --noprompt"
+	"\"${TTRO_installDir}/bin/mktsimple\" -p . -y ${TTRO_projectType} ${INCDIROPT} --noprompt"
 	"touch .mktsimple"
 )
 

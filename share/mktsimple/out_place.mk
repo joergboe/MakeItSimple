@@ -46,9 +46,8 @@ Optional customization variables:
   SRCDIRS             Space separated list of directories with c++/c/assembler source files
                       Default value is 'src' (Use '.' for the project dir)
   INCDIRS:            Space separated list of project internal include directories for the quote form
-                      of the include directive (-iquote) Omit this variable, if header and source files
-                      are placed in the source directories. The default value is 'include' if this
-                      directory exists or the empty string if the directory not exists.
+                      of the include directive (-iquote), This variable is not required when include
+                      directives of the quoted form specify the full path relative to the source.
   INCSYSDIRS:         Space separated list of external include directories used with compiler option -I.
                       Default: empty.
   WARN_LEVEL:         Warning level set 0 .. 5. Default: 3
@@ -87,8 +86,7 @@ Description:
   This make script builds or updates one executable from all %.cpp, %.cc, %.c and %.s source files in
   all project source directories. The name of the executable is defined through variable TARGET and
   the default is the last component of the directory which contains this Makefile.
-  The project may have separate header file directories. If the include directory differs from
-  'include', set the name(s) in variable INCDIRS.
+  The project may have separate header file directories specified in variable INCDIRS.
 
   This script checks the version of the compiler and searches for an appropriate 'warnings.xxxx.mk'
   file in the directories ./mktsimple and /usr/local/include/mktsimple. If the tool is installed in
@@ -148,7 +146,7 @@ Objects to build : $(sort $(objectscpp) $(objectscc) $(objectsc) $(objectsas))
 
 All include directories (-iquote): $(INCDIRS)
 
-All include (system) directories : $(INCSYSDIRS)
+All include (system) directories (-I): $(INCSYSDIRS)
 
 $(modeinfostring) : BUILD_MODE=$(BUILD_MODE)
 c++ build options : $(bmodeflags)
@@ -407,7 +405,6 @@ check_name = $(foreach var,$(hs) ' ' " " % : ; ( ),$(call name_has_char,$(1),$(v
 
 # determines all directories, sources, objects, dependecies, required flags
 SRCDIRS ?= src
-INCDIRS ?= $(wildcard include)
 # get the last path component from the realpath of this filename as target name
 TARGET ?= $(lastword $(subst /, ,$(dir $(realpath $(makefile_this)))))
 

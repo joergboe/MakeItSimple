@@ -38,8 +38,9 @@ OPTIONS:
 	-s|--src|--src-dir VALUE       : Directory with the c/c++ source files. If the source files are located in more
 	                                 than one directory, this option may be repeated. Default: src
 	-i|--inc|--include-dir VALUE   : The project internal include directory for the quote form of the include directive (-iquote).
-	                                 If header and source files are placed in the source directories, enter an empty string or a single space.
-	                                 This option may be repeated. The default value is 'include'
+	                                 If all include directives of the quoted form specify the full path relative to the source, the VALUE should
+	                                 be the empty string.
+	                                 This option may be repeated.
 	--cc|--CC VALUE                : C compiler to be used.
 	--cxx|--cpp|--CXX VALUE        : C++ compiler to be used.
 	--cppflags|--CPPFLAGS VALUE    : Extra compiler preprocessor options. This option may be repeated.
@@ -577,7 +578,7 @@ if [[ -n ${out_place_project_type} ]]; then
 	determine_item 'src_dirs' 'SRCDIRS' 'src' "Enter a space separated source directory list." 'true'
 
 	# request include dir list
-	determine_item 'inc_dirs' 'INCDIRS' 'include' "Enter a space separated include directory list." 'true'
+	determine_item 'inc_dirs' 'INCDIRS' '' "Enter a space separated list of the project include directories (-iquote)." 'true'
 fi
 
 # request incsysdirs
@@ -686,18 +687,7 @@ if [[ ${pr_type} != oto* ]]; then
 fi
 if [[ -n ${out_place_project_type} ]]; then
 	check_project_entry_req 'SRCDIRS' "${src_dirs}" 'src'
-
-	if defined_in_scan_res 'INCDIRS'; then
-		[[ "${inc_dirs}" != "${scan_result['INCDIRS']}" ]] && project_entry_required['INCDIRS']='true'
-	elif [[ "${inc_dirs}" == 'include' ]]; then
-		:	# dir will be created later
-	elif [[ -z "${inc_dirs}" ]]; then
-		if [[ -d "${project_dir}/include" ]]; then
-			echowarn "Directory include exists and will be used with -I option!\nConsider to delete the directory."
-		fi
-	else 
-		project_entry_required['INCDIRS']='true'
-	fi
+	check_project_entry_req 'INCDIRS' "${inc_dirs}" ''
 fi
 if [[ -n "${c_project_type}" ]]; then
 	check_project_entry_req 'CC' "${c_compiler}" "${default_c_compiler}"
