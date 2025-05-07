@@ -66,6 +66,8 @@ Optional customization variables:
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
   SRC_xxxx_FLAGS      Flags for one specific source file. xxxx stands for the path of the source file,
                       where periods and slashes are replaced by underscores.
+  FORMATFLAGS         Flags that affect the formatting of the source code.
+                      Default: -ftabstop=4 -fmessage-length=0
   TARGET_ARCH:        Target specific flags.
   LDFLAGS:            Extra linker options, such as -L.
   LDLIBS:             Space separated list of libraries given to the linker (including -l).
@@ -246,7 +248,7 @@ ifeq (,$(findstring clang,$(CXX)))
 else
   COMP_FLAGS_DEBUG ?= -Og -gline-tables-only
 endif
-formatflags ?= -ftabstop=4 -fmessage-length=0
+FORMATFLAGS ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
 oldlist := $(MAKEFILE_LIST)
@@ -365,7 +367,7 @@ STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
 MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(subst ./,,$(STRIPPED_PREREQ1))))_FLAGS
-allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
+allflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(FORMATFLAGS) $(TARGET_ARCH) -c
 depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 
 # prints info only if not silent (-s option) and not help goal or show goal
@@ -407,7 +409,7 @@ DISABLE_CONFIG_CHECK=$(DISABLE_CONFIG_CHECK)
 OUTPUT_OPTION=$(value OUTPUT_OPTION)
 cxxwarnings=$(strip $(cxxwarnings))
 depflags=$(value depflags)
-formatflags=$(value formatflags)
+FORMATFLAGS=$(value FORMATFLAGS)
 $(foreach var,$(filter SRC_%_FLAGS,$(.VARIABLES)),$(nl)$(var)=$(value $(var)))
 End.
 endef

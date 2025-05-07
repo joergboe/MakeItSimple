@@ -70,6 +70,8 @@ Optional customization variables:
   CXXFLAGS:           Extra c++ compiler options (use for linker and compiler).
   SRC_xxxx_FLAGS      Flags for one specific source file. xxxx stands for the path of the source file,
                       where periods and slashes are replaced by underscores.
+  FORMATFLAGS         Flags that affect the formatting of the source code.
+                      Default: -ftabstop=4 -fmessage-length=0
   CFLAGS:             Extra c compiler options.
   ASFLAGS:            Extra assembler options.
   TARGET_ARCH:        Target specific flags for the c-, c++-compiler and linker.
@@ -296,7 +298,7 @@ endif
 AS_FLAGS_RUN ?= -O2
 AS_FLAGS_DEBUG ?= -g
 AS_FLAGS_LIST ?= -asl=$(@:%.o=%.lst)
-formatflags ?= -ftabstop=4 -fmessage-length=0
+FORMATFLAGS ?= -ftabstop=4 -fmessage-length=0
 
 # include warning definitions in file makefile_warn and complement default values
 oldlist := $(MAKEFILE_LIST)
@@ -465,8 +467,8 @@ STRIPPED_PREREQ1 = $(<:$(temp_suffix)=)
 # all file and path values should be quoted
 OUTPUT_OPTION = -o '$(STRIPPED_TARGET)'
 MODUL_VAR_NAME = SRC_$(subst /,_,$(subst .,_,$(subst ./,,$(STRIPPED_PREREQ1))))_FLAGS
-allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(formatflags) $(TARGET_ARCH) -c
-allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cwarnings) $(formatflags) $(TARGET_ARCH) -c
+allcxxflags = $(CXXFLAGS) $(bmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cxxwarnings) $(FORMATFLAGS) $(TARGET_ARCH) -c
+allcflags = $(CFLAGS) $(cbmodeflags) $(incflags) $(CPPFLAGS) $($(MODUL_VAR_NAME)) $(cwarnings) $(FORMATFLAGS) $(TARGET_ARCH) -c
 allasflags = $(ASFLAGS) $(asbmodeflags) $($(MODUL_VAR_NAME)) $(aswarnings) -c
 depflags = -MMD -MF '$(STRIPPED_TARGET:%.o=%.dep)' -MP -MT '$(STRIPPED_TARGET)'
 
@@ -521,7 +523,7 @@ cxxwarnings=$(strip $(cxxwarnings))
 cwarnings=$(strip $(cwarnings))
 aswarnings=$(strip $(aswarnings))
 depflags=$(value depflags)
-formatflags=$(value formatflags)
+FORMATFLAGS=$(value FORMATFLAGS)
 $(foreach var,$(filter SRC_%_FLAGS,$(.VARIABLES)),$(nl)$(var)=$(value $(var)))
 End.
 endef
