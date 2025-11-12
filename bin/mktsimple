@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-readonly version='4.9.0'
+readonly version='5.0.0'
 
 #some setup to be save
 IFS=$' \t\n'
@@ -30,7 +30,7 @@ OPTIONS:
 	-h|--help                      : Display this help.
 	--help=type                    : Print project type information.
 	-p|--project-dir VALUE         : The base directory of the C/C++ project. Default: current directory.
-	-y|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb. Default: opbcpp
+	-y|--type|--project-type VALUE : The type of the project. Valid types are: otocpp, ipbcpp, opbcpp, opbc, opb, modcpp, modscpp. Default: opbcpp
 	                                 To find out more about the types use option --help=type
 	-c|--copy-warn                 : Make a local copy of the warning.mk files in the project directory.
 	-t|--target-name VALUE         : Name of the executable to build. Default value is the last path component of
@@ -67,14 +67,16 @@ EOF
 }
 
 readonly mkts='mktsimple'
-readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk'
+readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk one-step-compile.mk one-step-secondary.mk'
 # the first word of each list entry is the type identifier
 readonly -a pr3=(
-	'opbcpp -- C++ project   Out Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
-	'opbc   -- C project     Out Place Build'$'\n''    Build one executable from all %.c source files in all project source directories.'$'\n'
-	'opb    -- C/C++ project Out Place Build'$'\n''    Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
-	'ipbcpp -- C++ project   In Place Build'$'\n''    Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
-	'otocpp -- C++ project   One To One'$'\n''    Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
+	'opbcpp -- C++ project   Out Place Build'$'\n''	Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
+	'opbc   -- C project     Out Place Build'$'\n''	Build one executable from all %.c source files in all project source directories.'$'\n'
+	'opb    -- C/C++ project Out Place Build'$'\n''	Build one executable from all C++, C and assembler source files in all project source directories.'$'\n'
+	'ipbcpp -- C++ project   In Place Build'$'\n''	Build one executable from all %.cpp and %.cc source files in the project directory.'$'\n'
+	'otocpp -- C++ project   One To One'$'\n''	Build executable targets from each %.cpp and %.cc source file in the project directory.'$'\n'
+	'modcpp -- C++ project with modules'$'\n''	Scan for C++ modules and build one executable from all %.cpp source files (3 stages).'$'\n'
+	'modscpp -- C++ project with modules using secondary expansion'$'\n''	Scan for C++ modules and build one executable from all %.cpp source files (2 stages with secondary expansion).'$'\n'
 )
 declare -a valid_types
 for ((i=0; i<${#pr3[*]}; i++)); do
@@ -536,7 +538,7 @@ fi
 echo "Project type: ${pr_type}"
 
 out_place_project_type=
-[[ ${pr_type} == opb* ]] && out_place_project_type='true'
+[[ ${pr_type} == opb* || ${pr_type} == mod* ]] && out_place_project_type='true'
 cpp_project_type=
 [[ "${pr_type}" == *cpp || "${pr_type}" == 'opb' ]] && cpp_project_type='true'
 c_project_type=
@@ -807,7 +809,11 @@ if [[ -n ${execute_all} ]]; then
 		opbcpp)
 			src_name='out_place_cpp.mk';;
 		opb)
-			src_name='out_place.mk'
+			src_name='out_place.mk';;
+		modcpp)
+			src_name='one-step-compile.mk';;
+		modscpp)
+			src_name='one-step-secondary.mk'
 	esac
 	if [[ -e ${makefile_name} ]] && diff "${mkts_install_dir}/share/${mkts}/${src_name}" "${makefile_name}" &> /dev/null; then
 		echo "Makefile is up to date."

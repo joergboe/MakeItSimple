@@ -1,5 +1,5 @@
 # version
-mktsimple_version := 4.9.0
+mktsimple_version := 5.0.0
 # Prepare the help string if required
 ifneq (,$(findstring help,$(MAKECMDGOALS)))
   define helpstring =
