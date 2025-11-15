@@ -122,16 +122,13 @@ p1689files := $(depfiles:.dep=.ddi)
 ifdef use_clang
   system_header_targets := $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_SYSTEM_HEADER_UNITS)))
   user_header_targets := $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_USER_HEADER_UNITS)))
-  #system_header_file_args := $(foreach head,$(CXX_SYSTEM_HEADER_UNITS),'-fmodule-file=<$(head)>=$(CXX_MODULE_CACHE_DIR)/$(head).pcm')
-  #user_header_file_args := $(foreach head,$(CXX_USER_HEADER_UNITS),-fmodule-file=$(head)=$(CXX_MODULE_CACHE_DIR)/$(head).pcm)
-  #header_file_args := $(addprefix -fmodule-file=,$(system_header_targets)) $(addprefix -fmodule-file=,$(user_header_targets))
   system_header_file_args := $(addprefix -fmodule-file=,$(system_header_targets))
   user_header_file_args := $(addprefix -fmodule-file=,$(user_header_targets))
   header_file_args := $(system_header_file_args) $(user_header_file_args)
 else
   system_header_targets := $(addsuffix _target,$(CXX_SYSTEM_HEADER_UNITS))
   user_header_targets := $(addsuffix _target,$(CXX_USER_HEADER_UNITS))
-  .PHONY: all sys_units user_units clean purge
+  .PHONY: sys_units user_units
 endif
 
 # prevent implicit rules search for makefiles
@@ -140,40 +137,83 @@ endif
 # Must come before other rules
 .SECONDEXPANSION:
 
+CXX_SRC_MOD_CMI_IF_LIST ::=
+
 ifndef not_include_deps
   include $(depfiles)
 endif
 
-nomodsrcs := $(filter-out $(CXX_MODULE_SOURCES),$(SOURCES))
-nomodobjs :=$(addsuffix .o,$(nomodsrcs))
-modsrcs := $(filter $(CXX_MODULE_SOURCES),$(SOURCES))
-modobjs := $(addsuffix .o,$(modsrcs))
+# Prepare module dependency information
+
+# Check the consistency of src-mod-cmi-is_if list
+# call check_list list
+check_list = $(if $1,\
+	$(let src mod cmi is_if rest,$1,\
+		$(if $(and $(src),$(mod),$(cmi),$(is_if)),,Inconsistent CXX_SRC_MOD_CMI_IF_LIST - src = '$(src)'\
+			mod = '$(mod)' cmi = '$(cmi)' is_if = '$(is_if)')\
+		$(if $(rest),$(call check_list,$(rest)))\
+	)\
+)
+
+checked_list ::= $(strip $(call check_list,$(CXX_SRC_MOD_CMI_IF_LIST)))
+$(if $(checked_list),$(error $(checked_list)))
+
+# Extracting one column from the src-mod-cmi-is_if list
+# call get_column list src|mod|cmi|is_if
+get_column = $(if $1,$(let src mod cmi is_if rest,$1,$($2)$(if $(rest), $(call get_column,$(rest),$2))))
+
+# Extracting module interface list
+# call get_mod_if_units list
+get_mod_if_units = $(if $1,\
+	$(let src mod cmi is_if rest,$1,\
+		$(if $(subst 0,,$(is_if)), $(src))\
+		$(if $(rest),$(call get_mod_if_units,$(rest)))\
+	)\
+)
+
+# Pretty print the src-mod-cmi-is_if list
+# call pp_src-mod-cmi-is_if list
+pp_src-mod-cmi-is_if = $(if $1,\
+	$(let src mod cmi is_if rest,$1,\
+		src = '$(src)' mod = '$(mod)' cmi = '$(cmi)' is_if = '$(is_if)'$(nl)\
+		$(if $(rest),$(call pp_src-mod-cmi-is_if,$(rest)))\
+	)\
+)
+
+mod_if_units ::= $(strip $(call get_mod_if_units,$(CXX_SRC_MOD_CMI_IF_LIST)))
+modules ::= $(call get_column,$(CXX_SRC_MOD_CMI_IF_LIST),mod)
+modsrcs ::= $(call get_column,$(CXX_SRC_MOD_CMI_IF_LIST),src)
+
+nomodsrcs ::= $(filter-out $(modsrcs),$(SOURCES))
+nomodobjs ::=$(addsuffix .o,$(nomodsrcs))
+modobjs ::= $(addsuffix .o,$(modsrcs))
 
 ifndef silent
   $(info )
-  $(info Build target :$(nl)'$(TARGET)')
-  $(info From sources :$(nl)$(foreach x,$(sort $(SOURCES)),'$(x)'))
-  $(info In directories :$(nl)$(foreach x,$(SRCDIRS),'$(x)'))
-  $(info Module interface units :$(nl)$(foreach x,$(sort $(CXX_MODULE_INTERFACE_UNITS)),'$(x)'))
-  $(info Module units :$(nl)$(foreach x,$(sort $(CXX_MODULE_SOURCES)),'$(x)'))
-  $(info Module names (internal):$(nl)$(foreach x,$(sort $(CXX_MODULES)),'$(x)'))
-  $(info Not a module :$(nl)$(foreach x,$(sort $(nomodsrcs)),'$(x)'))
-  $(info Sytem Header Units :$(nl)$(CXX_SYSTEM_HEADER_UNITS))
-  $(info User Header Units :$(nl)$(CXX_USER_HEADER_UNITS))
+  $(info Build target : '$(TARGET)')
+  $(info From sources : $(foreach x,$(sort $(SOURCES)),'$(x)'))
+  $(info In directories : $(foreach x,$(SRCDIRS),'$(x)'))
+  $(info Module units (extracted): $(foreach x,$(sort $(modsrcs)),'$(x)'))
   ifdef verbose
-    $(info Object files:$(nl)$(foreach x,$(sort $(objects)),'$(x)'))
-    $(info Dependency files:$(nl)$(foreach x,$(sort $(depfiles)),'$(x)'))
-    $(info Compiled module interface files:$(nl)$(foreach x,$(sort $(CXX_CMI_FILES)),'$(x)'))
-    $(info This makefile:$(nl)'$(makefile_this)')
-    $(info Sytem Header Targets:$(nl)$(system_header_targets))
-    $(info User Header Targets:$(nl)$(user_header_targets))
+    $(info Module units (from dep): $(foreach x,$(sort $(CXX_MODULE_SOURCES)),'$(x)'))
+  endif
+  $(info Module interface units : $(foreach x,$(sort $(mod_if_units)),'$(x)'))
+  $(info Module names (internal): $(foreach x,$(sort $(modules)),'$(x)'))
+  $(info Not a module : $(foreach x,$(sort $(nomodsrcs)),'$(x)'))
+  $(info Sytem Header Units : $(CXX_SYSTEM_HEADER_UNITS))
+  $(info User Header Units : $(CXX_USER_HEADER_UNITS))
+  ifdef verbose
+    $(info Object files: $(foreach x,$(sort $(objects)),'$(x)'))
+    $(info Dependency files: $(foreach x,$(sort $(depfiles)),'$(x)'))
+    $(info This makefile: '$(makefile_this)')
+    $(info Sytem Header Targets: $(system_header_targets))
+    $(info User Header Targets: $(user_header_targets))
     $(info )
-    $(info Sourcefile to modulname database (CXX_SOURCE2MODULE_<source name>))
-    $(foreach src,$(CXX_MODULE_SOURCES),$(eval $(info $(src) -> $(CXX_SOURCE2MODULE_$(src)))))
-    $(info Sourcefile to CMI-file database (CXX_SOURCE2CMI_<source name>))
-    $(foreach src,$(CXX_MODULE_SOURCES),$(eval $(info $(src) -> $(CXX_SOURCE2CMI_$(src)))))
     $(info Modulname to CMI-file database (CXX_MODULE2CMI_<modulname>))
-    $(foreach mod,$(CXX_MODULES),$(eval $(info $(mod) -> $(CXX_MODULE2CMI_$(mod)))))
+    $(foreach mod,$(modules), $(info $(mod) -> $(CXX_MODULE2CMI_$(mod))))
+    $(info )
+    $(info CXX_SRC_MOD_CMI_IF_LIST:)
+    $(info $(call pp_src-mod-cmi-is_if,$(CXX_SRC_MOD_CMI_IF_LIST)))
     $(info MAKE_TERMOUT: $(MAKE_TERMOUT) MAKE_TERMERR: $(MAKE_TERMERR))
     $(info MAKE_VERSION: $(MAKE_VERSION))
   endif
@@ -221,26 +261,44 @@ $(nomodobjs): %.o: % %.dep
 	$(if $(silent),,@echo -e "Finished building: $<\n")
 	
 
-# Rules with Grouped Targets for modules to translate a module source into object and CMI file
+# Module rules with Grouped Targets to translate a module source into object and CMI file
 ifdef use_clang
-# call source-file,cmi-file
+# call with defined src and cmi
 define modul_template =
-$(1).o $(2) &: $(1) $(1).dep | $(CXX_MODULE_CACHE_DIR)
-	$$(if $$(silent),,@$$(RM) $$(verbose) $(1).o $(2))
-	$$(CXX) -o $(1).o -fmodule-output='$(2)' -x c++-module $(1) -c -fprebuilt-module-path=$$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH) $$(header_file_args)
-	$$(if $$(silent),,@echo -e "Finished modul compiling: $(1)\n")
+$(src).o $(cmi) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
+	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cmi))
+	$$(CXX) -o $(src).o -fmodule-output='$(cmi)' -x c++-module $(src) -c -fprebuilt-module-path=$$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH) $$(header_file_args)
+	$$(if $$(silent),,@echo -e "Finished modul compiling: $(src)\n")
 endef
 else
+# call with defined src and cmi
 define modul_template =
-$(1).o $(2) &: $(1) $(1).dep | $(CXX_MODULE_CACHE_DIR)
-	$$(if $$(silent),,@$$(RM) $$(verbose) $(1).o $(2))
-	$$(CXX) -o $(1).o $(1) -c -fmodules $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
-	$$(if $$(silent),,@echo -e "Finished modul compiling: $(1)\n")
+$(src).o $(cmi) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
+	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cmi))
+	$$(CXX) -o $(src).o $(src) -c -fmodules $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
+	$$(if $$(silent),,@echo -e "Finished modul compiling: $(src)\n")
 endef
 endif
-# Generate rules for all modules
-$(foreach src,$(modsrcs),$(eval $(call modul_template,$(src),$$(CXX_SOURCE2CMI_$(src)))))
 
+# Generate rules for all modules
+# call src_mod_cmi_if_list
+make_module_rule =\
+$(if $1,\
+	$(let src mod cmi is_if rest,$1,\
+		$(if $(silent),,$(info Generate Module rule src = $(src) cmi = $(cmi)))\
+		$(eval $(modul_template))\
+		$(if $(rest),\
+			$(call make_module_rule,$(rest))\
+		)\
+	),\
+	$(if $(silent),,$(info No module rule to generate))\
+)
+# Escape module db for eval
+escaped_src_mod_cmi_if_list := $(subst $$,$$$$,$(CXX_SRC_MOD_CMI_IF_LIST))
+$(call make_module_rule,$(escaped_src_mod_cmi_if_list))
+$(info )
+
+# Target
 $(TARGET): $(modobjs) $(nomodobjs)
 	@$(RM) $(verbose) $@
 	$(CXX) -o $@ $^ $(cppstd)$(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(LDLIBS)
@@ -252,29 +310,27 @@ sys-units: $(system_header_targets)
 user-units: $(user_header_targets)
 
 ifdef use_clang
-  # must not use -fmodules-reduced-bmi
-  # with -fmodules-reduced-bmi -> error: fatal error: file 'iostream.pcm' is not a valid module file: file doesn't start with precompiled file magic
-  $(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DIR)
+# must not use -fmodules-reduced-bmi
+# with -fmodules-reduced-bmi -> error: fatal error: file 'iostream.pcm' is not a valid module file: file doesn't start with precompiled file magic
+$(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DIR)
+	@$(RM) $(verbose) $@
 	$(CXX) -o $@ -x c++-header $* -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
-  $(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
+$(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
 	-@mkdir $(verbose) $$(dir=; for x in $(subst /, ,$(dir $@)); do dir+="$$x/"; echo -n "$$dir "; done)
+	@$(RM) $(verbose) $@
 	$(CXX) -o $@ -x c++-header $< -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 else
-  # Template for header units
-  # call header_template,header_unit,sytem|user
-define header_template =
-$(1)_target: | $$(CXX_MODULE_CACHE_DIR)
-	$$(CXX) -x c++-$(2)-header $(1) -c -fmodules $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
-endef
+$(system_header_targets): %_target: | $(CXX_MODULE_CACHE_DIR)
+	$(CXX) -x c++-system-header $* -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
-  # Generate rules for system header units
-  $(foreach unit,$(CXX_SYSTEM_HEADER_UNITS),$(eval $(call header_template,$(unit),system)))
-
-  # Generate rules for user header units
-  $(foreach unit,$(CXX_USER_HEADER_UNITS),$(eval $(call header_template,$(unit),user)))
+$(user_header_targets):  %_target: % | $(CXX_MODULE_CACHE_DIR)
+	@$(RM) $(verbose) $@
+	$(CXX) -x c++-user-header $* -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 endif
 
 $(CXX_MODULE_CACHE_DIR) :
@@ -283,20 +339,25 @@ $(CXX_MODULE_CACHE_DIR) :
 
 clean-header-units:
 	$(if $(silent),,@echo "Header Unit Cleanup")
+ifdef use_clang
 	$(RM) $(verbose) $(system_header_targets)
 	$(RM) $(verbose) $(user_header_targets)
+else
+	for x in $(CXX_MODULE_CACHE_DIR)/*; do if [[ -d $${x} ]]; then $(RMDIR) $(verbose) "$${x}"; fi; done
+endif
 	$(if $(silent),,@echo)
 
 clean:
 	$(if $(silent),,@echo "Cleanup")
-	$(RM) $(verbose) $(TARGET) $(CXX_CMI_FILES)
-	$(RM) $(verbose) $(nomodobjs) $(modobjs)
+	$(RM) $(verbose) $(TARGET)
+	$(RM) $(verbose) $(CXX_MODULE_CACHE_DIR)/*.$(cmi_extension)
+	$(RM) $(verbose) $(objects)
+	$(RM) $(verbose) $(depfiles)
+	$(RM) $(verbose) $(p1689files)
 	$(if $(silent),,@echo)
 
 purge: clean clean-header-units
 	$(if $(silent),,@echo "Purge")
-	$(RM) $(verbose) $(depfiles)
-	$(RM) $(verbose) $(p1689files)
 	$(RM) $(verbose) *.o *.dep *.ddi
 	$(RMDIR) $(verbose) $(CXX_MODULE_CACHE_DIR)
 	$(if $(silent),,@echo)

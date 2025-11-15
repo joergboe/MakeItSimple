@@ -25,7 +25,8 @@ usage() {
 			cache_dir        : The cache directory for cmi files
 			depfile          : The make dependency file to be extended with module dependency information
 
-	Append the module dependency rules in makefile format from 'input' to 'depfile'. Escape prerequisites for secondary expansion.
+	Append the module dependency rules in makefile format from 'input' to 'depfile'. Escape prerequisites for secondary
+	expansion.
 
 	EOF
 }
@@ -65,29 +66,20 @@ if [[ -n ${requires} ]]; then
 			echo -n " \$\$(CXX_MODULE2CMI_${module_subst//\$/\$\$\$\$})"
 		done
 		echo
-#		echo -n "${dep}:"
-#		for module in ${requires}; do
-#			module_subst="${module//:/"-"}" # replace : with in module names
-#			echo -n " \$\$(CXX_MODULE2SOURCE_${module_subst})"
-#		done
-#		echo
 	} >> "${dep}"
 fi
 
 if [[ -n ${provides} ]]; then
 	{
 		#echo "${5}/${provides}.c++-module : ${cmi}"
+		is_if=0
 		if [[ -n ${is_interface} && ${is_interface} == 'true' ]]; then
-			echo "CXX_MODULE_INTERFACE_UNITS += ${src//\$/\$\$}"
+			is_if=1
 		fi
 		provides_subst="${provides//:/"-"}"
-		echo "CXX_CMI_FILES += ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
-		echo "CXX_MODULES += ${provides_subst//\$/\$\$}"
 		echo "CXX_MODULE_SOURCES += ${src//\$/\$\$}"
-		echo "CXX_SOURCE2MODULE_${src//\$/\$\$} := ${provides_subst//\$/\$\$}"
-		echo "CXX_SOURCE2CMI_${src//\$/\$\$} := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
 		echo "CXX_MODULE2CMI_${provides_subst//\$/\$\$} := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
-		echo "CXX_MODULE2SOURCE_${provides_subst//\$/\$\$} := ${src//\$/\$\$}"
+		echo "CXX_SRC_MOD_CMI_IF_LIST += ${src//\$/\$\$} ${provides_subst//\$/\$\$} ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext} ${is_if}"
 	} >> "${dep}"
 fi
 
