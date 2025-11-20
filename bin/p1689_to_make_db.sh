@@ -57,18 +57,13 @@ while [[ $# -ge 1 ]]; do
 
 	if [[ -n ${provides} ]]; then
 		{
-			#echo "${5}/${provides}.c++-module : ${cmi}"
+			is_if=0
 			if [[ -n ${is_interface} && ${is_interface} == 'true' ]]; then
-				echo "CXX_MODULE_INTERFACE_UNITS += ${src//\$/\$\$}"
+				is_if=1
 			fi
 			provides_subst="${provides//:/"-"}"
-			echo "CXX_CMI_FILES += ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
-			echo "CXX_MODULES += ${provides_subst//\$/\$\$}"
-			echo "CXX_MODULE_SOURCES += ${src//\$/\$\$}"
-			echo "CXX_SOURCE2MODULE_${src//\$/\$\$} := ${provides_subst//\$/\$\$}"
-			echo "CXX_SOURCE2CMI_${src//\$/\$\$} := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
+			echo "CXX_SRC_MOD_CMI_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext};${is_if}"
 			echo "CXX_MODULE2CMI_${provides_subst//\$/\$\$} := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
-			echo "CXX_MODULE2SOURCE_${provides_subst//\$/\$\$} := ${src//\$/\$\$}"
 		} >> "${dep}"
 	fi
 done
