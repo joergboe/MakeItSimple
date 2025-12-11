@@ -52,10 +52,10 @@ fi
 
 if [[ -n ${requires} ]]; then
 	{
-		echo -n "${obj}:"
+		echo -n "${obj} :"
 		for module in ${requires}; do
 			module_subst="${module//:/"-"}" # replace : with in module names
-			echo -n " \$(CXX_MODULE2CMI_${module_subst//\$/\$\$})"
+			echo -n " \$(CXX_MOD_${module_subst//\$/\$\$}_CMI)"
 		done
 		echo
 	} >> "${dep}"

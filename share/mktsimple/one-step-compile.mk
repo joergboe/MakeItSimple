@@ -1,4 +1,4 @@
-# C++ Modules (standard modules) with clang++; one step compilation with separate db generation
+# C++ Modules (standard modules) with g++ or clang++; one step compilation with separate db generation
 
 min_make_version = 4.4.1
 ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
@@ -269,8 +269,8 @@ ifndef silent
   $(info Module names (internal) : $(foreach x,$(sort $(modules)),'$(x)'))
   $(info Not a module            : $(foreach x,$(sort $(nomodsrcs)),'$(x)'))
   ifdef verbose
-    $(info Modulname to CMI-file database (CXX_MODULE2CMI_<modulname>))
-    $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MODULE2CMI_$(mod))))
+    $(info Modulname to CMI-file database (CXX_MOD_<modulname>_CMI))
+    $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MOD_$(mod)_CMI)))
   endif
   $(info )
 endif
@@ -338,10 +338,11 @@ endif
 
 clean:
 	$(if $(silent),,@echo "Cleanup")
+	$(RM) $(verbose) $(TARGET)
 	$(RM) $(verbose) $(CXX_MODULE_CACHE_DIR)/*.$(cmi_extension)
 	$(RM) $(verbose) $(objects)
 	$(RM) $(verbose) $(depfiles)
-	$(RM) $(verbose) $(p1689files)
+	$(RM) $(verbose) $(mdepfiles)
 	$(RM) $(verbose) $(module_db)
 	$(if $(silent),,@echo)
 

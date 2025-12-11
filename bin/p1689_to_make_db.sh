@@ -63,7 +63,7 @@ while [[ $# -ge 1 ]]; do
 			fi
 			provides_subst="${provides//:/"-"}"
 			echo "CXX_SRC_MOD_CMI_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext};${is_if}"
-			echo "CXX_MODULE2CMI_${provides_subst//\$/\$\$} := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
+			echo "CXX_MOD_${provides_subst//\$/\$\$}_CMI := ${cache//\$/\$\$}/${provides_subst//\$/\$\$}.${cmi_ext}"
 		} >> "${dep}"
 	fi
 done

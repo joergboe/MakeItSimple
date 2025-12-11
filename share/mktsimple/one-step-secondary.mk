@@ -1,4 +1,4 @@
-# C++ Modules (standard modules) with clang++; one step compilation with secondary expansion
+# C++ Modules (standard modules) with g++ or clang++; one step compilation with secondary expansion
 
 min_make_version = 4.4.1
 ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
@@ -228,7 +228,7 @@ modsrcs ::=
 mod_if_units ::=
 
 define database_template
-  CXX_MODULE2CMI_$(mod) ::= $(cmi)
+  CXX_MOD_$(mod)_CMI ::= $(cmi)
   modules += $(mod)
   modsrcs += $(src)
   $(if $(call eq,$(is_if),1),mod_if_units += $(src))
@@ -263,8 +263,8 @@ ifndef silent
   $(info Module names (internal) : $(foreach x,$(sort $(modules)),'$(x)'))
   $(info Not a module            : $(foreach x,$(sort $(nomodsrcs)),'$(x)'))
   ifdef verbose
-    $(info Modulname to CMI-file database (CXX_MODULE2CMI_<modulname>))
-    $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MODULE2CMI_$(mod))))
+    $(info Modulname to CMI-file database (CXX_MOD_<modulname>_CMI))
+    $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MOD_$(mod)_CMI)))
   endif
   $(info )
 endif
