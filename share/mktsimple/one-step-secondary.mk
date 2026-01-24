@@ -138,7 +138,7 @@ endif
 # Must come before other rules
 .SECONDEXPANSION:
 
-CXX_SRC_MOD_CMI_IF_LIST ::=
+CXX_SRC_MOD_IF_LIST ::=
 
 ifndef not_include_deps
   include $(depfiles)
@@ -148,11 +148,11 @@ endif
 # call eq,param1,param2
 eq = $(if $(subst $(2),,$(1)),,1)
 
-# Pretty print the src-mod-cmi-is_if list
-# call pp_src-mod-cmi-is_if list
-pp_src-mod-cmi-is_if = $(foreach line,$1,\
-  $(let src mod cmi is_if,$(subst ;, ,$(line)),\
-    $(info $(empty)	src = '$(src)' mod = '$(mod)' cmi = '$(cmi)' is_if = '$(is_if)')\
+# Pretty print the src-mod-is_if list
+# call pp_src-mod-is_if list
+pp_src-mod-is_if = $(foreach line,$1,\
+  $(let src mod is_if,$(subst ;, ,$(line)),\
+    $(info $(empty)	src = '$(src)' mod = '$(mod)' is_if = '$(is_if)')\
   )\
 )
 
@@ -169,18 +169,14 @@ ifndef silent
     $(info This makefile    : '$(makefile_this)')
     $(info Sytem Header Targets : $(system_header_targets))
     $(info User Header Targets  : $(user_header_targets))
-    $(info CXX_SRC_MOD_CMI_IF_LIST:)
-    $(call pp_src-mod-cmi-is_if,$(CXX_SRC_MOD_CMI_IF_LIST))
+    $(info CXX_SRC_MOD_IF_LIST:)
+    $(call pp_src-mod-is_if,$(CXX_SRC_MOD_IF_LIST))
     $(info MAKE_TERMOUT : $(MAKE_TERMOUT) MAKE_TERMERR : $(MAKE_TERMERR))
     $(info MAKE_VERSION : $(MAKE_VERSION))
+    $(info CXX          : $(CXX))
+    $(info CXX VERSION  : $(shell $(CXX) --version))
   endif
   $(info )
-endif
-
-# set c++ standard to c++20 if not done otherwise
-cppstd ::=
-ifeq (,$(filter -std=%,$(CXXFLAGS)))
-  cppstd ::= -std=c++20 # One space is appended!
 endif
 
 # Rules section
@@ -191,70 +187,80 @@ deps: $(depfiles)
 # Dep files depend on the source and the generated rules with -MQ $*
 ifdef use_clang
   scandeps ::= $(cxxpath)clang-scan-deps$(patsubst clang++%,%,$(cxxfile))
-  dep_recipe = $(scandeps) -o $*.ddi -format=p1689 -- $(CXX) -o $*.o $< -MMD -MF $*.dep -MQ $@ -MP -c $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
+  depscan1 = $(scandeps) -o $*.ddi -format=p1689 -- $(CXX) -o $*.o $< -MMD -MF $*.dep -MQ $@ -MP -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
   cmi_extension ::= pcm
 else
-  dep_recipe = $(CXX) $< -MM -MF '$*.dep' -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+  depscan1 = $(CXX) $< -MM -MF '$*.dep' -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
   cmi_extension ::= gcm
 endif
 
 $(depfiles): %.dep: %
 	@$(RM) $(verbose) $@
-	$(dep_recipe)
-	$(mktsimple_bindir)p1689_to_make2.sh $*.ddi $< $*.o $(cmi_extension) $(CXX_MODULE_CACHE_DIR) $@
+	$(depscan1)
+	$(mktsimple_bindir)p1689_to_make_sec.sh $*.ddi $< $*.o $@
 	$(if $(silent),,@echo -e "Finished dependency scan: $<\n")
 
-# Module rules with Grouped Targets to translate a module source into object and CMI file
+# Macro expands to the cmi file name
+# Input: mod - module name
+cxx_modul_mapper = $(CXX_MODULE_CACHE_DIR)/$(mod).$(cmi_extension)
+
+# module_rule macro expands to a Grouped Targets Rule for a module
+# Input: src - source name
+#        mod - module name
 ifdef use_clang
-# call with defined src and cmi
-define modul_template =
-$(src).o $(cmi) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
-	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cmi))
-	$$(CXX) -o $(src).o -fmodule-output='$(cmi)' -x c++-module $(src) -c -fprebuilt-module-path=$$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH) $$(header_file_args)
+define module_rule =
+$(src).o $(cxx_modul_mapper) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
+	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cxx_modul_mapper))
+	$$(CXX) -o $(src).o -fmodule-output='$(cxx_modul_mapper)' -x c++-module $(src) -c -fprebuilt-module-path=$$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH) $$(header_file_args)
 	$$(if $$(silent),,@echo -e "Finished modul compiling: $(src)\n")
 endef
 else
-# call with defined src and cmi
-define modul_template =
-$(src).o $(cmi) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
-	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cmi))
-	$$(CXX) -o $(src).o $(src) -c -fmodules $$(cppstd)$$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
+define module_rule =
+$(src).o $(cxx_modul_mapper) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
+	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cxx_modul_mapper))
+	$$(CXX) -o $(src).o $(src) -c -fmodules $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	$$(if $$(silent),,@echo -e "Finished modul compiling: $(src)\n")
 endef
 endif
 
-modules ::=
-modsrcs ::=
-mod_if_units ::=
-
-define database_template
-  CXX_MOD_$(mod)_CMI ::= $(cmi)
+# module_variables expands to variable assignments for module database
+# Input: src - source name
+#        mod - module name
+#        is_if - is interface (0/1)
+define module_variables
+  CXX_MOD_$(mod)_CMI ::= $(cxx_modul_mapper)
   modules += $(mod)
   modsrcs += $(src)
   $(if $(call eq,$(is_if),1),mod_if_units += $(src))
 endef
 
-# Generate rules for all modules
-# call src_mod_cmi_if_list
-make_module_rule = $(foreach line,$1,\
-  $(let src mod cmi is_if,$(subst ;, ,$(line)),\
-    $(if $(silent),,$(info Generate Module Rule $(src).o $(cmi) &: $(src) $(src).dep))\
-    $(if $(and $(src),$(mod),$(cmi),$(is_if)),\
+# Generate rule and variables for a module
+# Input: src - source name
+#        mod - module name
+#        is_if - is interface (0/1)
+make_module_artifacts = $(foreach line,$1,\
+  $(let src mod is_if,$(subst ;, ,$(line)),\
+    $(if $(silent),,$(info Generate Module Rule $(src).o $(cxx_modul_mapper) &: $(src) $(src).dep))\
+    $(if $(and $(src),$(mod),$(is_if)),\
       ,\
-      $(error Inconsistent CXX_SRC_MOD_CMI_IF_LIST : '$(src)' '$(mod)' '$(cmi)' '$(is_if)')\
+      $(error Inconsistent CXX_SRC_MOD_IF_LIST : '$(src)' '$(mod)' '$(is_if)')\
     )\
-    $(eval $(modul_template))\
-    $(eval $(database_template))\
+    $(eval $(module_rule))\
+    $(eval $(module_variables))\
   )\
 )
 
 # Escape module db for eval
-escaped_src_mod_cmi_if_list ::= $(subst $$,$$$$,$(CXX_SRC_MOD_CMI_IF_LIST))
-$(call make_module_rule,$(escaped_src_mod_cmi_if_list))
+escaped_src_mod_if_list ::= $(subst $$,$$$$,$(CXX_SRC_MOD_IF_LIST))
+
+# Generate module rules and variables
+modules ::=
+modsrcs ::=
+mod_if_units ::=
+$(call make_module_artifacts,$(escaped_src_mod_if_list))
 
 nomodsrcs ::= $(filter-out $(modsrcs),$(SOURCES))
 nomodobjs ::=$(addsuffix .o,$(nomodsrcs))
-modobjs ::= $(addsuffix .o,$(modsrcs))
 
 ifndef silent
   $(info )
@@ -271,19 +277,18 @@ endif
 
 # generate objects from non module sources
 ifdef use_clang
-  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
+  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
 else
-  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 endif
 $(nomodobjs): %.o: % %.dep
 	@$(RM) $(verbose) $@
 	$(nomodobjs_recipe)
 	$(if $(silent),,@echo -e "Finished building: $<\n")
 
-# Target
-$(TARGET): $(modobjs) $(nomodobjs)
+$(TARGET): $(objects)
 	@$(RM) $(verbose) $@
-	$(CXX) -o $@ $^ $(cppstd)$(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(LDLIBS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(LDLIBS)
 	$(if $(silent),,@echo -e "Finished linking target: $@\n")
 
 # Header units
@@ -296,22 +301,22 @@ ifdef use_clang
 # with -fmodules-reduced-bmi -> error: fatal error: file 'iostream.pcm' is not a valid module file: file doesn't start with precompiled file magic
 $(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) $@
-	$(CXX) -o $@ -x c++-header $* -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	$(CXX) -o $@ -x c++-header $* -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
 $(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
 	-@mkdir $(verbose) $$(dir=; for x in $(subst /, ,$(dir $@)); do dir+="$$x/"; echo -n "$$dir "; done)
 	@$(RM) $(verbose) $@
-	$(CXX) -o $@ -x c++-header $< -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	$(CXX) -o $@ -x c++-header $< -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 else
 $(system_header_targets): %_target: | $(CXX_MODULE_CACHE_DIR)
-	$(CXX) -x c++-system-header $* -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(CXX) -x c++-system-header $* -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
 $(user_header_targets):  %_target: % | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) $@
-	$(CXX) -x c++-user-header $* -c -fmodules $(cppstd)$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(CXX) -x c++-user-header $* -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 endif
 
