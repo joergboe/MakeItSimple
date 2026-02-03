@@ -190,7 +190,7 @@ ifdef use_clang
   depscan1 = $(scandeps) -o $*.ddi -format=p1689 -- $(CXX) -o $*.o $< -MMD -MF $*.dep -MQ $@ -MP -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
   cmi_extension ::= pcm
 else
-  depscan1 = $(CXX) $< -MM -MF '$*.dep' -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+  depscan1 = $(CXX) $< -MM -MF '$*.dep' -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
   cmi_extension ::= gcm
 endif
 
@@ -218,7 +218,7 @@ else
 define module_rule =
 $(src).o $(cxx_modul_mapper) &: $(src) $(src).dep | $$(CXX_MODULE_CACHE_DIR)
 	$$(if $$(silent),,@$$(RM) $$(verbose) $(src).o $(cxx_modul_mapper))
-	$$(CXX) -o $(src).o $(src) -c -fmodules $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
+	$$(CXX) -o $(src).o $(src) -c $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	$$(if $$(silent),,@echo -e "Finished modul compiling: $(src)\n")
 endef
 endif
@@ -240,10 +240,13 @@ endef
 #        is_if - is interface (0/1)
 make_module_artifacts = $(foreach line,$1,\
   $(let src mod is_if,$(subst ;, ,$(line)),\
-    $(if $(silent),,$(info Generate Module Rule $(src).o $(cxx_modul_mapper) &: $(src) $(src).dep))\
+    $(if $(silent),,$(info Module '$(mod)' : Generate Module Rule $(src).o $(cxx_modul_mapper) &: $(src) $(src).dep))\
     $(if $(and $(src),$(mod),$(is_if)),\
       ,\
       $(error Inconsistent CXX_SRC_MOD_IF_LIST : '$(src)' '$(mod)' '$(is_if)')\
+    )\
+    $(if $(filter $(mod),$(modules)),\
+      $(error Duplicate module name '$(mod)' in source '$(src)')\
     )\
     $(eval $(module_rule))\
     $(eval $(module_variables))\
@@ -279,7 +282,7 @@ endif
 ifdef use_clang
   nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -fmodules-reduced-bmi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
 else
-  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+  nomodobjs_recipe = $(CXX) $(OUTPUT_OPTION) $< -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 endif
 $(nomodobjs): %.o: % %.dep
 	@$(RM) $(verbose) $@
@@ -305,18 +308,18 @@ $(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DI
 	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
 $(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
-	-@mkdir $(verbose) $$(dir=; for x in $(subst /, ,$(dir $@)); do dir+="$$x/"; echo -n "$$dir "; done)
+	-@mkdir $(verbose) $$(dir=; for x in $(subst /, ,$(dir $@)); do if [ -z "$$dir" ]; then dir+="$$x/"; else dir+="$$x/"; echo -n "$$dir "; fi; done)
 	@$(RM) $(verbose) $@
 	$(CXX) -o $@ -x c++-header $< -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 else
 $(system_header_targets): %_target: | $(CXX_MODULE_CACHE_DIR)
-	$(CXX) -x c++-system-header $* -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(CXX) -x c++-system-header $* -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished system header translation: $*\n")
 
 $(user_header_targets):  %_target: % | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) $@
-	$(CXX) -x c++-user-header $* -c -fmodules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
+	$(CXX) -x c++-user-header $* -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished user header translation: $*\n")
 endif
 
