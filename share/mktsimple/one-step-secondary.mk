@@ -129,7 +129,6 @@ ifdef use_clang
 else
   system_header_targets ::= $(addsuffix _target,$(CXX_SYSTEM_HEADER_UNITS))
   user_header_targets ::= $(addsuffix _target,$(CXX_USER_HEADER_UNITS))
-  .PHONY: sys_units user_units
 endif
 
 # prevent implicit rules search for makefiles
@@ -164,9 +163,10 @@ ifndef silent
   $(info Sytem Header Units : $(CXX_SYSTEM_HEADER_UNITS))
   $(info User Header Units  : $(CXX_USER_HEADER_UNITS))
   ifdef verbose
-    $(info Object files     : $(foreach x,$(sort $(objects)),'$(x)'))
-    $(info Dependency files : $(foreach x,$(sort $(depfiles)),'$(x)'))
-    $(info This makefile    : '$(makefile_this)')
+    $(info Object files            : $(foreach x,$(sort $(objects)),'$(x)'))
+    $(info Dependency files        : $(foreach x,$(sort $(depfiles)),'$(x)'))
+    $(info Module dependency files : $(foreach x,$(sort $(p1689files)),'$(x)'))
+    $(info This makefile        : '$(makefile_this)')
     $(info Sytem Header Targets : $(system_header_targets))
     $(info User Header Targets  : $(user_header_targets))
     $(info CXX_SRC_MOD_IF_LIST:)
@@ -187,10 +187,10 @@ deps: $(depfiles)
 # Dep files depend on the source and the generated rules with -MQ $*
 ifdef use_clang
   scandeps ::= $(cxxpath)clang-scan-deps$(patsubst clang++%,%,$(cxxfile))
-  depscan1 = $(scandeps) -o $*.ddi -format=p1689 -- $(CXX) -o $*.o $< -MMD -MF $*.dep -MQ $@ -MP -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
+  depscan1 = $(scandeps) -o $*.ddi -format=p1689 -- $(CXX) -o $*.o $< -MM -MF $*.dep -MQ $@ -MP -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
   cmi_extension ::= pcm
 else
-  depscan1 = $(CXX) $< -MM -MF '$*.dep' -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+  depscan1 = $(CXX) $< -MM -MF $*.dep -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
   cmi_extension ::= gcm
 endif
 

@@ -12,7 +12,7 @@ set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
 shopt -s nullglob
 
 command=${0##*/}
-usage="usage: ${command} depdb dep_ext src_ext obj_ext [input [input]..]"
+usage="usage: ${command} depdb dep_ext src_ext obj_ext builddir [input [input]..]"
 
 myhelp() {
 	cat <<-EOF
@@ -24,6 +24,7 @@ myhelp() {
 	        dep_ext     : The extension of the structured dependency (input) files (.ddi)
 	        src_ext     : The extension for source files.
 	        obj_ext     : The extension for object files.
+	        builddir    : The build directory.
 	        input       : Input files with structured dependency information according to P1689
 
 	Dump the module dependency database in makefile format from all input files
@@ -58,15 +59,16 @@ errexit() {
 if [[  $# -ge 1 && ( $1 == '-h' || $1 == '--help' ) ]]; then
 	myhelp
 	exit 0
-elif [[ $# -lt 4 ]]; then
-	errexit "Minimum 4 parameter required $# given!" 2
+elif [[ $# -lt 5 ]]; then
+	errexit "Minimum 5 parameter required $# given!" 2
 fi
 
 depdb="$1"
 dep_ext="$2"
 src_ext="$3"
 obj_ext="$4"
-shift 4
+builddir="$5"
+shift 5
 
 [[ -z "$depdb" ]] && errexit "depdb must not be empty" 2
 [[ -z "$dep_ext" ]] && errexit "dep_ext must not be empty" 2
@@ -81,7 +83,8 @@ while [[ $# -ge 1 ]]; do
 	[[ ${inp} == *${dep_ext} ]] || errexit "Input file ${inp} does not match *${dep_ext}" 2
 
 	stem="${inp%"${dep_ext}"}"
-	src="${stem}${src_ext}"
+	temp="${stem}${src_ext}"
+	src="${temp#"${builddir}"}"
 	obj="${stem}${obj_ext}"
 
 	my_unit=$(jq -cj ".rules[] | select(.[\"primary-output\"] == \"${obj}\")" "${inp}")
