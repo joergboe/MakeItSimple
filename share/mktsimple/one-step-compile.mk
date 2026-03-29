@@ -1,5 +1,6 @@
 # C++ Modules (standard modules) with g++ or clang++; one step compilation with
-# separate db generation or with secondary expansion
+# * immediately generated module db (secondary expansion)
+# * separate module db generated as file (FILE_MOD_DB=1)
 
 min_make_version = 4.4.1
 ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
@@ -169,7 +170,7 @@ bindir_int ::= $(call filter_out_dot_dir,$(call ensure_dir_end,$(call exit_if_ab
 BUILDDIR ?= build
 builddir_int ::= $(call filter_out_dot_dir,$(call ensure_dir_end,$(call exit_if_abs,$(BUILDDIR))))
 
-# bindir and builddir; ./ is removed
+# bindir and builddir with ./ removed
 dirs_to_remove ::= $(strip $(bindir_int) $(builddir_int))
 
 builddirs ::= $(if $(builddir_int),$\
@@ -185,13 +186,13 @@ builddirs ::= $(if $(builddir_int),$\
 )
 
 # remove ./ from  builddirs list
-builddirs_reduced ::= $(strip $(call filter_out_dot_dir,$(builddirs)))
-
-module_db ::= module-variables.mk
+builddirs_reduced ::= $(strip $(call filter_out_dot_dir,$(filter-out $(builddir_int),$(builddirs))))
 
 objects ::= $(addprefix $(builddir_int),$(addsuffix .o,$(sources_int)))
 depfiles ::= $(addprefix $(builddir_int),$(addsuffix .dep,$(sources_int)))
 p1689files ::= $(depfiles:.dep=.ddi)
+
+module_db ::= module-variables.mk
 
 ifdef use_clang
   system_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_SYSTEM_HEADER_UNITS)))
@@ -208,16 +209,15 @@ endif
 .PHONY: $(makefile_defs) $(makefile_this)
 
 # Include required variables
-CXX_SRC_MOD_CMI_IF_LIST ::=
-ifdef SECONDARY
-.SECONDEXPANSION:
-
-  ifndef not_include_deps
-    include $(depfiles)
-  endif
-else
+CXX_SRC_MOD_IF_LIST ::=
+ifdef FILE_MOD_DB
   ifndef not_include_deps
     include $(builddir_int)$(module_db)
+  endif
+else
+.SECONDEXPANSION:
+  ifndef not_include_deps
+    include $(depfiles)
   endif
 endif
 
@@ -236,14 +236,14 @@ ifndef silent
   $(info In directories     : $(call singl_quote,$(srcdirs_int)))
   $(info Sytem Header Units : $(CXX_SYSTEM_HEADER_UNITS))
   $(info User Header Units  : $(CXX_USER_HEADER_UNITS))
-  ifdef SECONDARY
+  ifdef FILE_MOD_DB
+    $(info Build module database in file $(module_db))
+else
     $(info Build with embedded module database and Secondary Expansion)
-  else
-    $(info Build module database in a seperate step in $(module_db))
   endif
   ifdef verbose
-    $(info Binary directory        : '$(bindir_int)')
-    $(info Build directory         : '$(builddir_int)')
+    $(info Binary directory        : '$(bindir_int)'$(if $(bindir_int),, - current directory))
+    $(info Build directory         : '$(builddir_int)'$(if $(builddir_int),, - current directory))
     $(info Build directories list  : $(call singl_quote,$(builddirs)))
     $(info Object files            : $(call singl_quote,$(objects)))
     $(info Dependency files        : $(call singl_quote,$(depfiles)))
@@ -251,7 +251,9 @@ ifndef silent
     $(info This makefile        : '$(makefile_this)')
     $(info Sytem Header Targets : $(system_header_targets))
     $(info User Header Targets  : $(user_header_targets))
-    $(info Module database file : $(module_db))
+    ifdef FILE_MOD_DB
+      $(info Module database file : $(module_db))
+    endif
     $(info CXX_SRC_MOD_IF_LIST:)
     $(call pp_src-mod-is_if,$(CXX_SRC_MOD_IF_LIST))
     $(info MAKE_TERMOUT : $(MAKE_TERMOUT) MAKE_TERMERR : $(MAKE_TERMERR))
@@ -270,20 +272,10 @@ all: $(bindir_int)$(TARGET)
 
 deps: $(depfiles)
 
-ifdef builddirs_reduced
-$(builddirs_reduced):
-	$(MKDIR) '$@'
-endif
-
-ifdef bindir_int
-$(bindir_int):
-	$(MKDIR) '$(bindir_int)'
-endif
-
-ifdef SECONDARY
-  depflags = -MM -MF $(builddir_int)$*.dep -MP -MQ $@
-else
+ifdef FILE_MOD_DB
   depflags = -MM -MF $(builddir_int)$*.dep -MP -MQ $(builddir_int)$*.dep -MQ $(builddir_int)$*.ddi
+else
+  depflags = -MM -MF $(builddir_int)$*.dep -MP -MQ $@
 endif
 
 # Dep files depend on the source and the generated rules with -MQ $*
@@ -293,23 +285,16 @@ ifdef use_clang
     ,$\
       $(patsubst clang%,%,$(cxxfile))$\
     )
-  depscan1 = $(scandeps) -o '$(builddir_int)$*.ddi' -format=p1689 -- $(CXX) -o '$(builddir_int)$*.o' '$<' $(depflags) -c\
+  depscan1 = $(scandeps) -o '$(builddir_int)$*.ddi' -format=p1689 -- $(CXX) -o '$(builddir_int)$*.o' '$<' $(depflags)\
     $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(header_file_args)
   cmi_extension ::= pcm
 else
   depscan1 = $(CXX) '$<' $(depflags) -fdeps-format=p1689r5 -fdeps-file='$(builddir_int)$*.ddi'\
-    -fdeps-target='$(builddir_int)$*.o' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+    -fdeps-target='$(builddir_int)$*.o' $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
   cmi_extension ::= gcm
 endif
 
-ifdef SECONDARY
-# depfile production
-$(depfiles): $(builddir_int)%.dep: % | $(call filter_out_dot_dir,$(dir $(builddir_int)%))
-	@$(RM) $(verbose) '$@'
-	$(depscan1)
-	$(mktsimple_bindir)p1689_to_make_sec.sh '$(builddir_int)$*.ddi' '$<' '$(builddir_int)$*.o' '$@'
-	$(if $(silent),,@echo -e "Finished dependency scan: '$<'\n")
-else
+ifdef FILE_MOD_DB
 # depfile production
 $(builddir_int)%.dep $(builddir_int)%.ddi &: % | $(call filter_out_dot_dir,$(dir $(builddir_int)%))
 	@$(RM) $(verbose) '$*.dep' '$*.ddi'
@@ -322,6 +307,13 @@ $(builddir_int)$(module_db): $(p1689files) | $(builddir_int)
 	@$(RM) $(verbose) '$@'
 	$(mktsimple_bindir)p1689_to_make_db.sh '$@' '.ddi' '' '.o' '$(builddir_int)' $(call singl_quote,$^)
 	$(if $(silent),,@echo -e "Finished database preparation in '$@'\n")
+else
+# depfile production
+$(depfiles): $(builddir_int)%.dep: % | $(call filter_out_dot_dir,$(dir $(builddir_int)%))
+	@$(RM) $(verbose) '$@'
+	$(depscan1)
+	$(mktsimple_bindir)p1689_to_make_sec.sh '$(builddir_int)$*.ddi' '$<' '$(builddir_int)$*.o' '$@'
+	$(if $(silent),,@echo -e "Finished dependency scan: '$<'\n")
 endif
 
 
@@ -373,7 +365,7 @@ make_module_artifacts = $(foreach line,$1,\
       $(error Inconsistent CXX_SRC_MOD_IF_LIST : '$(src)' '$(mod)' '$(is_if)')\
     )\
     $(if $(filter $(mod),$(modules)),\
-      $(error Duplicate module name '$(mod)' in source '$(src)')\
+      $(warning Duplicate module name '$(mod)' in source '$(src)')\
     )\
     $(eval $(module_rule))\
     $(eval $(module_variables))\
@@ -409,7 +401,7 @@ ifndef silent
   $(info )
 endif
 
-ifndef SECONDARY
+ifdef FILE_MOD_DB
   # Include dependency rules after variable definitions
   ifndef not_include_deps
     include $(depfiles)
@@ -444,31 +436,43 @@ ifdef use_clang
 # fatal error: file 'iostream.pcm' is not a valid module file: file doesn't start with precompiled file magic
 $(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -o '$@' -x c++-header '$*' -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR)\
+	$(CXX) -o '$@' -x c++-header '$*' -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MMD -MP -MF '$*.d'\
 	 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished system header translation: '$*'\n")
 
 $(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
-	-@mkdir $(verbose) $$(dir=; for x in $(subst /, ,$(dir $@)); do if [ -z "$$dir" ]; then dir+="$$x/"; else dir+="$$x/"; echo -n "$$dir "; fi; done)
+	@$(MKDIR) $(verbose) $(dir $@)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -o '$@' -x c++-header '$<' -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR)\
+	$(CXX) -o '$@' -x c++-header '$<' -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MMD -MP -MF '$*.d'\
 	 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished user header translation: '$*'\n")
 else
 $(system_header_targets): %_target: | $(CXX_MODULE_CACHE_DIR)
-	$(CXX) -x c++-system-header '$*' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
+	$(CXX) -x c++-system-header '$*' -c -MMD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
 	 -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished system header translation: '$*'\n")
 
 $(user_header_targets):  %_target: % | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -x c++-user-header '$*' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
+	$(CXX) -x c++-user-header '$*' -c -MMD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
 	 -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished user header translation: '$*'\n")
 endif
 
 $(CXX_MODULE_CACHE_DIR) :
 	$(MKDIR) $(verbose) '$@'
+	$(if $(silent),,@echo)
+
+$(builddirs_reduced): | $(builddir_int)
+	$(MKDIR) $(verbose) '$@'
+	$(if $(silent),,@echo)
+
+$(builddir_int):
+	$(MKDIR) $(verbose) '$(builddir_int)'
+	$(if $(silent),,@echo)
+
+$(bindir_int):
+	$(MKDIR) $(verbose) '$(bindir_int)'
 	$(if $(silent),,@echo)
 
 clean-header-units:
@@ -488,7 +492,9 @@ clean:
 	$(RM) $(verbose) $(call singl_quote,$(objects))
 	$(RM) $(verbose) $(call singl_quote,$(depfiles))
 	$(RM) $(verbose) $(call singl_quote,$(p1689files))
-	$(if $(SECONDARY),,$(RM) $(verbose) '$(builddir_int)$(module_db)')
+ifdef FILE_MOD_DB
+	$(RM) $(verbose) '$(builddir_int)$(module_db)'
+endif
 	$(if $(silent),,@echo)
 
 purge: clean clean-header-units

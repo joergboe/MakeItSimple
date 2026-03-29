@@ -96,7 +96,7 @@ requires=$(echo "${my_unit}" | jq -r 'if .requires then .requires[].["logical-na
 # Comment lines and escaped backslashes at the end of the line are not considered
 readonly deptemp="${dep}~"
 mv "${dep}" "${deptemp}"
-touch "${dep}" # ensure at least a empty file
+touch "${dep}" # ensure at least an empty file
 
 cont=
 declare -i pos_colon no_backslash length x

@@ -75,7 +75,7 @@ shift 5
 
 rm -f "${depdb}"
 # Provide the output file if no input files are given
-echo "# Automatic generated module dependency database" > "${depdb}"
+echo "# Automatically generated module dependency database - Do not edit!" > "${depdb}"
 
 while [[ $# -ge 1 ]]; do
 	inp="$1"; shift
