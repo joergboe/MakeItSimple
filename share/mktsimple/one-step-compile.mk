@@ -436,25 +436,25 @@ ifdef use_clang
 # fatal error: file 'iostream.pcm' is not a valid module file: file doesn't start with precompiled file magic
 $(system_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -o '$@' -x c++-header '$*' -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MMD -MP -MF '$*.d'\
+	$(CXX) -o '$@' -x c++-header '$*' -fmodule-header=system -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MD -MP -MF '$*.d'\
 	 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished system header translation: '$*'\n")
 
 $(user_header_targets): $(CXX_MODULE_CACHE_DIR)/%.pcm: % | $(CXX_MODULE_CACHE_DIR)
 	@$(MKDIR) $(verbose) $(dir $@)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -o '$@' -x c++-header '$<' -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MMD -MP -MF '$*.d'\
+	$(CXX) -o '$@' -x c++-header '$<' -fmodule-header=user -fprebuilt-module-path=$(CXX_MODULE_CACHE_DIR) -MD -MP -MF '$*.d'\
 	 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	$(if $(silent),,@echo -e "Finished user header translation: '$*'\n")
 else
 $(system_header_targets): %_target: | $(CXX_MODULE_CACHE_DIR)
-	$(CXX) -x c++-system-header '$*' -c -MMD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
+	$(CXX) -x c++-system-header '$*' -c -MD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
 	 -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished system header translation: '$*'\n")
 
 $(user_header_targets):  %_target: % | $(CXX_MODULE_CACHE_DIR)
 	@$(RM) $(verbose) '$@'
-	$(CXX) -x c++-user-header '$*' -c -MMD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
+	$(CXX) -x c++-user-header '$*' -c -MD -MP -fdeps-format=p1689r5 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -flang-info-module-cmi\
 	 -flang-info-include-translate
 	$(if $(silent),,@echo -e "Finished user header translation: '$*'\n")
 endif
