@@ -1,5 +1,7 @@
-# Prerequisites
+# Build dependency files
+*.d
 *.dep
+*.ddi
 
 # Compiled Object files
 *.slo
@@ -31,7 +33,13 @@
 *.out
 *.app
 
-# Generated executables and more
+# MakeItSimple generated files
+compile_commands.json
+.mktsimple/
+*.mks.tmp
+*.~*~
+
+# Generated sample files
 /OneToOne/m1
 /OneToOne/m2
 /OneToOne/Makefile
@@ -47,20 +55,18 @@
 /ProjectOutPlaceBuildC/debug/
 /ProjectOutPlaceBuildC/run/
 /ProjectOutPlaceBuildC/Makefile
-/*/.kateproject*
-compile_commands.json
-.mktsimple/
-*.mks.tmp
-*.~*~
 
-# test artifacts
+# Test artifacts
 /Test/scripts/
 /Test/testframeInstaller_*.sh
 /Test/workdir/
 
-# release artifacts
+# Release artifacts
 /doc/
 /releases/
+
+# kate generated files
+/*/.kateproject*
 
 # eclipse generated files
 .project

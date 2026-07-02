@@ -1,0 +1,48 @@
+case;make;err gcc;err clang;exec
+m000_empty;;fatal error: no input files;error: no input files;
+m000;ok;;;
+m001_header_unit;ok;;;
+m002_conditional_header;ok;;;
+m003_;ok;;;
+m003_header_unit;ok;;;
+m003_private;;module3.cpp:20:1: error: module already declared;ok;
+m004_impl;ok;;;
+m004_impl_header;ok;;;
+m005_submodule;ok;;;
+m006_partitions;ok;;warning: importing an implementation partition unit in a module ;
+m007_user_header_unit;ok;;;
+m008_user_header_unit;ok;;;
+m009_user_header_unit_abs;ok;;;
+m010_conditional_header;ok;;;
+m011_conditional_module;ok;;;
+m012_conditional_module;ok;;;
+m020_include_include_header;ok;;;
+m021_import_import;ok;;;
+m030_module_wrong_name;;m3: error: failed to read compiled module: No such file or directory;fatal error: module 'm3' not found ;
+m050_module_linkage;ok;;;
+m051_module_linkage;ok;;;
+m052_module_linkage_not_ok;;error: redeclaring 'struct A@lib_A' in global module conflicts with import;main.cpp:7:8: error: redefinition of 'A' ;
+m053_module_linkage_not_ok;;error: conflicting declaration of 'int g()' in module 'M' ;m.cpp:9:5: error: declaration of 'g' in module M follows declaration in the global module;
+m054_module_linkage_same_name;;error: reference to 'A' is ambiguous;error: declaration 'A' attached to named module 'lib_A' cannot be attached;
+m060_dollar_in_module_name;ok;;;
+m061_non_ascii_module_name;;fatal error: unknown compiled module interface: malformed string;;
+m101_same_mod_name;;*** Duplicate module name 'm1' in source 'src2.cpp'.  Stop.;*** Duplicate module name 'm1' in source 'src2.cpp'.  Stop. ;
+m102_same_mod_name_used;;*** Duplicate module name 'm1' in source 'src2.cpp'.  Stop. ;*** Duplicate module name 'm1' in source 'src2.cpp'.  Stop.;
+m105_conflicting_in_impl;ok;;;
+m106_conflicting_in_impl_incomplete;;error: aggregate 'X::A@mod1 a' has incomplete type and cannot be defined ;main.cpp:9:7: error: variable has incomplete type 'X::A' ;
+m110_circular_header;;error: '#include' nested depth 200 exceeds maximum of 20;./h1.h:1:10: error: #include nested too deeply;
+m111_circular_header_with_guard;;"error: 'S1' does not name a type; did you mean 'S3'?";./h3.h:7:2: error: unknown type name 'S1' ;
+m114_circular_header_ref;;;;29529 Segmentation fault         (core dumped) ./main
+m115_circular_header_templ;;;;29543 Segmentation fault         (core dumped) ./main
+m120_circular_module;;m2: error: failed to read compiled module: No such file or directory;m1.cpp:3:8: fatal error: module 'm2' not found ;
+m121_circular_module_unused;;m2: error: failed to read compiled module: No such file or directory;m1.cpp:3:8: fatal error: module 'm2' not found ;
+m122_circular_module_impl;;error: cannot convert 'S2@m2*' to 'S2@m1*' in assignment ;error: incompatible pointer types assigning to 'S2 *' from 'S2 *';
+m123_circular_module_impl_ns;;error: cannot convert 'ns::S2@m2*' to 'ns::S2@m1*' in assignment;error: incompatible pointer types assigning to 'S2 *' from 'ns::S2 *' ;ok
+m124_circular_module_impl_ref;;"m1_impl.cpp: In constructor 'S1@m1::S1()': 
+m1_impl.cpp:5:19: error: reference to 'S2' is ambiguous ";error: reference to 'S2' is ambiguous;
+m125_circular_module_impl_ref_part;;m1_impl.cpp:7:23: error: invalid use of incomplete type 'struct S2@m2';m1_impl.cpp:7:16: error: allocation of incomplete type 'S2';
+m128_circular_one_module_part;ok;err gcc: main.cpp: In function 'int main()': main.cpp:5:9: error: 'B' was not declared in this scope;;ok
+m129_circular_module_part_funct;;make: Circular gcm.cache/A.gcm <- gcm.cache/A-B.gcm dependency dropped.;make: Circular gcm.cache/A.gcm <- gcm.cache/A-B.gcm dependency dropped.;
+m130_circular_module_templ;ok;;;ok
+m131_circular_module_templ_sym;;A.cpp:6:66: error: type/value mismatch at argument 1;A.cpp:6:53: error: use of class template 'Struct_A_impl' requires template arguments ;
+m132_module_exp_imp;;main.cpp:3:8: error: redeclaring 'struct S@A_sub' in global module conflicts with import ;main.cpp:3:8: error: redefinition of 'S' ;

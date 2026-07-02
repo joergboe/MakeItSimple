@@ -1,0 +1,9 @@
+> HELLO 1 GCC '' ;
+< HELLO 1 make .
+> MODULE-REPO
+< MODULE-REPO gcm.cache/ 
+> INCLUDE-TRANSLATE /usr/include/stdc-predef.h
+< SEARCH
+> MODULE-EXPORT m1 1
+< MODULE-EXPORT m1 1
+END > 

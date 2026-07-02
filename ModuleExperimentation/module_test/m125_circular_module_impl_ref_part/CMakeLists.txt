@@ -1,0 +1,30 @@
+# Usage:
+#cmake -S . -B build -G Ninja
+#cmake --build build/ -v
+
+cmake_minimum_required(VERSION 3.31)
+
+project(m124_circular_module_impl_ref VERSION 1.0)
+
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+#set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+#add_compile_options(-fmodules-ts)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+set(CMAKE_CXX_COMPILER g++-15)
+
+add_executable(main)
+#set_property(SOURCE m1.cpp PROPERTY CXX_SCAN_FOR_MODULES)
+#add_library(module1 OBJECT)
+target_sources(main
+	PUBLIC
+	main.cpp m1.cpp m2.cpp m1_impl.cpp m2_impl.cpp
+	PUBLIC
+	FILE_SET CXX_MODULES FILES
+	m1.cpp m2.cpp
+)
