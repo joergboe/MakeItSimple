@@ -2,7 +2,7 @@ module;
 
 #include "header2.h"
 
-export module module1;
+export module module$2;
 
 export
 float sum(float a, float b) {

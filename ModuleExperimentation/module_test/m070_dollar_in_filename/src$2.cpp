@@ -1,8 +1,8 @@
 module;
 
-#include "header2.h"
+#include "header$2.h"
 
-export module module1;
+export module module2;
 
 export
 float sum(float a, float b) {

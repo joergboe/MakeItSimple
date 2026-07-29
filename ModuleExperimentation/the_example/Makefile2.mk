@@ -1,5 +1,6 @@
-# The rules for the example with custom module mapping.
+# The rules for the_example with custom module mapping.
 # Variables are used to express the module dependencies in prerequisites.
+# Database variables are defined in front of the dependency rules.
 
 # NOTE: The automatic variables $? and $^ are inaccurate if object file and cmi file have different prerequisites.
 # (GNU Make 4.4.1)
@@ -33,7 +34,7 @@ main.o : $(CXX_MOD_module1_CMI) $(CXX_MOD_module2_CMI)
 
 # src1.dep
 src1.o : src1.cpp header1.h
-src1.o : $(CXX_MOD_module2_CMI)
+src1.o $(CXX_MOD_module1_CMI) : $(CXX_MOD_module2_CMI)
 
 # src2.dep
 src2.o : src2.cpp header2.h

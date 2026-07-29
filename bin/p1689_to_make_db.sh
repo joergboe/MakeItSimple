@@ -73,7 +73,6 @@ shift 5
 [[ -z "$depdb" ]] && errexit "depdb must not be empty" 2
 [[ -z "$dep_ext" ]] && errexit "dep_ext must not be empty" 2
 
-rm -f "${depdb}"
 # Provide the output file if no input files are given
 echo "# Automatically generated module dependency database - Do not edit!" > "${depdb}"
 
@@ -92,6 +91,8 @@ while [[ $# -ge 1 ]]; do
 
 	number_provides=$(echo "${my_unit}" | jq -r "if .provides then .provides | length else empty end")
 	if [[ -z ${number_provides} ]]; then
+		continue
+	elif [[ ${number_provides} = 0 ]]; then
 		continue
 	elif [[ ${number_provides} != 1 ]]; then
 		errexit "File ${inp} has invalid number of provides." 1

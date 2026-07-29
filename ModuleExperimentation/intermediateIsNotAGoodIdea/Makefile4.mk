@@ -18,9 +18,9 @@ module1.c++-module : gcm.cache/module1.gcm
 .INTERMEDIATE : module1.c++-module
 
 #src2.dep
-src2.o gcm.cache/module2.gcm : src2.cpp header2.h
-module2.c++-module : gcm.cache/module2.gcm
-.INTERMEDIATE : module2.c++-module
+src2.o gcm.cache/module1.gcm : src2.cpp header2.h
+module1.c++-module : gcm.cache/module1.gcm
+.INTERMEDIATE : module1.c++-module
 
 # not a module
 main.o : main.cpp
@@ -31,7 +31,7 @@ src1.o gcm.cache/module1.gcm &: src1.cpp
 	$(due_to)
 	g++ -o src1.o src1.cpp -c -std=c++20 -fmodules
 # module2
-src2.o gcm.cache/module2.gcm &: src2.cpp
+src2.o gcm.cache/module1.gcm &: src2.cpp
 	$(due_to)
 	g++ -o src2.o src2.cpp -c -std=c++20 -fmodules
 

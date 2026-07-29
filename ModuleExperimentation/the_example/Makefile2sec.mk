@@ -1,4 +1,6 @@
-# The rules for the example expressed with variables and secondary expansion.
+# The rules for the_example with default module mapping.
+# Variables are used to express the module dependencies in prerequisites.
+# Database variables and dependency rules are defined simultaneously.
 
 # macro to display information
 due_to = @echo 'Run target $@ - Due to $?'

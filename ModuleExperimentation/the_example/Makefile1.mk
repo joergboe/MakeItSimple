@@ -1,4 +1,4 @@
-# The finally required rules for the example with standard module mapping.
+# The finally required rules for the_example with default module mapping.
 
 due_to = @echo 'Run target $@ - Due to $?'
 

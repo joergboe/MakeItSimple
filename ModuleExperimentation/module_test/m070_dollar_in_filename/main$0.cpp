@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "header2.h"
+#include "header$2.h"
 
-import module$1;
-import module$2;
+import module1;
+import module2;
 
 int main(int, const char**) {
 	greeting();

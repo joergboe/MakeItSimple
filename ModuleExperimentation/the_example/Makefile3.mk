@@ -1,14 +1,15 @@
-# The rules for the example.
+# The rules for the_example with default module mapping.
 # Module dependencies expressed in generated rules.
+# Database variables and dependency rules are defined simultaneously.
 
 # NOTE: The automatic variables $? and $^ are inaccurate if object file and cmi file have different prerequisites.
 # (GNU Make 4.4.1)
 
-# default target
-my_program :
-
 # macro to display information
 due_to = @echo 'Run target $@ - Due to $?'
+
+# default target
+my_program :
 
 # main.dep
 main.o : main.cpp header2.h
