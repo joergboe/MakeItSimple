@@ -1,4 +1,5 @@
-# The rules for projects with C++ modules and custom module mapping.
+# Makefile for a project with C++ modules and automatic dependency scanning.
+
 # Variables are used to express the module dependencies in prerequisites.
 # A variable like CXX_MOD_modulname_CMI substitutes the cmi file name by the module name.
 # Database variables are defined in front of the dependency rules.
@@ -43,9 +44,9 @@ dbmfiles ::= $(sources:.cpp=.depm)
 p1689files ::= $(depfiles:.dep=.ddi)
 %.dep %.depm : %.cpp
 	$(due_to)
-	$(CXX) '$<' -MM -MF '$*.dep' -MQ '$*.dep' -MQ '$*.depm' -fdeps-format=p1689r5 -fdeps-file='$*.ddi' -fdeps-target='$*.o'\
- -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	$(my_bin_dir)p1689_to_make.sh '$*.ddi' '$*.dep' '$*.depm' '$*.o' '$<' # appends the module dependencies expressed by variables
+	$(CXX) '$<' -MM -MF '$*.dep' -MQ '$*.dep' -MQ '$*.depm' -MQ '$*.o' -fdeps-format=p1689r5 -fdeps-file='$*.ddi'\
+ -fdeps-target='$*.o' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	$(my_bin_dir)p1689_to_make.sh '$*.ddi' '$*.dep' '$*.depm' '$*.o' '$<' '$$(call cmi_mapper,$$(mod),$$(src))'
 	@echo
 
 # include module database/variables
@@ -67,13 +68,12 @@ endif
 # template rule for module sources
 # input: src - source file name
 #        obj - object name
-#        dep - depfile name
 #        cmi - cmi file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
 define modul_rule_template
-$(info generate module rule $(obj) $(cmi) &: $(src) $(dep) module-map.txt)
+$(info generate module rule $(obj) $(cmi) &: $(src) module-map.txt)
 $$(obj) $$(cmi) : my_obj ::= $$(obj)
-$$(obj) $$(cmi) &: $$(src) $$(dep) module-map.txt
+$$(obj) $$(cmi) &: $$(src) module-map.txt
 	$$(due_to)
 	$$(CXX) -o '$$(my_obj)' '$$<' -c -fmodule-mapper=module-map.txt $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	@echo
@@ -95,11 +95,10 @@ modulemap ::=
 #        modi - internal module name (colon is replaced with dash)
 #        cmi  - cmi name
 #        obj - object name
-#        dep - defile name
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi obj dep,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)) $(src:.cpp=.o) $(src:.cpp=.dep),\
+      $(let modi cmi obj,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)) $(src:.cpp=.o),\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\
@@ -145,18 +144,19 @@ include $(depfiles)
 
 # generate rules for no module sources
 nomodobjects ::= $(nomodsources:.cpp=.o)
-$(nomodobjects) : %.o : %.cpp %.dep module-map.txt
+$(nomodobjects) : %.o : %.cpp module-map.txt
 	$(due_to)
 	$(CXX) -o '$@' '$<' -c -fmodule-mapper=module-map.txt $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
 
 # generate rules for module sources
 ifneq ($(CXX_MAP_MOD_2_SRC_NAME),)
-%.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
+%.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp module-map.txt
 	$(due_to)
 	$(CXX) -o '$(<:.cpp=.o)' '$<' -c -fmodule-mapper=module-map.txt $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
 endif
+# TODO: Is double colon rule appropriate?
 
 # finally link all together
 objects ::= $(sources:.cpp=.o)
@@ -170,6 +170,7 @@ clean :
 	rm -f '$(TARGET)'
 	rm -f *.o
 	rm -f *.dep
+	rm -f *.dep~
 	rm -f *.depm
 	rm -f *.ddi
 	rm -f module-map.txt

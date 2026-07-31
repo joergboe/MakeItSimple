@@ -1,6 +1,10 @@
+# Old files
+*~
+
 # Build dependency files
 *.d
 *.dep
+*.depm
 *.ddi
 
 # Compiled Object files
@@ -8,6 +12,10 @@
 *.lo
 *.o
 *.obj
+
+# Compiled Module Interfaces
+*.gcm
+*.pcm
 
 # Precompiled Headers
 *.gch
@@ -34,6 +42,7 @@
 *.app
 
 # MakeItSimple generated files
+module-map.txt
 compile_commands.json
 .mktsimple/
 *.mks.tmp

@@ -12,7 +12,7 @@ set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
 shopt -s nullglob
 
 command=${0##*/}
-usage="usage: ${command} input depfile mdbfile object source"
+usage="usage: ${command} input depfile mdbfile object source [cmitarget]"
 
 myhelp() {
 	cat <<-EOF
@@ -25,6 +25,9 @@ myhelp() {
 	        mdbfile   : Output       - module information in make format
 	        object    : The primary_output (object) file of the TU
 	        source    : The source file name
+	        cmitarget : If present, the first line is preceded with this target. The string $(mod) is substituted
+	                    with the provided module name. The string $(src) is substituted with the source name. Escape
+	                    character are applied.
 
 	1) Detect module dependencies for a translation unit in 'input' and append the
 	module prerequisites in makefile format to 'depfile'. Modules are represented by a variable
@@ -65,11 +68,16 @@ errexit() {
 if [[  $# -ge 1 && ( $1 == '-h' || $1 == '--help' ) ]]; then
 	myhelp
 	exit 0
-elif [[ $# -ne 5 ]]; then
-	errexit "5 parameters required $# given!" 2
+elif [[ $# -ne 5 && $# -ne 6 ]]; then
+	errexit "5 or 6 parameters required $# given!" 2
 fi
 
 readonly inp="$1" dep="$2" mbf="$3" obj="$4" src="$5"
+cmitarget=
+if [[ $# -eq 6 ]]; then
+	cmitarget="$6"
+fi
+readonly cmitarget
 
 [[ -z "${inp}" || -z "${dep}" || -z "${mbf}" || -z "${obj}" || -z "${src}" ]] \
 	&& errexit "None of the parameters must be empty!" 2
@@ -106,9 +114,24 @@ if [[ -n ${provides} ]]; then
 	provides=${provides//\$/\$\$} # escape $ in make style
 fi
 
-# append module deps to depfile
 src_escaped="${src//\$/\$\$}"
 obj_escaped="${obj//\$/\$\$}"
+
+# precede the target list if required
+if [[ -n ${cmitarget} && -n ${provides} ]]; then
+	readonly deptemp="${dep}~"
+	mv "${dep}" "${deptemp}"
+
+	# assume $(mod) and $(src) are substituted in context of a function thus # and : are not special
+	temp1="${cmitarget//\$(mod)/${provides}}"
+	temp2="${temp1//\$(src)/${src_escaped}}"
+	echo -n "${temp2} " > "${dep}"
+	while read -r; do
+		echo "${REPLY}" >> "${dep}"
+	done < "${deptemp}"
+fi
+
+# append module deps to depfile
 if [[ -n ${requires} ]]; then
 	{
 		echo -n "${obj_escaped//#/\\#}" # in rule context hash mark must be quoted
