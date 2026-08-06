@@ -1,42 +1,18 @@
-# Skeleton Makefile1-auto.mk
+# Skeleton Makefile2sec-auto.mk
 
-# * Variables are used to express the module dependencies in prerequisites. A variable like CXX_MOD_modulname_CMI
-#   substitutes the CMI file name by the module name. These database variables are defined in front of the dependency
-#   rules.
-#
-# * The dependency scan is performed only if the dependency or database files are missing or outdated.
-#
-# * The dependency scan produces two dependency files for each translation unit: %.dep and %.depm.
-#
-# * The dependency file 1 (depfiles - %.dep) contains the makefile rules without recipes as usual.
-#
-# * The dependency file 2 (dbmfiles - %.depm) contains information about provided module of the translation unit and
-#   is based on structured dependency information (%.ddi).
-#   The CXX_SRC_MOD_IF_LIST list contains a triple <primary output; source; module-provided; is-interface> for
-#   each translation unit.
-#
-# * If one of the dependency or database files is updated, Make is restarted and the dependency tree is rebuilt using
-#   current data.
-#
-# * The variables CXX_MOD_modulname_CMI are defined based on variable CXX_SRC_MOD_IF_LIST.
-#
-# * A file with the mapping of module name to CMI filename is generated and stored in file 'module-map.txt'
-#
-# * Translation units that export a module are managed using Grouped Target Rules or Pattern Rules, depending on
-#   the module mapping. Grouped Target Rules are generated with make function 'eval'.
-#
-# * If the CMI filename is derived from the source name via simple pattern substitution (simple mapping), pattern rules
-#   can be applied directly.
-#
-# * The remaining translation units are managed with Pattern Rules.
+# Difference to Skeleton Makefile1-auto.mk:
+# * Rules and information about provided module are written into one file.
+# * Make uses the Second Expansion to get the current cmi file dependencies.
 #
 # --------------------------------------------------------------------------
 
+.SECONDEXPANSION :
+
 # rules to generate depfiles and dbmfiles
-%.dep %.depm : %.cpp
-	g++ $< -M -MF $*.dep -MQ $*.dep -MQ $*.depm -MQ $*.o -MQ '$(call cmi_mapper,$(mod),$(src))' \
- -fdeps-format=p1689r5 -fdeps-file=$*.ddi ...
-	p1689_to_make.sh ...
+depfiles ::= $(sources:.cpp=.dep)
+$(depfiles) %.dep : %.cpp
+	g++ $< -M -MF $@ -MQ $@.dep -fdeps-format=p1689r5 -fdeps-file=$*.ddi ...
+	p1689_to_make_sec.sh ... # merges all into one file
 	..
 
 # Variable CMI_mapper expands to the CMI file name.
@@ -48,32 +24,35 @@ else
   cmi_mapper = modulecache/$2.gcm
 endif
 
-# include the provided modules database: CXX_SRC_MOD_IF_LIST
-dbmfiles ::= $(sources:.cpp=.depm)
-include $(dbmfiles)
+# include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
+# depfiles require cmi_mapper function
+# CXX_MOD_require1_CMI variables are resolved during secondary expansion
+depfiles ::= $(sources:.cpp=.dep)
+include $(depfiles)
 
 # Variable modul_rule_template expands to the grouped target rule for module units including recipe.
 # input: src - source file name
 #        obj - object name
-#        cmi - cmi file
+#        cmi - cmi file name
+#        dep - depfile name
 ifeq ($(CXX_SIMPLE_MAPPING),)
 define
 modul_rule_template =
-$(obj) $(cmi) &: $(src) module-map.txt
+$(obj) $(cmi) &: $(src) $(dep) module-map.txt
 	g++ -o $(obj) $< -c -fmodule-mapper=module-map.txt ...
 endef
 else
-modul_rule_template = # rule is provided as Pattern Rule
+  modul_rule_template = # rule is provided as Pattern Rule
 endif
 
 # provide required module variables CXX_MOD_module_required_CMI
 # generate rules + recipes for translation units providing a module
 # provide module map, modsources and nomodsources
-# let provides the local variables: src, mod, is_if, obj, modi and cmi
+# let provides the local variables: src, mod, is_if, obj, dep, modi and cmi
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let obj modi cmi,$(src:.cpp=.o) $(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
+      $(let obj dep modi cmi,$(src:.cpp=.o) $(src:.cpp=.dep) $(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
         $(eval CXX_MOD_$(modi)_CMI ::= $(cmi))\
         $(eval modsources += $(src))\
         $(eval $(modul_rule_template))\
@@ -90,11 +69,6 @@ $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
 ifne(...)
   $(file > module-map.txt,...)
 endif
-
-# include all depfiles after definition of all CXX_MOD_module_CMI variables
-# depfiles also require cmi_mapper function
-depfiles ::= $(sources:.cpp=.dep)
-include $(depfiles)
 
 # rules for no module sources and simple module mapping
 nomodobjects = $(nomodsources:.cpp=.o)
@@ -115,18 +89,18 @@ $(TARGET) : $(objects)
 
 # *** Structure of dependency file (%.dep) ***
 # The dependency file contains the makfile rules for the translation unit.
-# (1) The firs rule lists the non module prerequisites, source file, header includes.
+# (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
 # (2) The second rule lists the required module interfaces if any.
 
 # Module Units
 # (1)
-src.o $(call cmi_mapper,module_provided,src.cpp) src.dep src.depm: src.cpp header.h ...
+src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
 src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
 
 # Non Module Units
 # (1)
-src.o src.dep src.depm: src.cpp header.h ...
+src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
 src1.o : $(CXX_MOD_module_required_CMI) ...
 
@@ -140,4 +114,3 @@ CXX_SRC_MOD_IF_LIST += src.cpp;module;1
 
 # Non Module Units
 CXX_SRC_MOD_IF_LIST += src.cpp;-;0
-

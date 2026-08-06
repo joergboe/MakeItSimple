@@ -35,7 +35,7 @@ $(TARGET) :
 # required compiler options
 CXXFLAGS ?= -std=c++20 -fmodules
 
-# rule to generate dependency files and structured dependency files
+# rule to generate dependency files with legacy rule and module deps
 depfiles ::= $(sources:.cpp=.dep)
 $(depfiles) : %.dep: %.cpp
 	$(due_to)
@@ -45,7 +45,7 @@ $(depfiles) : %.dep: %.cpp
 	@echo
 
 # include depfiles with header and module dependency
-CXX_SRC_MOD_IF_LIST ::= # prefer simple variable flavor for the list with provided modules
+CXX_OBJ_SRC_MOD_IF_REQ_LIST ::= # prefer simple variable flavor for the list with provided modules
 include $(depfiles)
 
 # TODO: generate variables and modulemap for imported cmi files
@@ -53,7 +53,7 @@ include $(depfiles)
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map internal module name and source file name to the cmi file name for project modules
+# cmi_mapper - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
@@ -62,15 +62,13 @@ else
   cmi_mapper = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
 endif
 
-# ensure the simply expanded variable flavor for the output variables
-modulemap ::=
-
 # generate variables for cmi file of project modules
 # provided variables:
 #        src - source file name
 #        mod - the module name
 #        modi - internal module name (colon is replaced with dash)
 #        cmi  - cmi name
+modulemap ::= # ensure the simply expanded variable flavor for the output variables
 $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
@@ -103,7 +101,7 @@ ifneq ($(modulemap_old),$(modulemap_subst))
 endif
 # TODO: write empty modulemap
 
-# reqs2cmi - expand all prerequisite modules to cmi files
+# reqs2cmi - expand all prerequisite modules to cmi file name
 # input: reqs - list of prerequisite modules
 reqs2cmi = $(foreach mod,$(reqs),$(CXX_MOD_$(subst :,-,$(mod))_CMI))
 
@@ -136,11 +134,6 @@ $$(obj) : my_map_option ::= $$(if $$(reqs),-fmodule-mapper=module-map.txt)
 $$(obj) : $$(src) $$(dep) $$(reqs2cmi) $$(if $$(reqs),module-map.txt)
 endef
 
-# ensure the simply expanded variable flavor for the output variables
-modsources ::=
-nomodsources ::=
-nomodobjects ::=
-
 # generate rules for module units and non module units and variables
 # provided variables:
 #        src - source file name
@@ -150,6 +143,9 @@ nomodobjects ::=
 #        dep - defile name
 #        modreq - the required cmi files list
 #        cmi  - cmi name (for modules only)
+modsources ::= # ensure the simply expanded variable flavor for the output variables
+nomodsources ::=
+nomodobjects ::=
 $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\

@@ -51,7 +51,7 @@ $(depfiles) : %.dep: %.cpp
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map module name and source file name to the cmi file name for project modules
+# cmi_mapper - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
@@ -60,11 +60,10 @@ else
   cmi_mapper = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
 endif
 
-CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
-
-# depfiles provide CXX_SRC_MOD_IF_LIST the include all depfiles with module variables before rule generation
+# include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
 # depfiles require cmi_mapper function
 # CXX_MOD_require1_CMI variables are resolved during secondary expansion
+CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
 include $(depfiles)
 
 # template rule for module sources
@@ -85,10 +84,7 @@ else
 modul_rule_template =
 endif
 
-# generate rules for module sources and module variables for the output variables
-modsources ::=
-nomodsources ::=
-modulemap ::=
+# TODO: generate variables and modulemap for imported cmi files
 
 # generate rules for module sources, module variables and module map and check for duplicate module
 # provided variables:
@@ -99,6 +95,9 @@ modulemap ::=
 #        cmi  - cmi name
 #        obj - object name
 #        dep - defile name
+modsources ::= # generate rules for module sources and module variables for the output variables
+nomodsources ::=
+modulemap ::=
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\

@@ -38,9 +38,6 @@ $(TARGET) :
 CXXFLAGS ?= -std=c++20 -fmodules
 
 # rule to generate dependency files and structured dependency files
-depfiles ::= $(sources:.cpp=.dep)
-dbmfiles ::= $(sources:.cpp=.depm)
-p1689files ::= $(depfiles:.dep=.ddi)
 %.dep %.depm : %.cpp
 	$(due_to)
 	$(CXX) '$<' -MM -MF '$*.dep' -MQ '$*.dep' -MQ '$*.depm' -fdeps-format=p1689r5 -fdeps-file='$*.ddi' -fdeps-target='$*.o'\
@@ -48,14 +45,10 @@ p1689files ::= $(depfiles:.dep=.ddi)
 	$(my_bin_dir)p1689_to_make.sh '$*.ddi' '$*.dep' '$*.depm' '$*.o' '$<' # appends the module dependencies expressed by variables
 	@echo
 
-# include module database/variables
-CXX_SRC_MOD_IF_LIST ::= # prefer simple variable flavor for the list with provided modules
-include $(dbmfiles)
-
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map internal module name and source file name to the cmi file name for project modules
+# cmi_mapper - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
@@ -63,6 +56,11 @@ ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
 else
   cmi_mapper = $(CXX_MODULE_CACHE)/$(2:.cpp=).gcm
 endif
+
+# include the provided modules database: CXX_SRC_MOD_IF_LIST
+dbmfiles ::= $(sources:.cpp=.depm)
+CXX_SRC_MOD_IF_LIST ::= # prefer simple variable flavor for the list with provided modules
+include $(dbmfiles)
 
 # template rule for module sources
 # input: src - source file name
@@ -82,10 +80,7 @@ else
 modul_rule_template =
 endif
 
-# ensure the simply expanded variable flavor for the output variables
-modsources ::=
-nomodsources ::=
-modulemap ::=
+# TODO: generate variables and modulemap for imported cmi files
 
 # generate rules for module sources, module variables and module map and check for duplicate module
 # provided variables:
@@ -96,6 +91,9 @@ modulemap ::=
 #        cmi  - cmi name
 #        obj - object name
 #        dep - defile name
+modsources ::= # ensure the simply expanded variable flavor for the output variables
+nomodsources ::=
+modulemap ::=
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
@@ -139,6 +137,7 @@ endif
 
 # include all depfiles after definition of all CXX_MOD_module_CMI variables
 # depfiles also require cmi_mapper function
+depfiles ::= $(sources:.cpp=.dep)
 include $(depfiles)
 
 # TODO: Check missing module requirements
