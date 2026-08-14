@@ -1,10 +1,10 @@
 // Macro definitions are not available in imported modules.
-#define CONST0 0
+#define MAIN0 0
 
 import m3;
 
-#ifdef CONST0
-#warning "CONST0 is defined in main"
+#ifdef MAIN0
+#warning "MAIN0 is defined in main"
 #endif
 
 // Macro definitions in modules are not exported

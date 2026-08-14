@@ -111,19 +111,21 @@ reqs2cmi = $(foreach mod,$(reqs),$(CXX_MOD_$(subst :,-,$(mod))_CMI))
 #        dep - depfile name
 #        cmi - cmi file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
-define modul_rule_template
-$(info generate module rule $(obj) $(cmi) &: $(src) $(reqs2cmi) module-map.txt)
-$$(obj) $$(cmi) : my_obj ::= $$(obj)
-$$(obj) $$(cmi) &: $$(src) $$(dep) $$(reqs2cmi) module-map.txt
+  define modul_rule_template
+  $(info generate module rule $(obj) $(cmi) &: $(src) $(reqs2cmi) module-map.txt)
+
+  $$(obj) $$(cmi) : my_obj ::= $$(obj)
+  $$(obj) $$(cmi) &: $$(src) $$(dep) $$(reqs2cmi) module-map.txt
 	$$(due_to)
 	$$(CXX) -o '$$(my_obj)' '$$<' -c -fmodule-mapper=module-map.txt $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	@echo
-endef
+  endef
 else
-define modul_rule_template
-$(info generate module rule $(obj) $(cmi) : $(src) $(reqs2cmi) module-map.txt)
-$$(obj) $$(cmi) : $$(src) $$(dep) $$(reqs2cmi) module-map.txt
-endef
+  define modul_rule_template
+  $(info generate module rule $(obj) $(cmi) : $(src) $(reqs2cmi) module-map.txt)
+
+  $$(obj) $$(cmi) : $$(src) $$(dep) $$(reqs2cmi) module-map.txt
+  endef
 endif
 
 # template rule fragment for non module sources
@@ -174,7 +176,7 @@ $(nomodobjects) : %.o : %.cpp %.dep
 
 # generate rules for module sources
 ifneq ($(CXX_MAP_MOD_2_SRC_NAME),)
-%.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
+  %.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
 	$(due_to)
 	$(CXX) -o '$(<:.cpp=.o)' '$<' -c -fmodule-mapper=module-map.txt $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo

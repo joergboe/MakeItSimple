@@ -1,11 +1,9 @@
-
-import <cstdlib>;
-import <iostream>;
+#include <iostream>
+#include <cstdlib>
 
 import m1;
 
 int main(int, const char**) {
 	std::cout << greetings() << std::endl;
-	// Macros from imported header units are defined.
 	return EXIT_SUCCESS;
 }

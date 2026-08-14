@@ -10,8 +10,8 @@ export module m3;
 #define CONST2 2
 
 // Macro definitions from importing unis are not defined
-#ifndef CONST0
-#warning "CONST0 is not defined in module m3"
+#ifndef MAIN0
+#warning "MAIN0 is not defined in module m3"
 #endif
 
 #ifdef CONST1
@@ -25,7 +25,6 @@ export module m3;
 #ifndef VERSION
 #define VERSION "X.X.X"
 #endif
-
 
 void greetings() {
 	std::cout << "Greetings!\n";

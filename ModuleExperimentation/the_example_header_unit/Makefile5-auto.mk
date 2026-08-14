@@ -68,10 +68,14 @@ else
 
 endif
 
+# collect source files
+sources ::= $(wildcard *.cpp)
+$(info sources = $(sources))
+
 # generate dependency files for source files
 # header unit translation must be complete before dependency scan
 # the depfile substitutes all header dependencies of the source
-depfiles ::= $(SOURCES:.cpp=.dep)
+depfiles ::= $(sources:.cpp=.dep)
 $(depfiles) : %.dep: %.cpp | header-map-user
 	$(due_to)
 	g++ $< -MM -MF $@ -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-file=$*.ddi -fdeps-target=$*.o -c -std=c++20 -fmodules
@@ -147,7 +151,7 @@ $(nomodobjects) : %.o : %.cpp %.dep
 	@echo
 
 # link all together
-objects ::= $(SOURCES:.cpp=.o)
+objects ::= $(sources:.cpp=.o)
 my_program : $(objects)
 	$(due_to)
 	g++ -o my_program $(objects) -std=c++20 -fmodules
@@ -161,7 +165,7 @@ my_program : $(objects)
 #	$(MAKE) -f Makefile5-auto-headers.mk KIND=SYSTEM $@
 
 # cleans all cmi files of named modules
-depfiles_p1689 = $(SOURCES:.cpp=.ddi)
+depfiles_p1689 = $(sources:.cpp=.ddi)
 #deptempfiles ::= $(addsuffix ~,$(depfiles))
 .PHONY : clean
 clean :

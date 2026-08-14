@@ -1,5 +1,6 @@
 export module m2;
 
+// One can use macros in modules and from included header files.
 #include "header2.h"
 
 export

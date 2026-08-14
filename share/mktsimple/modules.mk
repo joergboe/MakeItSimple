@@ -351,7 +351,7 @@ nomodobjs ::= $(call add_dir_prefix,$(builddir_int),$(addsuffix .o,$(nomodsrcs))
 
 ifndef silent
   $(info )
-  ifdef CXX_SRC_MOD_IF_LIST
+  ifdef CXX_OBJ_SRC_MOD_IF_REQ_LIST
     $(info Module units            : $(foreach x,$(sort $(modsrcs)),'$(x)'))
     $(info Module interface units  : $(foreach x,$(sort $(mod_if_units)),'$(x)'))
     $(info Module names (internal) : $(foreach x,$(sort $(modules)),'$(x)'))

@@ -3,8 +3,8 @@ module;
 #include "header1.h"
 
 // Auto import is supported
-import <iostream>;
-//#include <iostream>
+//import <iostream>;
+#include <iostream>
 import module2;
 
 export module module1;

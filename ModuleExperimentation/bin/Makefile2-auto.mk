@@ -68,16 +68,17 @@ include $(dbmfiles)
 #        dep - depfile name
 #        cmi - cmi file name
 ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
-define modul_rule_template
-$(info generate module rule $(obj) $(cmi) &: $(src) $(dep) module-map.txt)
-$$(obj) $$(cmi) : my_obj ::= $$(obj)
-$$(obj) $$(cmi) &: $$(src) $$(dep) module-map.txt
+  define modul_rule_template
+  $(info generate module rule $(obj) $(cmi) &: $(src) $(dep) module-map.txt)
+
+  $$(obj) $$(cmi) : my_obj ::= $$(obj)
+  $$(obj) $$(cmi) &: $$(src) $$(dep) module-map.txt
 	$$(due_to)
 	$$(CXX) -o '$$(my_obj)' '$$<' -c -fmodule-mapper=module-map.txt $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	@echo
-endef
+  endef
 else
-modul_rule_template =
+  modul_rule_template =
 endif
 
 # TODO: generate variables and modulemap for imported cmi files
@@ -151,7 +152,7 @@ $(nomodobjects) : %.o : %.cpp %.dep module-map.txt
 
 # generate rules for module sources
 ifneq ($(CXX_MAP_MOD_2_SRC_NAME),)
-%.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
+  %.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
 	$(due_to)
 	$(CXX) -o '$(<:.cpp=.o)' '$<' -c -fmodule-mapper=module-map.txt $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
