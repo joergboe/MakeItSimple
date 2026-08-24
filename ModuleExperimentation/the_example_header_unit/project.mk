@@ -1,6 +1,6 @@
 SOURCES ::= main.cpp src1.cpp src2.cpp
 CXX_SYSTEM_HEADER_UNITS ::= iostream cstdio cstddef
-#CXX_SYSTEM_HEADER_UNITS ::= bits/stdc++.h
+CXX_SYSTEM_HEADER_UNITS += bits/stdc++.h
 CXX_USER_HEADER_UNITS ::= header2.h
 
 CXXFLAGS = -std=c++20 -fmodules

@@ -23,18 +23,25 @@ due_to = @echo 'Run target $@ - Due to $?'
 all : header-cmis.txt
 
 # project definitions
-include project.mk
+PROJECT_MK ?= project.mk
+include $(PROJECT_MK)
 
 # required compiler options
 CXXFLAGS ?= -std=c++20 -fmodules
 CXXFLAGS += -flang-info-include-translate -flang-info-module-cmi
 
-# Delete the stored Header Units list if the list has changed.
+# module cache directory
+# If the cache is the default directory, a auto import may happen in the dependency scan or even in the info scan.
+# This may be a problem if old and dispensable files are present. Thus make a cleanup before header list changes.
+CXX_MODULE_CACHE ?= gcm.cache
+
+# Delete the stored Header Units list if the list has changed at start up.
 units ::= $(CXX_SYSTEM_HEADER_UNITS) $(CXX_USER_HEADER_UNITS)
 ifndef MAKE_RESTARTS
   old_units ::= $(file < header-units-list)
   ifneq ($(units),$(old_units))
     $(info !Header Units list has changed!)
+    $(file > header-units-list.temp,$(units)) # file function avoids shell quoting issues
     $(shell rm -f header-units-list)
   else
     $(info No changes in Header Units list.)
@@ -48,18 +55,21 @@ $(info )
 # A missing file triggers this rule.
 header-units-list :
 	$(due_to)
-	echo '$(units)' > $@
+	mv header-units-list.temp $@
 	@echo
 
-# Delete the stored configuration file if the configuration has changed.
+# Delete the stored configuration file if the configuration has changed at start up.
+configuration ::= $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 ifndef MAKE_RESTARTS
-  $(file > header-units-config.temp,$(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)) # store configuration in make to avoid shell quoting issues
-  $(info $(shell if diff header-units-config header-units-config.temp; then\
-      echo "No changes in Header Units configuration.";\
-    else\
-      rm -f header-units-config; echo "!Header Units configuration has changed!";\
-    fi))
-    $(info )
+  old_configuration ::= $(file < header-units-config)
+  ifneq ($(configuration),$(old_configuration))
+    $(info !Header Units configuration has changed!)
+    $(file > header-units-config.temp,$(configuration)) # file function avoids shell quoting issues
+    $(shell rm -f header-units-config)
+  else
+    $(info No changes in Header Units configuration.)
+  endif
+  $(info )
 endif
 
 # A missing configuration file triggers this rule.
@@ -68,56 +78,71 @@ header-units-config :
 	mv header-units-config.temp $@
 	@echo
 
-# The module cache directory must be different from the default gcm.cache.
-CXX_MODULE_CACHE ?= cmi_cache
-
 # Generate infofiles : The source file name is figured out from script dep_2src.sh and the cmi file name is constructed.
 # Output : CXX_UNIT_SRC_MOD_CMI_KIND_LIST
 # Source file may be relative or absolute.
-infofiles_sys ::= $(addsuffix .dep.n,$(CXX_SYSTEM_HEADER_UNITS))
-$(infofiles_sys) : %.dep.n: header-units-list header-units-config
+infofiles_sys ::= $(addprefix system/,$(addsuffix .dep.n,$(CXX_SYSTEM_HEADER_UNITS)))
+$(infofiles_sys) : system/%.dep.n: header-units-list header-units-config
 	$(due_to)
-	$(CXX) -x c++-system-header $* -c -MM -MF $*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${my_bin_dir}get_info.sh $*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm system # provide variable CXX_UNIT_SRC_CMI_LIST
+	$(CXX) -x c++-system-header $* -c -MM -MF system/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${my_bin_dir}get-header-info-and-map.sh system/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm system # provide variable CXX_UNIT_SRC_CMI_LIST
 	@echo
 
-infofiles_user ::= $(addsuffix .dep.n,$(CXX_USER_HEADER_UNITS))
-$(infofiles_user) : %.dep.n: header-units-list header-units-config
+infofiles_user ::= $(addprefix user/,$(addsuffix .dep.n,$(CXX_USER_HEADER_UNITS)))
+$(infofiles_user) : user/%.dep.n: header-units-list header-units-config
 	$(due_to)
-	$(CXX) -x c++-user-header $* -c -MM -MF $*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${my_bin_dir}get_info.sh $*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm user # provide variable CXX_UNIT_SRC_CMI_LIST
+	$(CXX) -x c++-user-header $* -c -MM -MF user/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${my_bin_dir}get-header-info-and-map.sh user/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm user # provide variable CXX_UNIT_SRC_CMI_LIST
 	@echo
 
-# generate database cmi mapper - output <logical name> <cmi>
+# The Order Only Prerequisites for the directories require secondary expansion and follow near makefile end.
+
+# Function: Get the directory, filter out dot dirs and remove trailing slash.
+dir_but_not_dot_dir = $(patsubst %/,%,$(filter-out ./,$(dir $1)))
+
+# rules for the infofiles directories
+dirs_infofiles_sys ::= $(sort $(call dir_but_not_dot_dir,$(infofiles_sys)))
+$(info Directories for infofiles_sys = $(dirs_infofiles_sys))
+$(dirs_infofiles_sys) :
+	mkdir -p $@
+	@echo
+
+dirs_infofiles_user ::= $(sort $(call dir_but_not_dot_dir,$(infofiles_user)))
+$(info Directories for infofiles_user = $(dirs_infofiles_user))
+$(dirs_infofiles_user) :
+	mkdir -p $@
+	@echo
+
+# generate database cmi mapper: <logical name> <cmi>
 header-mapper.txt : $(infofiles_sys) $(infofiles_user)
 	$(due_to)
 	@cat $^ | { IFS=\;; while read -r -a ar; do echo "$${ar[2]//\$$\$$/\$$} $${ar[3]//\$$\$$/\$$}"; done; } > "$@"
 	@echo
 
 # generate the depfiles
-depfiles_sys ::= $(addsuffix .dep,$(CXX_SYSTEM_HEADER_UNITS))
-$(depfiles_sys) : %.dep : header-mapper.txt
+depfiles_sys ::= $(addprefix system/,$(addsuffix .dep,$(CXX_SYSTEM_HEADER_UNITS)))
+$(depfiles_sys) : system/%.dep : header-mapper.txt
 	$(due_to)
-	$(CXX) -x c++-system-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$*.o \
- -fdeps-file=$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${my_bin_dir}add_module_dep.sh header-mapper.txt $(CURDIR) $@.1 $@
+	$(CXX) -x c++-system-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=system/$*.o \
+ -fdeps-file=system/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${my_bin_dir}add-header-module-dep.sh header-mapper.txt $(CURDIR) $@.1 $@
 	@echo
 
-depfiles_user ::= $(addsuffix .dep,$(CXX_USER_HEADER_UNITS))
-$(depfiles_user) : %.dep : header-mapper.txt
+depfiles_user ::= $(addprefix user/,$(addsuffix .dep,$(CXX_USER_HEADER_UNITS)))
+$(depfiles_user) : user/%.dep : header-mapper.txt
 	$(due_to)
-	$(CXX) -x c++-user-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$*.o \
- -fdeps-file=$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${my_bin_dir}add_module_dep.sh header-mapper.txt $(CURDIR) $@.1 $@
+	$(CXX) -x c++-user-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=user/$*.o \
+ -fdeps-file=user/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${my_bin_dir}add-header-module-dep.sh header-mapper.txt $(CURDIR) $@.1 $@
 	@echo
 
 # rule template for unit cmi file targets
 # automatic header inclusion is effective
 define cmi_file_rule
-  $(info generate $(unit) rule : $(cmi) : $(src) $(unit).dep)
+  $(info generate $(unit) rule : $(cmi) : $(src) $(kind)/$(unit).dep)
 
   $$(cmi) : my_unit ::= $$(unit)
-  $$(cmi) : $$(src) $$(unit).dep
+  $$(cmi) : $$(src) $$(kind)/$$(unit).dep
 	$$(due_to)
 	$$(CXX) -x c++-$(kind)-header $$(my_unit) -c -fmodule-mapper=header-mapper.txt $$(CXXFLAGS) $$(CPPFLAGS) \
  $$(TARGET_ARCH)
@@ -161,20 +186,28 @@ clean :
 	$(due_to)
 	LIST=; for x in $(CXX_MODULE_CACHE)/*; do if [[ -d $${x} ]]; then LIST+=" $${x}"; fi; done; rm -rfv $${LIST};
 	rm -f header-cmis.txt
-	rm -f *.dep.n
-	rm -f *.dep.0
+	rm -rf $(dirs_infofiles_sys)
+	rm -rf $(dirs_infofiles_user)
 	rm -f header-mapper.txt
-	rm -f *.dep
-	rm -f *.dep.1
-	rm -f *.ddi
 	@echo
 
 .PHONY : purge
 purge : clean
 	$(due_to)
 	rm -f header-units-config header-units-config.temp
-	rm -f header-units-list
+	rm -f header-units-list header-units-list.temp
+	rm -rf system user
 	@echo
+
+# Append the Order Only Prerequisites for the infofile directories:
+
+# Get the directory part of the target but skip pure . pattern.
+target_dir_but_not_dot_dir = $(filter-out .,$(@D))
+
+.SECONDEXPANSION :
+
+$(infofiles_sys) : | $$(target_dir_but_not_dot_dir)
+$(infofiles_user) : | $$(target_dir_but_not_dot_dir)
 
 $(info **** End reading makefile $(this_makefile))
 $(info )

@@ -309,7 +309,7 @@ $(builddir_int)$(module_db): $(p1689files) | $(builddir_int)
 	$(if $(silent),,@echo -e "Finished database preparation in '$@'\n")
 else
 # depfile production
-$(depfiles): $(builddir_int)%.dep: % | $(call filter_out_dot_dir,$(dir $(builddir_int)%))
+$(depfiles): $(builddir_int)%.dep: % | $$(call filter_out_dot_dir,$$(dir $$(builddir_int)%))
 	@$(RM) $(verbose) '$@'
 	$(depscan1)
 	$(mktsimple_bindir)p1689_to_make_sec.sh '$(builddir_int)$*.ddi' '$<' '$(builddir_int)$*.o' '$@'

@@ -15,7 +15,7 @@ usage="usage: ${command} [-h|-v].. [--] depfile outfile name cache ext kind"
 myhelp() {
 	cat <<-EOF
 
-	Get source filename information from depfile and provide the CMI filename.
+	Get source filename information from depfile and provide the CMI filename mapping.
 
 	${usage}
 

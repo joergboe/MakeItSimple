@@ -67,7 +67,7 @@ EOF
 }
 
 readonly mkts='mktsimple'
-readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk one-step-compile.mk one-step-secondary.mk'
+readonly all_install_files='in_place_cpp.mk in_place_cpp.mk out_place_c.mk out_place_cpp.mk out_place_cpp.mk one-step-compile.mk'
 # the first word of each list entry is the type identifier
 readonly -a pr3=(
 	'opbcpp -- C++ project   Out Place Build'$'\n''	Build one executable from all %.cpp and %.cc source files in all project source directories.'$'\n'
@@ -133,7 +133,7 @@ check_install_dir() {
 	local x
 	for x in ${all_install_files}; do
 		if [[ ! -f "${mypath}/${x}" ]]; then
-			echoerr "Source dir '$1' is not a valid installation!"
+			echoerr "${mypath}/${x} is missing! Source dir '$1' is not a valid installation!"
 			return 1
 		fi
 	done
