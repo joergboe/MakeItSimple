@@ -4,4 +4,5 @@ SRCDIRS = ./
 BUILDDIR = .
 BINDIR = .
 CXXFLAGS = -std=c++20 -fmodules
-CXX_SYSTEM_HEADER_UNITS = iostream cstdlib
+CXXFLAGS += -flang-info-include-translate -flang-info-module-cmi
+CXM_SYSTEM_HEADER_UNITS = iostream cstdlib

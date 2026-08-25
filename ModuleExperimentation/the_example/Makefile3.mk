@@ -13,19 +13,19 @@ my_program :
 
 # main.dep
 main.o : main.cpp header2.h
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += main.o;main.cpp;-;0;module1;module2
+CXM_OBJ_SRC_MOD_IF_REQ_LIST += main.o;main.cpp;-;0;module1;module2
 
 # src1.dep
 src1.o : src1.cpp header1.h
 # as workaround for <https://savannah.gnu.org/bugs/?67825> try this
 #src1.o gcm.cache/module1.gcm : src1.cpp header1.h
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src1.o;src1.cpp;module1;1;module2
+CXM_OBJ_SRC_MOD_IF_REQ_LIST += src1.o;src1.cpp;module1;1;module2
 
 # src2.dep
 src2.o : src2.cpp header2.h
 # as workaround for <https://savannah.gnu.org/bugs/?67825> try this
 #src2.o gcm.cache/module2.gcm : src2.cpp header2.h
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src2.o;src2.cpp;module2;1
+CXM_OBJ_SRC_MOD_IF_REQ_LIST += src2.o;src2.cpp;module2;1
 
 # not a module
 main.o : main.cpp gcm.cache/module1.gcm gcm.cache/module2.gcm

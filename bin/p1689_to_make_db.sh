@@ -36,7 +36,7 @@ myhelp() {
 	For each translation unit that exports a module, a triple of the following
 	form is emitted:
 
-	        CXX_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
+	        CXM_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
 
 	A colon in a module name (module partitions) is replaced by a dash. Dollar
 	symbols in names are replaced by two dollar symbols.
@@ -108,7 +108,7 @@ while [[ $# -ge 1 ]]; do
 			is_if=1
 		fi
 		provides_subst="${provides//:/"-"}"
-		echo "CXX_SRC_MOD_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
+		echo "CXM_SRC_MOD_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
 	} >> "${depdb}"
 
 done

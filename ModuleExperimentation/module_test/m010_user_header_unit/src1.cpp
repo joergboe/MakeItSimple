@@ -1,4 +1,4 @@
-#include "headers/header1.h"
+#include "include/header1.h"
 
 const char another_string[]="Some other string";
 

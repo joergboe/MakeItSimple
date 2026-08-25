@@ -2,7 +2,7 @@
 # Module dependencies expressed in generated rules.
 
 # With automatic dependency generation based on structured dependency information.
-# The CXX_OBJ_SRC_MOD_IF_REQ_LIST lists:
+# The CXM_OBJ_SRC_MOD_IF_REQ_LIST lists:
 #    primary output; source; module-provided; is-interface[; mod-required[ ;mod-required..]]
 # The depfile substitutes all legacy header dependencies of an translation unit.
 # Grouped Target Rules for module units and non module units are generated with 'eval'.
@@ -10,10 +10,10 @@
 # The automatic variable $? is fixed because the grouped rule peps are complete
 
 # The makefile implements 2 custom module mappings:
-#    If CXX_MAP_MOD_2_SRC_NAME is undefined the name of the cmi file is         modulecache/<modulname>.gcm
-#    If CXX_MAP_MOD_2_SRC_NAME has a nonempty value the name of the cmi file is modulecache/<sourcefile>.gcm
+#    If CXM_SIMPLE_MAPPING is undefined the name of the cmi file is         modulecache/<modulname>.gcm
+#    If CXM_SIMPLE_MAPPING has a nonempty value the name of the cmi file is modulecache/<sourcefile>.gcm
 
-# With CXX_MAP_MOD_2_SRC_NAME=1:
+# With CXM_SIMPLE_MAPPING=1:
 # Problem with grouped pattern rule dependency propagation. (delete src1.o src2.o)
 
 $(info **** $(if $(MAKE_RESTARTS),Restart # $(MAKE_RESTARTS),Start) in directory $(CURDIR))
@@ -45,21 +45,21 @@ $(depfiles) : %.dep: %.cpp
 	@echo
 
 # include depfiles with header and module dependency
-CXX_OBJ_SRC_MOD_IF_REQ_LIST ::= # prefer simple variable flavor for the list with provided modules
+CXM_OBJ_SRC_MOD_IF_REQ_LIST ::= # prefer simple variable flavor for the list with provided modules
 include $(depfiles)
 
 # TODO: generate variables and modulemap for imported cmi files
 
 # module cache directory
-CXX_MODULE_CACHE ?= gcm.cache
+CXM_MODULE_CACHE ?= gcm.cache
 
 # cmi_mapper - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
-ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+ifeq ($(CXM_SIMPLE_MAPPING),)
+  cmi_mapper = $(CXM_MODULE_CACHE)/$(subst :,-,$1).gcm
 else
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
+  cmi_mapper = $(CXM_MODULE_CACHE)/$(src:.cpp=).gcm
 endif
 
 # generate variables for cmi file of project modules
@@ -69,15 +69,15 @@ endif
 #        modi - internal module name (colon is replaced with dash)
 #        cmi  - cmi name
 modulemap ::= # ensure the simply expanded variable flavor for the output variables
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
+$(foreach line,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
       $(let modi cmi,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
-        $(if $(CXX_MOD_$(modi)_CMI),\
+        $(if $(CXM_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\
-        $(info CXX_MOD_$(modi)_CMI ::= $(cmi))\
-        $(eval CXX_MOD_$$(modi)_CMI ::= $$(cmi))\
+        $(info CXM_MOD_$(modi)_CMI ::= $(cmi))\
+        $(eval CXM_MOD_$$(modi)_CMI ::= $$(cmi))\
         $(eval modulemap += $$(mod);$$(cmi))\
       )\
     )\
@@ -103,14 +103,14 @@ endif
 
 # reqs2cmi - expand all prerequisite modules to cmi file name
 # input: reqs - list of prerequisite modules
-reqs2cmi = $(foreach mod,$(reqs),$(CXX_MOD_$(subst :,-,$(mod))_CMI))
+reqs2cmi = $(foreach mod,$(reqs),$(CXM_MOD_$(subst :,-,$(mod))_CMI))
 
 # template rule for module sources
 # input: src - source file name
 #        obj - object name
 #        dep - depfile name
 #        cmi - cmi file name
-ifeq ($(CXX_MAP_MOD_2_SRC_NAME),)
+ifeq ($(CXM_SIMPLE_MAPPING),)
   define modul_rule_template
   $(info generate module rule $(obj) $(cmi) &: $(src) $(reqs2cmi) module-map.txt)
 
@@ -148,7 +148,7 @@ endef
 modsources ::= # ensure the simply expanded variable flavor for the output variables
 nomodsources ::=
 nomodobjects ::=
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
+$(foreach line,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\
       $(if $(subst -,,$(mod)),\
@@ -175,8 +175,8 @@ $(nomodobjects) : %.o : %.cpp %.dep
 	@echo
 
 # generate rules for module sources
-ifneq ($(CXX_MAP_MOD_2_SRC_NAME),)
-  %.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
+ifneq ($(CXM_SIMPLE_MAPPING),)
+  %.o $(CXM_MODULE_CACHE)/%.gcm :: %.cpp %.dep module-map.txt
 	$(due_to)
 	$(CXX) -o '$(<:.cpp=.o)' '$<' -c -fmodule-mapper=module-map.txt $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
@@ -197,4 +197,4 @@ clean :
 	rm -f *.dep
 	rm -f *.ddi
 	rm -f module-map.txt
-	rm -rf '$(CXX_MODULE_CACHE)'
+	rm -rf '$(CXM_MODULE_CACHE)'

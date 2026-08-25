@@ -114,15 +114,15 @@ Für das o. g. Beispiel werden folgende Abhängigkeits-Fragmente benötigt:
 	# like in the classical case
 	main.o : main.cpp
 	# add prerequisites coming from module imports
-	main.o : $$(CXX_MOD_CMI_module1) $$(CXX_MOD_CMI_module2)
+	main.o : $$(CXM_MOD_CMI_module1) $$(CXM_MOD_CMI_module2)
 
 	//src1.dep
 	# the 'classical' dependencies
 	src1.o gcm.cache/module1.gcm : src1.cpp
 	# add prerequisites comming from module imports
-	src1.o gcm.cache/module1.gcm : $$(CXX_MOD_CMI_module2)
+	src1.o gcm.cache/module1.gcm : $$(CXM_MOD_CMI_module2)
 	# module to CMI file database
-	CXX_MOD_CMI_module1 = gcm.cache/module1.gcm
+	CXM_MOD_CMI_module1 = gcm.cache/module1.gcm
 	# append TU to list of Module Interface Units
 	CXX_MODULE_INTERFACE_UNITS += src1.cpp
 	# append generated CMI file to list
@@ -130,7 +130,7 @@ Für das o. g. Beispiel werden folgende Abhängigkeits-Fragmente benötigt:
 
 	//src2.dep
 	src2.o gcm.cache/module2.gcm : src2.cpp
-	CXX_MOD_CMI_module2 = gcm.cache/module2.gcm
+	CXM_MOD_CMI_module2 = gcm.cache/module2.gcm
 	CXX_MODULE_INTERFACE_UNITS += src2.cpp
 	CXX_CMI_FILES += gcm.cache/module2.gcm
 
@@ -140,7 +140,7 @@ führt Make ein re-start aus bevor die 2. Phase des Build-Prozesses abläuft und
 aktuelle Abhängigkeitsbaum verwendet wird. Siehe: 
 <https://www.gnu.org/software/make/manual/make.html#Remaking-Makefiles>
 
-Da nicht sichergestellt werden kann, dass die Deklarationen der Variablen `CXX_MOD_CMI_<module name>` 
+Da nicht sichergestellt werden kann, dass die Deklarationen der Variablen `CXM_MOD_CMI_<module name>` 
 vor den Rules die sie referenzieren erfolgt, müssen diese Variablen in der *Secondary Expansion* 
 ausgewertet werden. Dazu muss das Target `.SECONDEXPANSION` vor den Dependency-Rules definiert werden.
 Siehe: <https://www.gnu.org/software/make/manual/make.html#Secondary-Expansion>

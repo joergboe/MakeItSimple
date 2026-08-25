@@ -28,7 +28,7 @@ myhelp() {
 	
 	For each translation a line of the following form is emitted:
 
-	        CXX_OBJ_SRC_MOD_IF_REQ_LIST += object;source;provides;is_interface(0/1)[;req1[;req2]]
+	        CXM_OBJ_SRC_MOD_IF_REQ_LIST += object;source;provides;is_interface(0/1)[;req1[;req2]]
 
 	    object: the object file name
 	    source: the source file name
@@ -91,7 +91,7 @@ requires=$(echo "${my_unit}" | jq -r 'if .requires then .requires[].["logical-na
 		fi
 		provides_subst="${provides//:/"-"}"
 	fi
-	echo -n "CXX_OBJ_SRC_MOD_IF_REQ_LIST += ${obj//\$/\$\$};${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
+	echo -n "CXM_OBJ_SRC_MOD_IF_REQ_LIST += ${obj//\$/\$\$};${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
 
 	if [[ -n ${requires} ]]; then
 		for module in ${requires}; do

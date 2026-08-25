@@ -18,8 +18,8 @@ include project.mk
 
 # export variables required in other makefiles
 export SOURCES
-export CXX_SYSTEM_HEADER_UNITS
-export CXX_USER_HEADER_UNITS
+export CXM_SYSTEM_HEADER_UNITS
+export CXM_USER_HEADER_UNITS
 
 # trigger dependent targets
 FORCE :: ;
@@ -85,11 +85,11 @@ clean :
 .PHONY : clean-header-units
 clean-header-units : clean-user-header-units clean-system-header-units
 
-user_unit_mapfiles ::= $(addsuffix .map,$(CXX_USER_HEADER_UNITS))
-user_unit_infofiles ::= $(addsuffix .dep,$(CXX_USER_HEADER_UNITS))
-user_unit_depfiles ::= $(addsuffix .d,$(CXX_USER_HEADER_UNITS))
-user_unit_p1689files ::= $(addsuffix .ddi,$(CXX_USER_HEADER_UNITS))
-user_unit_p1689files2 ::= $(addsuffix .ddi2,$(CXX_USER_HEADER_UNITS))
+user_unit_mapfiles ::= $(addsuffix .map,$(CXM_USER_HEADER_UNITS))
+user_unit_infofiles ::= $(addsuffix .dep,$(CXM_USER_HEADER_UNITS))
+user_unit_depfiles ::= $(addsuffix .d,$(CXM_USER_HEADER_UNITS))
+user_unit_p1689files ::= $(addsuffix .ddi,$(CXM_USER_HEADER_UNITS))
+user_unit_p1689files2 ::= $(addsuffix .ddi2,$(CXM_USER_HEADER_UNITS))
 user_unit_tmpfiles ::= $(addsuffix ~,$(user_unit_infofiles))
 
 .PHONY : clean-user-header-units
@@ -104,11 +104,11 @@ clean-user-header-units :
 	rm -f $(user_unit_p1689files2)
 	@echo
 
-sys_unit_mapfiles ::= $(addsuffix .map,$(CXX_SYSTEM_HEADER_UNITS))
-sys_unit_infofiles ::= $(addsuffix .dep,$(CXX_SYSTEM_HEADER_UNITS))
-sys_unit_depfiles ::= $(addsuffix .d,$(CXX_SYSTEM_HEADER_UNITS))
-sys_unit_p1689files ::= $(addsuffix .ddi,$(CXX_SYSTEM_HEADER_UNITS))
-sys_unit_p1689files2 ::= $(addsuffix .ddi2,$(CXX_SYSTEM_HEADER_UNITS))
+sys_unit_mapfiles ::= $(addsuffix .map,$(CXM_SYSTEM_HEADER_UNITS))
+sys_unit_infofiles ::= $(addsuffix .dep,$(CXM_SYSTEM_HEADER_UNITS))
+sys_unit_depfiles ::= $(addsuffix .d,$(CXM_SYSTEM_HEADER_UNITS))
+sys_unit_p1689files ::= $(addsuffix .ddi,$(CXM_SYSTEM_HEADER_UNITS))
+sys_unit_p1689files2 ::= $(addsuffix .ddi2,$(CXM_SYSTEM_HEADER_UNITS))
 sys_unit_tmpfiles ::= $(addsuffix ~,$(sys_unit_infofiles))
 
 .PHONY : clean-system-header-units

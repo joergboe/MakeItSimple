@@ -4,7 +4,7 @@
 # * The depfile substitutes all legacy header dependencies of the translation unit.
 # * The rules for module related dependencies are all generated from make. The depfiles contain the
 #   rule for the legacy header dependencies and the variable with the module dependencies in CSV style.
-#   The CXX_OBJ_SRC_MOD_IF_REQ_LIST list now contains:
+#   The CXM_OBJ_SRC_MOD_IF_REQ_LIST list now contains:
 #       <primary output; source; module-provided; is-interface[; module-required[...]]>
 #
 # --------------------------------------------------------------------------
@@ -28,18 +28,18 @@ else
   cmi_mapper = modulecache/$2.gcm
 endif
 
-# include the provided modules database: CXX_SRC_MOD_IF_LIST
+# include the provided modules database: CXM_SRC_MOD_IF_LIST
 dbmfiles ::= $(sources:.cpp=.depm)
 include $(dbmfiles)
 
-# provide required module variables CXX_MOD_module_required_CMI
+# provide required module variables CXM_MOD_module_required_CMI
 # provide module map, modsources and nomodsources
 # let provides the local variables: obj, src, mod, is_if, modi and cmi
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
+$(foreach line,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
       $(let modi cmi,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
-        $(eval CXX_MOD_$(modi)_CMI ::= $(cmi))\
+        $(eval CXM_MOD_$(modi)_CMI ::= $(cmi))\
         $(eval modulemap += $(mod);$(cmi))\
       )\
     )\
@@ -54,7 +54,7 @@ endif
 
 # reqs2cmi - expand all prerequisite modules to cmi file name
 # input: reqs - list of prerequisite modules
-reqs2cmi = $(foreach mod,$(reqs),$(CXX_MOD_$(subst :,-,$(mod))_CMI))
+reqs2cmi = $(foreach mod,$(reqs),$(CXM_MOD_$(subst :,-,$(mod))_CMI))
 
 ifeq ($(CXX_SIMPLE_MAPPING),)
 define
@@ -77,7 +77,7 @@ endef
 # generate rules for all translation units
 # provide modsources and nomodsources
 # let provides the local variables: obj, src, mod, is_if, dep, modreg and cmi
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
+$(foreach line,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\
       $(if $(subst -,,$(mod)),\
@@ -112,7 +112,7 @@ $(TARGET) : $(objects)
 
 # *** Structure of dependency file (%.dep) ***
 # The dependency file contains the makfile rules for the translation unit and contains the information about provide
-# module in form of a variable with a CSV record. The CXX_OBJ_SRC_MOD_IF_REQ_LIST lists:
+# module in form of a variable with a CSV record. The CXM_OBJ_SRC_MOD_IF_REQ_LIST lists:
 #    primary output; source; module-provided; is-interface[; module-required[...]]
 
 # (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
@@ -122,10 +122,10 @@ $(TARGET) : $(objects)
 # (1)
 src.dep : src.cpp header.h ...
 # (2)
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;module-provided;1;module-required[; ...]
+CXM_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;module-provided;1;module-required[; ...]
 
 # Non Module Units
 # (1)
 src.dep : src.cpp header.h ...
 # (3)
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;-;0
+CXM_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;-;0

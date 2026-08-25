@@ -1,8 +1,8 @@
 # This makefile generates cmi files for header units with automatic dependency generation
 # and uses the CXX_UNIT_OBJ_SRC_MOD_IF_REQ_LIST schema.
 
-# With variable KIND=SYSTEM system header units are build and the names are expected in variable CXX_SYSTEM_HEADER_UNITS
-# With variable KIND=USER user header units are build and the names are expected in variable CXX_USER_HEADER_UNITS
+# With variable KIND=SYSTEM system header units are build and the names are expected in variable CXM_SYSTEM_HEADER_UNITS
+# With variable KIND=USER user header units are build and the names are expected in variable CXM_USER_HEADER_UNITS
 
 # Requires that the file header-info-$(kind) with header name and source info exists.
 # Makes a separate dep scan -restart cycle.

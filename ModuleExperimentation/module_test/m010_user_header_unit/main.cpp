@@ -5,8 +5,8 @@
 
 #define MAIN 55
 
-//#include "headers/header1.h"
-import "headers/header1.h";
+//#include "include/header1.h"
+import "include/header1.h";
 
 int main(int, const char**) {
 	std::cout << greeting() << std::endl;

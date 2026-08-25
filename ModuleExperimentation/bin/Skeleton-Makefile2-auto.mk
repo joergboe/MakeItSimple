@@ -20,7 +20,7 @@ else
   cmi_mapper = modulecache/$2.gcm
 endif
 
-# include the provided modules database: CXX_SRC_MOD_IF_LIST
+# include the provided modules database: CXM_SRC_MOD_IF_LIST
 dbmfiles ::= $(sources:.cpp=.depm)
 include $(dbmfiles)
 
@@ -39,15 +39,15 @@ else
   modul_rule_template = # rule is provided as Pattern Rule
 endif
 
-# provide required module variables CXX_MOD_module_required_CMI
+# provide required module variables CXM_MOD_module_required_CMI
 # generate rules + recipes for translation units providing a module
 # provide module map, modsources and nomodsources
 # let provides the local variables: src, mod, is_if, obj, dep, modi and cmi
-$(foreach line,$(CXX_SRC_MOD_IF_LIST),\
+$(foreach line,$(CXM_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
       $(let obj dep modi cmi,$(src:.cpp=.o) $(src:.cpp=.dep) $(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
-        $(eval CXX_MOD_$(modi)_CMI ::= $(mcmi))\
+        $(eval CXM_MOD_$(modi)_CMI ::= $(mcmi))\
         $(eval modsources += $(src))\
         $(eval $(modul_rule_template))\
         $(eval modulemap += $(mod);$(cmi))\
@@ -64,7 +64,7 @@ ifne(...)
   $(file > module-map.txt,...)
 endif
 
-# include all depfiles after definition of all CXX_MOD_module_CMI variables
+# include all depfiles after definition of all CXM_MOD_module_CMI variables
 # depfiles also require cmi_mapper function
 depfiles ::= $(sources:.cpp=.dep)
 include $(depfiles)
@@ -88,7 +88,7 @@ $(TARGET) : $(objects)
 
 # *** Structure of dependency file (%.dep) ***
 # The dependency file contains the makfile rules for the translation unit and contains the information about provide
-# module in form of a variable. The CXX_SRC_MOD_IF_LIST lists:
+# module in form of a variable. The CXM_SRC_MOD_IF_LIST lists:
 #    primary output; source; module-provided; is-interface
 
 # (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
@@ -99,14 +99,14 @@ $(TARGET) : $(objects)
 # (1)
 src.dep : src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
+src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXM_MOD_module_required_CMI) ...
 # (3)
-CXX_SRC_MOD_IF_LIST += src.cpp;module;1
+CXM_SRC_MOD_IF_LIST += src.cpp;module;1
 
 # Non Module Units
 # (1)
 src.dep : src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-src1.o : $(CXX_MOD_module_required_CMI) ...
+src1.o : $(CXM_MOD_module_required_CMI) ...
 # (3)
-CXX_SRC_MOD_IF_LIST += src.cpp;-;0
+CXM_SRC_MOD_IF_LIST += src.cpp;-;0

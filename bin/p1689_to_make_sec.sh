@@ -32,18 +32,18 @@ myhelp() {
 	module dependencies in makefile format to 'depfile'.
 	Escape prerequisites for secondary expansion.
 
-	Every imported module is represented by a variable CXX_MOD_modulname_CMI.
+	Every imported module is represented by a variable CXM_MOD_modulname_CMI.
 	The CMI-file-name for a given module must be provided from a translation
 	unit that exports the module.
 	The module dependency rule for a translation unit that imports modules has
 	the form:
 	
-	        object : \${CXX_MOD_module1_CMI} \${CXX_MOD_module2_CMI}...
+	        object : \${CXM_MOD_module1_CMI} \${CXM_MOD_module2_CMI}...
 
 	For each translation unit that exports a module, a triple of the following
 	form is emitted:
 
-	        CXX_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
+	        CXM_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
 
 	A colon in a module name (module partitions) is replaced by a dash. Dollar
 	symbols in names are replaced by two dollar symbols.
@@ -153,7 +153,7 @@ if [[ -n ${requires} ]]; then
 		echo -n "${obj} :"
 		for module in ${requires}; do
 			module_subst="${module//:/"-"}" # replace : with in module names
-			echo -n " \$\$(CXX_MOD_${module_subst//\$/\$\$\$\$}_CMI)"
+			echo -n " \$\$(CXM_MOD_${module_subst//\$/\$\$\$\$}_CMI)"
 		done
 		echo
 	} >> "${dep}"
@@ -167,7 +167,7 @@ if [[ -n ${provides} ]]; then
 			is_if=1
 		fi
 		provides_subst="${provides//:/"-"}"
-		echo "CXX_SRC_MOD_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
+		echo "CXM_SRC_MOD_IF_LIST += ${src//\$/\$\$};${provides_subst//\$/\$\$};${is_if}"
 	} >> "${dep}"
 fi
 

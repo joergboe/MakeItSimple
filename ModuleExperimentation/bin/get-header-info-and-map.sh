@@ -36,7 +36,7 @@ myhelp() {
 
 	The output in one line of the form:
 
-	        CXX_UNIT_SRC_MOD_CMI_KIND_LIST += <unit name>;<source name>;<logical module>;<cmi name>;<kind>
+	        CXM_UNIT_SRC_MOD_CMI_KIND_LIST += <unit name>;<source name>;<logical module>;<cmi name>;<kind>
 
 	    unit name      : The unit name from command line
 	    source name    : The source file name from the first prerequisite in depfile
@@ -143,7 +143,7 @@ fi
 [ -z ${verbose} ] || echo "cmi='${cmi}'"
 
 # write variables to out
-echo "CXX_UNIT_SRC_MOD_CMI_KIND_LIST += ${unit//\$/\$\$};${src//\$/\$\$};${logname//\$/\$\$};${cmi//\$/\$\$};${kind}" \
+echo "CXM_UNIT_SRC_MOD_CMI_KIND_LIST += ${unit//\$/\$\$};${src//\$/\$\$};${logname//\$/\$\$};${cmi//\$/\$\$};${kind}" \
 	> "${out}"
 
 [ -z ${verbose} ] || echo "Done ${out}"

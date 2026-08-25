@@ -195,21 +195,21 @@ p1689files ::= $(depfiles:.dep=.ddi)
 module_db ::= module-variables.mk
 
 ifdef use_clang
-  system_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_SYSTEM_HEADER_UNITS)))
-  user_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_USER_HEADER_UNITS)))
+  system_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXM_SYSTEM_HEADER_UNITS)))
+  user_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXM_USER_HEADER_UNITS)))
   system_header_file_args ::= $(foreach var,$(system_header_targets),-fmodule-file='$(var)')
   user_header_file_args ::= $(foreach var,$(user_header_targets),-fmodule-file='$(var)')
   header_file_args ::= $(system_header_file_args) $(user_header_file_args)
 else
-  system_header_targets ::= $(addsuffix _target,$(CXX_SYSTEM_HEADER_UNITS))
-  user_header_targets ::= $(addsuffix _target,$(CXX_USER_HEADER_UNITS))
+  system_header_targets ::= $(addsuffix _target,$(CXM_SYSTEM_HEADER_UNITS))
+  user_header_targets ::= $(addsuffix _target,$(CXM_USER_HEADER_UNITS))
 endif
 
 # prevent implicit rules search for makefiles
 .PHONY: $(makefile_defs) $(makefile_this)
 
 # Include required variables
-CXX_SRC_MOD_IF_LIST ::=
+CXM_SRC_MOD_IF_LIST ::=
 ifdef FILE_MOD_DB
   ifndef not_include_deps
     include $(builddir_int)$(module_db)
@@ -234,8 +234,8 @@ ifndef silent
   $(info Build target       : '$(bindir_int)$(TARGET)')
   $(info From sources       : $(call singl_quote,$(sources_int)))
   $(info In directories     : $(call singl_quote,$(srcdirs_int)))
-  $(info Sytem Header Units : $(CXX_SYSTEM_HEADER_UNITS))
-  $(info User Header Units  : $(CXX_USER_HEADER_UNITS))
+  $(info Sytem Header Units : $(CXM_SYSTEM_HEADER_UNITS))
+  $(info User Header Units  : $(CXM_USER_HEADER_UNITS))
   ifdef FILE_MOD_DB
     $(info Build module database in file $(module_db))
 else
@@ -254,8 +254,8 @@ else
     ifdef FILE_MOD_DB
       $(info Module database file : $(module_db))
     endif
-    $(info CXX_SRC_MOD_IF_LIST:)
-    $(call pp_src-mod-is_if,$(CXX_SRC_MOD_IF_LIST))
+    $(info CXM_SRC_MOD_IF_LIST:)
+    $(call pp_src-mod-is_if,$(CXM_SRC_MOD_IF_LIST))
     $(info MAKE_TERMOUT : $(MAKE_TERMOUT) MAKE_TERMERR : $(MAKE_TERMERR))
     $(info MAKE_VERSION : $(MAKE_VERSION))
     $(if $(use_gcc),$(info Use gcc))
@@ -347,7 +347,7 @@ endif
 #        mod - module name
 #        is_if - is interface (0/1)
 define module_variables
-  CXX_MOD_$(mod)_CMI ::= $(cxx_module_mapper)
+  CXM_MOD_$(mod)_CMI ::= $(cxx_module_mapper)
   modules += $(mod)
   modsrcs += $(src)
   $(if $(call neq,$(is_if),0),mod_if_units += $(src))
@@ -362,7 +362,7 @@ make_module_artifacts = $(foreach line,$1,\
     $(if $(silent),,$(info Module '$(mod)' : Generate Module Rule $(src).o $(cxx_module_mapper) &: $(src) $(src).dep))\
     $(if $(and $(src),$(mod),$(is_if)),\
       ,\
-      $(error Inconsistent CXX_SRC_MOD_IF_LIST : '$(src)' '$(mod)' '$(is_if)')\
+      $(error Inconsistent CXM_SRC_MOD_IF_LIST : '$(src)' '$(mod)' '$(is_if)')\
     )\
     $(if $(filter $(mod),$(modules)),\
       $(warning Duplicate module name '$(mod)' in source '$(src)')\
@@ -373,7 +373,7 @@ make_module_artifacts = $(foreach line,$1,\
 )
 
 # Escape module db for eval
-escaped_src_mod_if_list ::= $(subst $$,$$$$,$(CXX_SRC_MOD_IF_LIST))
+escaped_src_mod_if_list ::= $(subst $$,$$$$,$(CXM_SRC_MOD_IF_LIST))
 
 # Generate module rules and variables
 modules ::=
@@ -386,14 +386,14 @@ nomodobjs ::= $(call add_dir_prefix,$(builddir_int),$(addsuffix .o,$(nomodsrcs))
 
 ifndef silent
   $(info )
-  ifdef CXX_SRC_MOD_IF_LIST
+  ifdef CXM_SRC_MOD_IF_LIST
     $(info Module units            : $(foreach x,$(sort $(modsrcs)),'$(x)'))
     $(info Module interface units  : $(foreach x,$(sort $(mod_if_units)),'$(x)'))
     $(info Module names (internal) : $(foreach x,$(sort $(modules)),'$(x)'))
     $(info Not a module            : $(foreach x,$(sort $(nomodsrcs)),'$(x)'))
     ifdef verbose
-      $(info Modulname to CMI-file database (CXX_MOD_<module name>_CMI))
-      $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MOD_$(mod)_CMI)))
+      $(info Modulname to CMI-file database (CXM_MOD_<module name>_CMI))
+      $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXM_MOD_$(mod)_CMI)))
     endif
   else
     $(info No modules)

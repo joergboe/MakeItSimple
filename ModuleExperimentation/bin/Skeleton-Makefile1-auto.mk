@@ -1,6 +1,6 @@
 # Skeleton Makefile1-auto.mk
 
-# * Variables are used to express the module dependencies in prerequisites. A variable like CXX_MOD_modulname_CMI
+# * Variables are used to express the module dependencies in prerequisites. A variable like CXM_MOD_modulname_CMI
 #   substitutes the CMI file name by the module name. These database variables are defined in front of the dependency
 #   rules.
 #
@@ -12,13 +12,13 @@
 #
 # * The dependency file 2 (dbmfiles - %.depm) contains information about provided module of the translation unit and
 #   is based on structured dependency information (%.ddi).
-#   The CXX_SRC_MOD_IF_LIST list contains a triple <primary output; source; module-provided; is-interface> for
+#   The CXM_SRC_MOD_IF_LIST list contains a triple <primary output; source; module-provided; is-interface> for
 #   each translation unit.
 #
 # * If one of the dependency or database files is updated, Make is restarted and the dependency tree is rebuilt using
 #   current data.
 #
-# * The variables CXX_MOD_modulname_CMI are defined based on variable CXX_SRC_MOD_IF_LIST.
+# * The variables CXM_MOD_modulname_CMI are defined based on variable CXM_SRC_MOD_IF_LIST.
 #
 # * A file with the mapping of module name to CMI filename is generated and stored in file 'module-map.txt'
 #
@@ -48,7 +48,7 @@ else
   cmi_mapper = modulecache/$2.gcm
 endif
 
-# include the provided modules database: CXX_SRC_MOD_IF_LIST
+# include the provided modules database: CXM_SRC_MOD_IF_LIST
 dbmfiles ::= $(sources:.cpp=.depm)
 include $(dbmfiles)
 
@@ -66,15 +66,15 @@ else
 modul_rule_template = # rule is provided as Pattern Rule
 endif
 
-# provide required module variables CXX_MOD_module_required_CMI
+# provide required module variables CXM_MOD_module_required_CMI
 # generate rules + recipes for translation units providing a module
 # provide module map, modsources and nomodsources
 # let provides the local variables: src, mod, is_if, obj, modi and cmi
-$(foreach line,$(CXX_SRC_MOD_IF_LIST),\
+$(foreach line,$(CXM_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
       $(let obj modi cmi,$(src:.cpp=.o) $(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
-        $(eval CXX_MOD_$(modi)_CMI ::= $(cmi))\
+        $(eval CXM_MOD_$(modi)_CMI ::= $(cmi))\
         $(eval modsources += $(src))\
         $(eval $(modul_rule_template))\
         $(eval modulemap += $(mod);$(cmi))\
@@ -91,7 +91,7 @@ ifne(...)
   $(file > module-map.txt,...)
 endif
 
-# include all depfiles after definition of all CXX_MOD_module_CMI variables
+# include all depfiles after definition of all CXM_MOD_module_CMI variables
 # depfiles also require cmi_mapper function
 depfiles ::= $(sources:.cpp=.dep)
 include $(depfiles)
@@ -122,22 +122,22 @@ $(TARGET) : $(objects)
 # (1)
 src.o $(call cmi_mapper,module_provided,src.cpp) src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
+src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXM_MOD_module_required_CMI) ...
 
 # Non Module Units
 # (1)
 src.o src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-src1.o : $(CXX_MOD_module_required_CMI) ...
+src1.o : $(CXM_MOD_module_required_CMI) ...
 
 # *** Structure of module database file (%.depm) ***
 # contains the information about provided module in form of a variable
-# The CXX_SRC_MOD_IF_LIST lists:
+# The CXM_SRC_MOD_IF_LIST lists:
 #    primary output; source; module-provided; is-interface
 
 # Module Units
-CXX_SRC_MOD_IF_LIST += src.cpp;module;1
+CXM_SRC_MOD_IF_LIST += src.cpp;module;1
 
 # Non Module Units
-CXX_SRC_MOD_IF_LIST += src.cpp;-;0
+CXM_SRC_MOD_IF_LIST += src.cpp;-;0
 

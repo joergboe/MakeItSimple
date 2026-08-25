@@ -2,8 +2,8 @@
 # and uses the CXX_UNIT_OBJ_SRC_MOD_IF_REQ_LIST schema.
 # Each header unit is translated independently and auto import is disabled.
 
-# With variable KIND=SYSTEM system header units are build and the names are expected in variable CXX_SYSTEM_HEADER_UNITS
-# With variable KIND=USER user header units are build and the names are expected in variable CXX_USER_HEADER_UNITS
+# With variable KIND=SYSTEM system header units are build and the names are expected in variable CXM_SYSTEM_HEADER_UNITS
+# With variable KIND=USER user header units are build and the names are expected in variable CXM_USER_HEADER_UNITS
 
 # The first step generates the 'infofiles' with information module name and source name.
 # For header units the module name depends only on the storage location and the header file name, thus the
