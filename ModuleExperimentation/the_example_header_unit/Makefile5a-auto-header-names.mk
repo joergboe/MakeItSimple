@@ -1,7 +1,7 @@
 # This makefile generates info files for header units and uses the CXX_UNIT_OBJ_SRC_MOD_IF_REQ_LIST schema.
 
-# KIND=SYSTEM : build system header units infofiles are build and the names are expected in variable CXM_SYSTEM_HEADER_UNITS
-# KIND=USER user header units infofiles are build and the names are expected in variable CXM_USER_HEADER_UNITS
+# KIND=SYSTEM : build system header units infofiles are build and the names are expected in variable CXX_SYSTEM_HEADER_UNITS
+# KIND=USER user header units infofiles are build and the names are expected in variable CXX_USER_HEADER_UNITS
 
 # Required: dep_2_src.sh
 

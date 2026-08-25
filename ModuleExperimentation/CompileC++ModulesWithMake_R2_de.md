@@ -133,7 +133,7 @@ Zirkularität im Abhängigkeitsbaum erkannt wird und beendet die Abhängigkeitsa
 GCC kann Dateien erzeugen die, ähnlich wie im klassischen Fall den Abhängigkeitsbaum beschreiben. 
 Die erzeugten Dependency-Dateien müssen zusätzlich zu den herkömmlichen Header-Abhängigkeiten, die 
 Abhängigkeiten von den CMI-Dateien der importierten Module enthalten. Der Speicherort der CMI-Dateien 
-kann variieren, daher wird diese Abhängigkeit als Variable der Form `CXM_MOD_<module name>_CMI` 
+kann variieren, daher wird diese Abhängigkeit als Variable der Form `CXX_MOD_<module name>_CMI` 
 zum Ausdruck gebracht. Der Wert der Variable wird im Make-Script ermittelt.
 
 Für Modulpartitionen werden Namen verwendet, die einen Doppelpunkt enthalten. Doppelpunkte haben für 
@@ -149,12 +149,12 @@ in Variablennamen verwendet werden.
 Außerdem müssen die Dependency-Dateien Informationen bereitstellen, die vom Quelldateinamen auf 
 den enthaltenen Modulnamen schließen lassen. Dazu wird eine Liste erzeugt, die für jede Modulquelle 
 ein Tripel aus Quelldateiname, Modulname und einen boolschen Wert 'is_interface' enthält 
-(`CXM_SRC_MOD_IF_LIST`). Die Teile des Tripels werden durch Semikolon getrennt. Ein Semikolon 
+(`CXX_SRC_MOD_IF_LIST`). Die Teile des Tripels werden durch Semikolon getrennt. Ein Semikolon 
 darf weder in einem Modulnamen noch in einem Dateinamen erscheinen. Auch hier muss ein 
 Doppelpunkt im Modulnamen durch einen einfachen Strich und das Dollarsymbol durch zwei 
 Dollarsymbole ersetzt werden.
 
-Da nicht sichergestellt werden kann, dass die Deklarationen der Variablen `CXM_MOD_<module name>_CMI` 
+Da nicht sichergestellt werden kann, dass die Deklarationen der Variablen `CXX_MOD_<module name>_CMI` 
 vor den Regeln die sie benötigen erfolgt, müssen diese Variablen in der Secondary Expansion 
 ausgewertet werden. Dazu muss das Target `.SECONDEXPANSION` vor den Abhängigkeitsregeln 
 definiert werden.
@@ -164,20 +164,20 @@ Die Abhängigkeitsregeln für das Beispiel:
 
 	//main.dep
 	main.o : main.cpp header2.h
-	main.o : $$(CXM_MOD_module1_CMI) $$(CXM_MOD_module2_CMI)
+	main.o : $$(CXX_MOD_module1_CMI) $$(CXX_MOD_module2_CMI)
 
 	//src1.dep
 	src1.o : src1.cpp header1.h
-	src1.o : $$(CXM_MOD_module2_CMI)
-	CXM_SRC_MOD_IF_LIST += src1.cpp;module1;1
+	src1.o : $$(CXX_MOD_module2_CMI)
+	CXX_SRC_MOD_IF_LIST += src1.cpp;module1;1
 
 	//src2.dep
 	src2.o : src2.cpp header2.h
-	CXM_SRC_MOD_IF_LIST += src2.cpp;module2;1
+	CXX_SRC_MOD_IF_LIST += src2.cpp;module2;1
 
 	//automatic generated definitions
-	CXM_MOD_module1_CMI = gcm.cache/module1.gcm
-	CXM_MOD_module2_CMI = gcm.cache/module2.gcm
+	CXX_MOD_module1_CMI = gcm.cache/module1.gcm
+	CXX_MOD_module2_CMI = gcm.cache/module2.gcm
 	modsources = src1.cpp src2.cpp
 
 Die Voraussetzungen sind hier nur für die Objektdateien aufgelistet. Da für die Produktion der 
@@ -236,7 +236,7 @@ nicht durch Mustersubstitution hergestellt werden kann, können keine Musterrege
 für die Module-Units benutzt werden. Hier werden Gruppierte-Ziele-Regeln durch 
 die `eval` Funktion in einer Schleife erzeugt.
 
-Die Liste `CXM_SRC_MOD_IF_LIST` wird benutzt um alle Gruppierte-Ziele-Regeln 
+Die Liste `CXX_SRC_MOD_IF_LIST` wird benutzt um alle Gruppierte-Ziele-Regeln 
 zur Übersetzung der Moduldateien zu erzeugen und um die Verknüpfung von Modulname zu 
 CMI-File aufzulösen. Wenn ein spezielles Mapping der CMI-Dateien gewünscht ist, kann das 
 an dieser Stelle verwirklicht werden. Das Beispiel verwendet die Standardzuordnung.
@@ -247,10 +247,10 @@ an dieser Stelle verwirklicht werden. Das Beispiel verwendet die Standardzuordnu
 		g++ -o $(src:.cpp=.o) $(src) -c -std=c++20 -fmodules
 	endef
 
-	$(foreach line,$(CXM_SRC_MOD_IF_LIST),\
+	$(foreach line,$(CXX_SRC_MOD_IF_LIST),\
 		$(let src mod is_if,$(subst ;, ,$(line)),\
 			$(eval $(modul_rule_template))\
-			$(eval CXM_MOD_$(mod)_CMI = gcm.cache/$(mod).gcm)\
+			$(eval CXX_MOD_$(mod)_CMI = gcm.cache/$(mod).gcm)\
 			$(eval modsources += $(src))\
 		)\
 	)

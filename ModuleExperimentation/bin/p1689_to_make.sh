@@ -31,23 +31,23 @@ myhelp() {
 
 	1) Detect module dependencies for a translation unit in 'input' and append the
 	module prerequisites in makefile format to 'depfile'. Modules are represented by a variable
-	like CXM_MOD_modulname_CMI.
+	like CXX_MOD_modulname_CMI.
 	The CMI-file-name for a given module must be provided by the make-script.
 	The module dependency rule for a translation unit that imports modules has
 	the form:
-	        object : \$(CXM_MOD_require1_CMI) \$(CXM_MOD_require2_CMI)...
+	        object : \$(CXX_MOD_require1_CMI) \$(CXX_MOD_require2_CMI)...
 	If the translation unit provides a module:
-	        object \$(call cmi_mapper,module,source) : \$(CXM_MOD_require1_CMI) \$(CXM_MOD_require2_CMI)...
+	        object \$(call cmi_mapper,module,source) : \$(CXX_MOD_require1_CMI) \$(CXX_MOD_require2_CMI)...
 	Dollar symbols in names are replaced by two dollar symbols.
-	In variables CXM_MOD_require1_CMI a colon in the required module name (module partitions) is replaced
+	In variables CXX_MOD_require1_CMI a colon in the required module name (module partitions) is replaced
 	by a dash and dollar symbols are replaced by two dollar symbols.
 
 	2) Dump the module dependency database in makefile format from all input files to 'mdbfile'
 	For each translation unit that provides a module, a triple of the following
 	form is emitted:
-	        CXM_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
+	        CXX_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
 	For a non module translation unit, the following triple is emitted:
-	        CXM_SRC_MOD_IF_LIST += source;-;0
+	        CXX_SRC_MOD_IF_LIST += source;-;0
 	Dollar symbols in names are replaced by two dollar symbols.
 
 	EOF
@@ -141,7 +141,7 @@ if [[ -n ${requires} ]]; then
 		echo -n " :"
 		for module in ${requires}; do
 			module_subst="${module//:/"-"}" # Make prohibits colons in variable names.
-			echo -n " \$(CXM_MOD_${module_subst//\$/\$\$}_CMI)"
+			echo -n " \$(CXX_MOD_${module_subst//\$/\$\$}_CMI)"
 		done
 		echo
 	} >> "${dep}"
@@ -150,9 +150,9 @@ fi
 # dump provided module to mdbfile
 {
 	if [[ -z ${provides} ]]; then
-		echo "CXM_SRC_MOD_IF_LIST += ${src_escaped//#/\\#};-;0" # in assignment hash mark must be quoted
+		echo "CXX_SRC_MOD_IF_LIST += ${src_escaped//#/\\#};-;0" # in assignment hash mark must be quoted
 	else
-		echo "CXM_SRC_MOD_IF_LIST += ${src_escaped//#/\\#};${provides};${is_if}" # provides should not contain #
+		echo "CXX_SRC_MOD_IF_LIST += ${src_escaped//#/\\#};${provides};${is_if}" # provides should not contain #
 	fi
 } > "${mbf}"
 

@@ -32,8 +32,8 @@ my_program :
 include project.mk
 
 # export variables required in header makefiles
-export CXM_SYSTEM_HEADER_UNITS
-export CXM_USER_HEADER_UNITS
+export CXX_SYSTEM_HEADER_UNITS
+export CXX_USER_HEADER_UNITS
 
 # macro to display information
 due_to = @echo 'Run target $@ - Due to $?'

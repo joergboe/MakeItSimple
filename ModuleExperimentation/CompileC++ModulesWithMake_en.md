@@ -113,15 +113,15 @@ The following dependency fragments are required for the above example:
 	# like in the classical case
 	main.o : main.cpp
 	# add prerequisites coming from module imports
-	main.o : $$(CXM_MOD_CMI_module1) $$(CXM_MOD_CMI_module2)
+	main.o : $$(CXX_MOD_CMI_module1) $$(CXX_MOD_CMI_module2)
 
 	//src1.dep
 	# the 'classical' dependencies
 	src1.o gcm.cache/module1.gcm : src1.cpp
 	# add prerequisites comming from module imports
-	src1.o gcm.cache/module1.gcm : $$(CXM_MOD_CMI_module2)
+	src1.o gcm.cache/module1.gcm : $$(CXX_MOD_CMI_module2)
 	# module to CMI file database
-	CXM_MOD_CMI_module1 = gcm.cache/module1.gcm
+	CXX_MOD_CMI_module1 = gcm.cache/module1.gcm
 	# append TU to list of Module Interface Units
 	CXX_MODULE_INTERFACE_UNITS += src1.cpp
 	# append generated CMI file to list
@@ -129,7 +129,7 @@ The following dependency fragments are required for the above example:
 
 	//src2.dep
 	src2.o gcm.cache/module2.gcm : src2.cpp
-	CXM_MOD_CMI_module2 = gcm.cache/module2.gcm
+	CXX_MOD_CMI_module2 = gcm.cache/module2.gcm
 	CXX_MODULE_INTERFACE_UNITS += src2.cpp
 	CXX_CMI_FILES += gcm.cache/module2.gcm
 
@@ -138,7 +138,7 @@ in the Makefile. If the files do not exist or if their contents change, Make exe
 the second phase of the build process and ensures that the current dependency tree is used. See:
 <https://www.gnu.org/software/make/manual/make.html#Remaking-Makefiles>
 
-Since it cannot be guaranteed that the variable `CXM_MOD_CMI_<module name>` is declared before the rules 
+Since it cannot be guaranteed that the variable `CXX_MOD_CMI_<module name>` is declared before the rules 
 that require it, these variables must be evaluated in the *Secondary Expansion*. To do this, the target 
 `.SECONDEXPANSION` must be defined before the dependency rules.
 See: <https://www.gnu.org/software/make/manual/make.html#Secondary-Expansion>

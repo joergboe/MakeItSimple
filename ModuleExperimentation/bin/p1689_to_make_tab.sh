@@ -27,7 +27,7 @@ myhelp() {
 	
 	For each translation a line of the following form is emitted:
 
-	        CXM_OBJ_SRC_MOD_IF_REQ_LIST += object;source;provides;is_interface(0/1)[;req1[;req2]]
+	        CXX_OBJ_SRC_MOD_IF_REQ_LIST += object;source;provides;is_interface(0/1)[;req1[;req2]]
 
 	    object: the object file name
 	    source: the source file name
@@ -101,7 +101,7 @@ obj_esc="${obj//\$/\$\$}"
 {
 	# in assignment hash mark must be quoted
 	# provides and requires should not contain #
-	echo -n "CXM_OBJ_SRC_MOD_IF_REQ_LIST += ${obj_esc//#/\\#};${src_esc//#/\\#};${provides};${is_if}"
+	echo -n "CXX_OBJ_SRC_MOD_IF_REQ_LIST += ${obj_esc//#/\\#};${src_esc//#/\\#};${provides};${is_if}"
 
 	if [[ -n ${requires} ]]; then
 		for module in ${requires}; do

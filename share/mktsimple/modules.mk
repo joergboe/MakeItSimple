@@ -1,7 +1,7 @@
 # C++ Modules (standard modules) with g++ or clang++; one step compilation with
 # immediately generated module db
 
-# Module dependencies expressed in generated rules. (CXM_OBJ_SRC_MOD_IF_REQ_LIST schema)
+# Module dependencies expressed in generated rules. (CXX_OBJ_SRC_MOD_IF_REQ_LIST schema)
 
 min_make_version = 4.4.1
 ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
@@ -196,21 +196,21 @@ p1689files ::= $(depfiles:.dep=.ddi)
 module_db ::= module-variables.mk
 
 ifdef use_clang
-  system_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXM_SYSTEM_HEADER_UNITS)))
-  user_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXM_USER_HEADER_UNITS)))
+  system_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_SYSTEM_HEADER_UNITS)))
+  user_header_targets ::= $(addprefix $(CXX_MODULE_CACHE_DIR)/,$(addsuffix .pcm,$(CXX_USER_HEADER_UNITS)))
   system_header_file_args ::= $(foreach var,$(system_header_targets),-fmodule-file='$(var)')
   user_header_file_args ::= $(foreach var,$(user_header_targets),-fmodule-file='$(var)')
   header_file_args ::= $(system_header_file_args) $(user_header_file_args)
 else
-  system_header_targets ::= $(addsuffix _target,$(CXM_SYSTEM_HEADER_UNITS))
-  user_header_targets ::= $(addsuffix _target,$(CXM_USER_HEADER_UNITS))
+  system_header_targets ::= $(addsuffix _target,$(CXX_SYSTEM_HEADER_UNITS))
+  user_header_targets ::= $(addsuffix _target,$(CXX_USER_HEADER_UNITS))
 endif
 
 # prevent implicit rules search for makefiles
 .PHONY: $(makefile_defs) $(makefile_this)
 
 # Include required variables
-CXM_OBJ_SRC_MOD_IF_REQ_LIST ::=
+CXX_OBJ_SRC_MOD_IF_REQ_LIST ::=
 ifndef not_include_deps
   include $(depfiles)
 endif
@@ -240,8 +240,8 @@ ifndef silent
     $(info This makefile        : '$(makefile_this)')
     $(info Sytem Header Targets : $(system_header_targets))
     $(info User Header Targets  : $(user_header_targets))
-    $(info CXM_OBJ_SRC_MOD_IF_REQ_LIST:)
-    $(call pp_src-mod-is_if,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST))
+    $(info CXX_OBJ_SRC_MOD_IF_REQ_LIST:)
+    $(call pp_src-mod-is_if,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST))
     $(info MAKE_TERMOUT : $(MAKE_TERMOUT) MAKE_TERMERR : $(MAKE_TERMERR))
     $(info MAKE_VERSION : $(MAKE_VERSION))
     $(if $(use_gcc),$(info Use gcc))
@@ -316,12 +316,12 @@ endef
 endif
 
 # Generate rules all source units
-# call make_rules, CXM_OBJ_SRC_MOD_IF_REQ_LIST
+# call make_rules, CXX_OBJ_SRC_MOD_IF_REQ_LIST
 make_rules = $(foreach line,$1,\
   $(let obj src mod is_if req,$(subst ;, ,$(line)),\
     $(if $(and $(obj),$(src),$(mod),$(is_if)),\
       ,\
-      $(error Inconsistent CXM_OBJ_SRC_MOD_IF_REQ_LIST : '$(obj)' '$(src)' '$(mod)' '$(is_if)')\
+      $(error Inconsistent CXX_OBJ_SRC_MOD_IF_REQ_LIST : '$(obj)' '$(src)' '$(mod)' '$(is_if)')\
     )\
     $(if $(subst -,,$(mod)),\
       $(if $(silent),,\
@@ -338,7 +338,7 @@ make_rules = $(foreach line,$1,\
 )
 
 # Escape module db for eval
-escaped_obj_src_mod_if_req_list ::= $(subst $$,$$$$,$(CXM_OBJ_SRC_MOD_IF_REQ_LIST))
+escaped_obj_src_mod_if_req_list ::= $(subst $$,$$$$,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST))
 
 # Generate module rules and variables
 modules ::=
@@ -351,14 +351,14 @@ nomodobjs ::= $(call add_dir_prefix,$(builddir_int),$(addsuffix .o,$(nomodsrcs))
 
 ifndef silent
   $(info )
-  ifdef CXM_OBJ_SRC_MOD_IF_REQ_LIST
+  ifdef CXX_OBJ_SRC_MOD_IF_REQ_LIST
     $(info Module units            : $(foreach x,$(sort $(modsrcs)),'$(x)'))
     $(info Module interface units  : $(foreach x,$(sort $(mod_if_units)),'$(x)'))
     $(info Module names (internal) : $(foreach x,$(sort $(modules)),'$(x)'))
     $(info Not a module            : $(foreach x,$(sort $(nomodsrcs)),'$(x)'))
     ifdef verbose
-      $(info Modulname to CMI-file database (CXM_MOD_<module name>_CMI))
-      $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXM_MOD_$(mod)_CMI)))
+      $(info Modulname to CMI-file database (CXX_MOD_<module name>_CMI))
+      $(foreach mod,$(modules), $(info $(empty)	$(mod) -> $(CXX_MOD_$(mod)_CMI)))
     endif
   else
     $(info No modules)

@@ -6,12 +6,12 @@
 # (GNU Make 4.4.1)
 
 # the database
-CXM_SRC_MOD_IF_LIST += src1.cpp;module1;1
-CXM_SRC_MOD_IF_LIST += src2.cpp;module2;1
+CXX_SRC_MOD_IF_LIST += src1.cpp;module1;1
+CXX_SRC_MOD_IF_LIST += src2.cpp;module2;1
 
 # generated variables
-CXM_MOD_module1_CMI = modulecache/module1.gcm
-CXM_MOD_module2_CMI = modulecache/module2.gcm
+CXX_MOD_module1_CMI = modulecache/module1.gcm
+CXX_MOD_module2_CMI = modulecache/module2.gcm
 modsources = src1.cpp src2.cpp
 define modulemap ::=
 module1 modulecache/module1.gcm
@@ -30,11 +30,11 @@ my_program :
 
 # main.dep
 main.o : main.cpp header2.h
-main.o : $(CXM_MOD_module1_CMI) $(CXM_MOD_module2_CMI)
+main.o : $(CXX_MOD_module1_CMI) $(CXX_MOD_module2_CMI)
 
 # src1.dep
 src1.o : src1.cpp header1.h
-src1.o $(CXM_MOD_module1_CMI) : $(CXM_MOD_module2_CMI)
+src1.o $(CXX_MOD_module1_CMI) : $(CXX_MOD_module2_CMI)
 
 # src2.dep
 src2.o : src2.cpp header2.h

@@ -1,7 +1,7 @@
 # Makefile translates System Header Units and User Header Units
 #
 # Stage 1 determines the header unit to source and cmi file mapping. This rule fires only once at start-up or after a
-# configuration change. (The infofiles '%.dep.n' contain the variable CXM_UNIT_SRC_MOD_CMI_KIND_LIST)
+# configuration change. (The infofiles '%.dep.n' contain the variable CXX_UNIT_SRC_MOD_CMI_KIND_LIST)
 #
 # Stage 2 generates a module mapper file for the header units. (header-mapper.txt)
 #
@@ -60,10 +60,10 @@ CXXFLAGS += -flang-info-include-translate -flang-info-module-cmi
 # module cache directory
 # If the cache is the default directory, a auto import may happen in the dependency scan or even in the info scan.
 # This may be a problem if old and dispensable files are present. Thus make a cleanup before header list changes.
-CXM_MODULE_CACHE ?= gcm.cache
+CXX_MODULE_CACHE ?= gcm.cache
 
 # Delete the stored Header Units list if the list has changed at start up.
-units ::= $(CXM_SYSTEM_HEADER_UNITS) $(CXM_USER_HEADER_UNITS)
+units ::= $(CXX_SYSTEM_HEADER_UNITS) $(CXX_USER_HEADER_UNITS)
 ifndef MAKE_RESTARTS
   ifeq ($(cleanup),)
     old_units ::= $(file < header-units-list)
@@ -77,8 +77,8 @@ ifndef MAKE_RESTARTS
   endif
 endif
 
-$(info Registered System Header Units: $(CXM_SYSTEM_HEADER_UNITS))
-$(info Registered User Header Units  : $(CXM_USER_HEADER_UNITS))
+$(info Registered System Header Units: $(CXX_SYSTEM_HEADER_UNITS))
+$(info Registered User Header Units  : $(CXX_USER_HEADER_UNITS))
 $(info )
 
 # A missing file triggers this rule.
@@ -111,20 +111,20 @@ header-units-config :
 
 # Stage 1: Generate infofiles.
 # The source file name is figured out from script dep_2src.sh and the cmi file name is constructed.
-# Output : CXM_UNIT_SRC_MOD_CMI_KIND_LIST
+# Output : CXX_UNIT_SRC_MOD_CMI_KIND_LIST
 # Source file may be relative to the current directory or absolute.
-infofiles_sys ::= $(addprefix system/,$(addsuffix .dep.n,$(CXM_SYSTEM_HEADER_UNITS)))
+infofiles_sys ::= $(addprefix system/,$(addsuffix .dep.n,$(CXX_SYSTEM_HEADER_UNITS)))
 $(infofiles_sys) : system/%.dep.n: header-units-list header-units-config
 	$(due_to)
 	$(CXX) -x c++-system-header $* -c -MM -MF system/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${bin}get-header-info-and-map.sh system/$*.dep.0 $@ $* $(CXM_MODULE_CACHE) gcm system # provide variable CXX_UNIT_SRC_CMI_LIST
+	${bin}get-header-info-and-map.sh system/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm system # provide variable CXX_UNIT_SRC_CMI_LIST
 	@echo
 
-infofiles_user ::= $(addprefix user/,$(addsuffix .dep.n,$(CXM_USER_HEADER_UNITS)))
+infofiles_user ::= $(addprefix user/,$(addsuffix .dep.n,$(CXX_USER_HEADER_UNITS)))
 $(infofiles_user) : user/%.dep.n: header-units-list header-units-config
 	$(due_to)
 	$(CXX) -x c++-user-header $* -c -MM -MF user/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${bin}get-header-info-and-map.sh user/$*.dep.0 $@ $* $(CXM_MODULE_CACHE) gcm user # provide variable CXX_UNIT_SRC_CMI_LIST
+	${bin}get-header-info-and-map.sh user/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm user # provide variable CXX_UNIT_SRC_CMI_LIST
 	@echo
 
 # The Order Only Prerequisites for the directories require secondary expansion and follow near makefile end.
@@ -152,7 +152,7 @@ header-mapper.txt : $(infofiles_sys) $(infofiles_user)
 	@echo
 
 # Stage 3: Generate the depfiles
-depfiles_sys ::= $(addprefix system/,$(addsuffix .dep,$(CXM_SYSTEM_HEADER_UNITS)))
+depfiles_sys ::= $(addprefix system/,$(addsuffix .dep,$(CXX_SYSTEM_HEADER_UNITS)))
 $(depfiles_sys) : system/%.dep : header-mapper.txt
 	$(due_to)
 	$(CXX) -x c++-system-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=system/$*.o \
@@ -160,7 +160,7 @@ $(depfiles_sys) : system/%.dep : header-mapper.txt
 	${bin}add-header-module-dep.sh header-mapper.txt $(CURDIR) $@.1 $@
 	@echo
 
-depfiles_user ::= $(addprefix user/,$(addsuffix .dep,$(CXM_USER_HEADER_UNITS)))
+depfiles_user ::= $(addprefix user/,$(addsuffix .dep,$(CXX_USER_HEADER_UNITS)))
 $(depfiles_user) : user/%.dep : header-mapper.txt
 	$(due_to)
 	$(CXX) -x c++-user-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=user/$*.o \
@@ -183,20 +183,20 @@ define cmi_file_rule
 endef
 
 # include information about source names
-CXM_UNIT_SRC_MOD_CMI_KIND_LIST ::=
+CXX_UNIT_SRC_MOD_CMI_KIND_LIST ::=
 ifeq ($(cleanup),)
   include $(infofiles_sys) $(infofiles_user)
 endif
-# $(info CXM_UNIT_SRC_MOD_CMI_KIND_LIST = $(CXM_UNIT_SRC_MOD_CMI_KIND_LIST))
+# $(info CXX_UNIT_SRC_MOD_CMI_KIND_LIST = $(CXX_UNIT_SRC_MOD_CMI_KIND_LIST))
 
 # evaluate information from infofiles and generate:
 # rules for unit cmi files
 # a cmi files list
 cmifiles ::=
-ifndef CXM_UNIT_SRC_MOD_CMI_KIND_LIST
+ifndef CXX_UNIT_SRC_MOD_CMI_KIND_LIST
   $(info No rules to generate.)
 endif
-$(foreach line,$(CXM_UNIT_SRC_MOD_CMI_KIND_LIST),\
+$(foreach line,$(CXX_UNIT_SRC_MOD_CMI_KIND_LIST),\
   $(let unit src mod cmi kind,$(subst ;, ,$(line)),\
       $(eval cmifiles += $(cmi))\
       $(eval $(cmi_file_rule))\
@@ -221,7 +221,7 @@ header-cmis.txt : $(cmifiles)
 .PHONY : clean
 clean :
 	$(due_to)
-	LIST=; for x in $(CXM_MODULE_CACHE)/*; do if [[ -d $${x} ]]; then LIST+=" $${x}"; fi; done; rm -rfv $${LIST};
+	LIST=; for x in $(CXX_MODULE_CACHE)/*; do if [[ -d $${x} ]]; then LIST+=" $${x}"; fi; done; rm -rfv $${LIST};
 	rm -f header-cmis.txt
 	rm -rf $(dirs_infofiles_sys)
 	rm -rf $(dirs_infofiles_user)

@@ -26,12 +26,12 @@ myhelp() {
 
 	Detect module dependencies for a translation unit in 'input' and append the
 	module prerequisites in makefile format to 'depfile'. Every imported module
-	is represented by a variable CXM_MOD_modulname_CMI. The CMI-file-name for 
+	is represented by a variable CXX_MOD_modulname_CMI. The CMI-file-name for 
 	a given module must be provided by the make-script.
 	The module dependency rule for a translation unit that imports modules has
 	the form:
 	
-	        object : \${CXM_MOD_module1_CMI} \${CXM_MOD_module2_CMI}...
+	        object : \${CXX_MOD_module1_CMI} \${CXX_MOD_module2_CMI}...
 
 	A colon in a module name (module partitions) is replaced by a dash. Dollar
 	symbols in names are replaced by two dollar symbols.
@@ -75,7 +75,7 @@ if [[ -n ${requires} ]]; then
 		echo -n "${obj} :"
 		for module in ${requires}; do
 			module_subst="${module//:/"-"}" # replace : with - in module names
-			echo -n " \$(CXM_MOD_${module_subst//\$/\$\$}_CMI)"
+			echo -n " \$(CXX_MOD_${module_subst//\$/\$\$}_CMI)"
 		done
 		echo
 	} >> "${dep}"
