@@ -1,12 +1,11 @@
 # Skeleton Makefile2sec-auto.mk
 
-# Difference to Skeleton Makefile1-auto.mk:
-# * Rules and information about provided module are written into one file.
-# * Make uses the Second Expansion to get the current cmi file dependencies.
+# Difference to Skeleton Makefile2-auto.mk:
+# * Makefile2sec-auto.mk reduces the number of rules required once more.
+#   Rules and information about provided module are written into a single dependency file.
+#   Make uses the Second Expansion to get the current cmi file dependencies.
 #
 # --------------------------------------------------------------------------
-
-.SECONDEXPANSION :
 
 # rules to generate depfiles and dbmfiles
 depfiles ::= $(sources:.cpp=.dep)
@@ -23,6 +22,8 @@ ifeq ($(CXX_SIMPLE_MAPPING),)
 else
   cmi_mapper = modulecache/$2.gcm
 endif
+
+.SECONDEXPANSION :
 
 # include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
 # depfiles require cmi_mapper function
@@ -88,29 +89,26 @@ $(TARGET) : $(objects)
 # --------------------------------------------------------------------------
 
 # *** Structure of dependency file (%.dep) ***
-# The dependency file contains the makfile rules for the translation unit.
-# (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
-# (2) The second rule lists the required module interfaces if any.
-
-# Module Units
-# (1)
-src.dep src.depm: src.cpp header.h ...
-# (2) If the unit requires other module units, the second rule is present.
-src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
-
-# Non Module Units
-# (1)
-src.dep src.depm: src.cpp header.h ...
-# (2) If the unit requires other module units, the second rule is present.
-src1.o : $(CXX_MOD_module_required_CMI) ...
-
-# *** Structure of module database file (%.depm) ***
-# contains the information about provided module in form of a variable
-# The CXX_SRC_MOD_IF_LIST lists:
+# The dependency file contains the makefile rules for the translation unit and contains the information about provide
+# module in form of a variable. The CXX_SRC_MOD_IF_LIST lists:
 #    primary output; source; module-provided; is-interface
 
+# (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
+# (2) The second rule lists the required module interfaces if any.
+# (3) A variable contains the information about provided module.
+
 # Module Units
+# (1)
+src.dep : src.cpp header.h ...
+# (2) If the unit requires other module units, the second rule is present.
+$(call cmi_mapper,module_provided,src.cpp) src.o : $(CXX_MOD_module_required_CMI) ...
+# (3)
 CXX_SRC_MOD_IF_LIST += src.cpp;module;1
 
 # Non Module Units
+# (1)
+src.dep : src.cpp header.h ...
+# (2) If the unit requires other module units, the second rule is present.
+src1.o : $(CXX_MOD_module_required_CMI) ...
+# (3)
 CXX_SRC_MOD_IF_LIST += src.cpp;-;0

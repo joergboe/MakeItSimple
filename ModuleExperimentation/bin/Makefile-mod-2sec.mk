@@ -1,15 +1,5 @@
-# The rules for projects with C++ modules using secondary expansion
-# Variables are used to express the module dependencies in prerequisites.
-# A variable like CXX_MOD_modulname_CMI substitutes the cmi file name by the module name.
-# Database variables and dependency rules are generated in dep files.
-
-# With automatic dependency generation based on structured dependency information.
-# The CXX_SRC_MOD_IF_LIST lists:
-#    primary output; source; module-provided; is-interface
-# The depfile substitutes all legacy header dependencies of an translation unit.
-# Grouped Target Rules for module units are generated with 'eval'.
-
-# The automatic variable $? is fixed because the grouped rule prerequisites are complete.
+# The projects with C++ modules using secondary expansion
+# see: Skeleton-Makefile2sec-auto.mk
 
 # The makefile implements 2 custom module mappings:
 #    If CXX_SIMPLE_MAPPING is undefined the name of the cmi file is         modulecache/<modulname>.gcm
@@ -18,10 +8,36 @@
 # With CXX_SIMPLE_MAPPING=1:
 # Problem with grouped pattern rule dependency propagation. (delete src1.o src2.o)
 
-$(info **** $(if $(MAKE_RESTARTS),Restart # $(MAKE_RESTARTS),Start) in directory $(CURDIR))
+this_makefile ::= $(lastword $(MAKEFILE_LIST))
 
-# get path of this makefile
-my_bin_dir ::= $(dir $(lastword $(MAKEFILE_LIST)))
+$(info )
+$(info **** $(if $(MAKE_RESTARTS),Restart # $(MAKE_RESTARTS),Start) $(this_makefile) in directory $(CURDIR))
+
+min_make_version = 4.4.1
+ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_version))))
+  $(warning WARNING: Required make version is $(min_make_version) or higher but version is $(MAKE_VERSION))
+endif
+
+# remove all the built-in pattern rules
+MAKEFLAGS += -r
+
+# check cleanup goals
+cleanup_goals = clean purge
+goals = $(MAKECMDGOALS)
+ifeq (,$(goals))
+  goals = all
+endif
+# The variable cleanup is also used to prevent inclusion of dependent makefiles.
+cleanup ::= $(filter $(cleanup_goals),$(goals))
+ifneq ($(cleanup),)
+  ifneq (,$(filter-out $(cleanup_goals),$(goals)))
+    $(error ERROR: The goals '$(cleanup_goals)' must not be used in conjunction with other targets.)
+  endif
+endif
+
+# Setup configuration with project file...
+makefile_defs ::= project.mk
+-include $(makefile_defs)
 
 # collect source files
 sources ::= $(wildcard *.cpp)
@@ -30,12 +46,17 @@ $(info sources = $(sources))
 # macro to display information
 due_to = @echo 'Run target $@ - Due to $?'
 
+.DELETE_ON_ERROR:
+
 # default target
 TARGET ?= main
 $(TARGET) :
 
 # required compiler options
-CXXFLAGS ?= -std=c++20 -fmodules
+CXXFLAGS ?= -std=c++20 -fmodules -flang-info-include-translate -flang-info-module-cmi -fdollars-in-identifiers
+
+# get path of this makefile
+my_bin_dir ::= $(dir $(this_makefile))
 
 # rule to generate dependency files
 depfiles ::= $(sources:.cpp=.dep)
@@ -73,7 +94,9 @@ mapper_opt = $(if $(user_mapping),-fmodule-mapper=module-map.txt)
 # depfiles require cmi_mapper function
 # CXX_MOD_require1_CMI variables are resolved during secondary expansion
 CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
-include $(depfiles)
+ifeq ($(cleanup),)
+  include $(depfiles)
+endif
 
 # template rule for module sources
 # input: src - source file name

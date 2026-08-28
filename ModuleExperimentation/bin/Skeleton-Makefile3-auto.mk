@@ -128,4 +128,4 @@ CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;module-provided;1;module-required[;
 # (1)
 src.dep : src.cpp header.h ...
 # (3)
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;-;0
+CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;-;0;module-required[; ...]

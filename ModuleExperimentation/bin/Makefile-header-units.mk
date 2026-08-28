@@ -1,7 +1,10 @@
 # Makefile translates System Header Units and User Header Units
 #
+# This script requires two variables with the list of header units to translate
+# CXX_SYSTEM_HEADER_UNITS and CXX_USER_HEADER_UNITS.
+#
 # Stage 1 determines the header unit to source and cmi file mapping. This rule fires only once at start-up or after a
-# configuration change. (The infofiles '%.dep.n' contain the variable CXX_UNIT_SRC_MOD_CMI_KIND_LIST)
+# configuration change. (The infofiles '%.depn' contain the variable CXX_UNIT_SRC_MOD_CMI_KIND_LIST)
 #
 # Stage 2 generates a module mapper file for the header units. (header-mapper.txt)
 #
@@ -110,18 +113,18 @@ header-units-config :
 	@echo
 
 # Stage 1: Generate infofiles.
-# The source file name is figured out from script dep_2src.sh and the cmi file name is constructed.
+# The source file name is figured out from script get-header-info-and-map.sh and the cmi file name is constructed.
 # Output : CXX_UNIT_SRC_MOD_CMI_KIND_LIST
 # Source file may be relative to the current directory or absolute.
-infofiles_sys ::= $(addprefix system/,$(addsuffix .dep.n,$(CXX_SYSTEM_HEADER_UNITS)))
-$(infofiles_sys) : system/%.dep.n: header-units-list header-units-config
+infofiles_sys ::= $(addprefix system/,$(addsuffix .depn,$(CXX_SYSTEM_HEADER_UNITS)))
+$(infofiles_sys) : system/%.depn: header-units-list header-units-config
 	$(due_to)
 	$(CXX) -x c++-system-header $* -c -MM -MF system/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	${bin}get-header-info-and-map.sh system/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm system # provide variable CXX_UNIT_SRC_CMI_LIST
 	@echo
 
-infofiles_user ::= $(addprefix user/,$(addsuffix .dep.n,$(CXX_USER_HEADER_UNITS)))
-$(infofiles_user) : user/%.dep.n: header-units-list header-units-config
+infofiles_user ::= $(addprefix user/,$(addsuffix .depn,$(CXX_USER_HEADER_UNITS)))
+$(infofiles_user) : user/%.depn: header-units-list header-units-config
 	$(due_to)
 	$(CXX) -x c++-user-header $* -c -MM -MF user/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	${bin}get-header-info-and-map.sh user/$*.dep.0 $@ $* $(CXX_MODULE_CACHE) gcm user # provide variable CXX_UNIT_SRC_CMI_LIST

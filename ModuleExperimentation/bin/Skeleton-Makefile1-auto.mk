@@ -10,8 +10,8 @@
 #
 # * The dependency file 1 (depfiles - %.dep) contains the makefile rules without recipes as usual.
 #
-# * The dependency file 2 (dbmfiles - %.depm) contains information about provided module of the translation unit and
-#   is based on structured dependency information (%.ddi).
+# * The dependency file 2 (dbmfiles - %.depm) contains information about provided module of the translation unit in
+#   CSV style and is based on structured dependency information (%.ddi).
 #   The CXX_SRC_MOD_IF_LIST list contains a triple <primary output; source; module-provided; is-interface> for
 #   each translation unit.
 #
@@ -23,7 +23,7 @@
 # * A file with the mapping of module name to CMI filename is generated and stored in file 'module-map.txt'
 #
 # * Translation units that export a module are managed using Grouped Target Rules or Pattern Rules, depending on
-#   the module mapping. Grouped Target Rules are generated with make function 'eval'.
+#   the module mapping. Grouped Target Rules are generated using make function 'eval'.
 #
 # * If the CMI filename is derived from the source name via simple pattern substitution (simple mapping), pattern rules
 #   can be applied directly.
@@ -120,9 +120,9 @@ $(TARGET) : $(objects)
 
 # Module Units
 # (1)
-src.o $(call cmi_mapper,module_provided,src.cpp) src.dep src.depm: src.cpp header.h ...
+$(call cmi_mapper,module_provided,src.cpp) src.o src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-src1.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
+src.o $(call cmi_mapper,module_provided,src.cpp) : $(CXX_MOD_module_required_CMI) ...
 
 # Non Module Units
 # (1)

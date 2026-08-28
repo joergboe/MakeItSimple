@@ -25,9 +25,9 @@ myhelp() {
 	        mdbfile   : Output       - module information in make format
 	        object    : The primary_output (object) file of the TU
 	        source    : The source file name
-	        cmitarget : If present, the first line is preceded with this target. The string $(mod) is substituted
-	                    with the provided module name. The string $(src) is substituted with the source name. Escape
-	                    character are applied.
+	        cmitarget : If present and the current unit provides a module, the first line is preceded with this target.
+	                    The string \$(mod) is substituted with the provided module name.
+	                    The string \$(src) is substituted with the source name. Escape characters are applied.
 
 	1) Detect module dependencies for a translation unit in 'input' and append the
 	module prerequisites in makefile format to 'depfile'. Modules are represented by a variable
