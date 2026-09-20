@@ -1,0 +1,7 @@
+CXXFLAGS = -std=c++20 -fmodules
+SRCDIRS = . ./src/
+BINDIR = .
+BUILDDIR = .
+CXX_MODULE_CACHE = ./
+#CXX_HEADER_CACHE = .
+CXX_SIMPLE_MAPPING = 1
