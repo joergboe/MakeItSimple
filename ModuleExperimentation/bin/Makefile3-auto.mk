@@ -53,13 +53,13 @@ include $(depfiles)
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map module name or source file name to the cmi file name for project modules
+# get_cmi_name - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
 else
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
 endif
 
 # generate variables for cmi file of project modules
@@ -72,7 +72,7 @@ modulemap ::= # ensure the simply expanded variable flavor for the output variab
 $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
+      $(let modi cmi,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)),\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\
@@ -152,7 +152,7 @@ $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\
       $(if $(subst -,,$(mod)),\
-        $(let cmi,$(call cmi_mapper,$(mod),$(src)),\
+        $(let cmi,$(call get_cmi_name,$(mod),$(src)),\
           $(eval $(modul_rule_template))\
           $(eval modsources += $$(src))\
         )\

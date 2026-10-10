@@ -19,13 +19,13 @@ $(depfiles) : %.dep: %.cpp
 # include depfiles with header and module dependency
 include $(depfiles)
 
-# Variable cmi_mapper expands to the CMI file name.
+# Variable get_cmi_name expands to the CMI file name.
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  cmi_mapper = modulecache/$(subst :,-,$1).gcm
+  get_cmi_name = modulecache/$(subst :,-,$1).gcm
 else
-  cmi_mapper = modulecache/$2.gcm
+  get_cmi_name = modulecache/$2.gcm
 endif
 
 # include the provided modules database: CXX_SRC_MOD_IF_LIST
@@ -38,7 +38,7 @@ include $(dbmfiles)
 $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
+      $(let modi cmi,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)),\
         $(eval CXX_MOD_$(modi)_CMI ::= $(cmi))\
         $(eval modulemap += $(mod);$(cmi))\
       )\
@@ -81,7 +81,7 @@ $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
     $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\
       $(if $(subst -,,$(mod)),\
-        $(let cmi,$(call cmi_mapper,$(mod),$(src)),\
+        $(let cmi,$(call get_cmi_name,$(mod),$(src)),\
           $(eval $(modul_rule_template))\
           $(eval modsources += $(src))\
         )\

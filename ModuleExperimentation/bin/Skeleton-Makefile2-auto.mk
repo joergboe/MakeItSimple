@@ -16,9 +16,9 @@
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  cmi_mapper = modulecache/$(subst :,-,$1).gcm
+  get_cmi_name = modulecache/$(subst :,-,$1).gcm
 else
-  cmi_mapper = modulecache/$2.gcm
+  get_cmi_name = modulecache/$2.gcm
 endif
 
 # include the provided modules database: CXX_SRC_MOD_IF_LIST
@@ -47,7 +47,7 @@ endif
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let obj dep modi cmi,$(src:.cpp=.o) $(src:.cpp=.dep) $(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)),\
+      $(let obj dep modi cmi,$(src:.cpp=.o) $(src:.cpp=.dep) $(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)),\
         $(eval CXX_MOD_$(modi)_CMI ::= $(mcmi))\
         $(eval modsources += $(src))\
         $(eval $(modul_rule_template))\
@@ -66,7 +66,7 @@ ifne(...)
 endif
 
 # include all depfiles after definition of all CXX_MOD_module_CMI variables
-# depfiles also require cmi_mapper function
+# depfiles also require get_cmi_name function
 depfiles ::= $(sources:.cpp=.dep)
 include $(depfiles)
 
@@ -96,7 +96,7 @@ $(TARGET) : $(objects)
 # (1)
 src.dep src.depm: src.cpp header.h ...
 # (2) If the unit requires other module units, the second rule is present.
-$(call cmi_mapper,module_provided,src.cpp) src.o : $(CXX_MOD_module_required_CMI) ...
+$(call get_cmi_name,module_provided,src.cpp) src.o : $(CXX_MOD_module_required_CMI) ...
 
 # Non Module Units
 # (1)

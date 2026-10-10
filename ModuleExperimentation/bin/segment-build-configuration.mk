@@ -1,47 +1,31 @@
-# Segment includes the project configuration and figure out bin directory, build directory and cache directory.
+# Segment includes the project configuration and figure out build directory and cache directory.
 #
 # required functions: info_i, info_d
 #
-# provided functions: resolve_path, prefix_dir and suffix_dir
-#
 # provided variables:
-# bindir_res, builddir_res cache_res hcache_res:
+# build mcache hcache:
 # resolved relative path if below CURDIR, absolute otherwise; trailing / is removed
 #
-# binp, buildp and cachep hcachep:
+# build_p and mcache_p hcache_p:
 # directory prefix ending with slash, empty if curdir
 #
-# bindir_ndot, builddir_ndot, cache_ndot hcache_ndot:
+# build_ndot, mcache_ndot hcache_ndot:
 # empty if dot dir, dir otherwise
-#
-# builddirs: the list of all build sub directories below builddir
-# cmidirs: list of all cache sub directories below cache
 #
 # request_header_translation: 1 if header translation is requested, empty otherwise
 #
 # user_mapping: 1 if we use a non default module mapping?
 
 $(call info_d,Reading segment-build-configuration.mk)
-
-# resolve_path - returns the list of resolved paths.
-# The returned paths are absolute unless below CURDIR.
-# usage: $(call resolved,file-list,option,error-message)
-resolve_path = $(shell realpath $2 --relative-base=$(CURDIR) $1)$\
-  $(if $(subst 0,,$(.SHELLSTATUS)),$(error ERROR: realpath returns failure '$(.SHELLSTATUS)' - $3 $1))
-
-# prefix_dir - returns the empty string if input is dot and returns dir/ otherwise
-# usage: $(call prefix_dir,dir)
-prefix_dir = $(if $(subst .,,$1),$1/)
-
-# suffix_dir - returns /$1 unless $1 is dot
-# usage: $(call suffix_dir,dir)
-suffix_dir = $(if $(subst .,,$1),/$1)
+$(call info_i,)
 
 # read configuration from project file
 MKTS_MAKEFILE_DEFS ?= project.mk
 -include $(MKTS_MAKEFILE_DEFS)
 $(if $(filter $(MKTS_MAKEFILE_DEFS),$(lastword $(MAKEFILE_LIST))),\
-  $(call info_i,Included '$(MKTS_MAKEFILE_DEFS)')\
+  $(call info_i,Using project configuration '$(MKTS_MAKEFILE_DEFS)')\
+,\
+  $(call info_i,Using default configuration.)\
 )
 
 # Is header translation required?
@@ -50,52 +34,76 @@ ifneq ($(strip $(CXX_SYSTEM_HEADER_UNITS) $(CXX_USER_HEADER_UNITS)),)
   request_header_translation ::= 1
 endif
 
-# identifying bin directory build directory and module cache directory
-BINDIR ?= bin
+# identifying build directory and module cache directory
 BUILDDIR ?= build
 CXX_MODULE_CACHE ?= gcm.cache
-CXX_HEADER_CACHE ?= gcm.cache
-# TODO: Check BINDIR, BUILDDIR, CXX_MODULE_CACHE and CXX_HEADER_CACHE for empty string.
+CXX_HEADER_CACHE ?= gcm.hcache
+
+# All build directories must be reside below CURDIR and must be non empty.
+temp = $(BUILDDIR) $(CXX_MODULE_CACHE) $(CXX_HEADER_CACHE)
+ifneq ($(words $(temp)),3)
+  $(error $(red)ERROR: Enter one valid value for BUILDDIR, CXX_MODULE_CACHE and CXX_HEADER_CACHE! '$(temp)'$(res))
+endif
 
 # resolve all directories and start sub-shell only once
-build_bin_dir ::= $(call resolve_path,$(BINDIR) $(BUILDDIR) $(CXX_MODULE_CACHE) $(CXX_HEADER_CACHE),$\
-  --canonicalize-missing,Resolving BINDIR BUILDDIR CXX_MODULE_CACHE CXX_HEADER_CACHE)
+temp2 ::= $(call resolve_path,$(temp),$\
+  --canonicalize-missing,Resolving BUILDDIR CXX_MODULE_CACHE CXX_HEADER_CACHE)
 
-bindir_res ::= $(firstword $(build_bin_dir))
-builddir_res ::= $(word 2,$(build_bin_dir))
-cache_res ::= $(word 3,$(build_bin_dir))
-hcache_res ::= $(lastword $(build_bin_dir))
+build ::= $(word 1,$(temp2))
+mcache ::= $(word 2,$(temp2))
+hcache ::= $(word 3,$(temp2))
 
-binp ::= $(call prefix_dir,$(bindir_res))
-buildp ::= $(call prefix_dir,$(builddir_res))
-cachep ::= $(call prefix_dir,$(cache_res))
-hcachep ::= $(call prefix_dir,$(hcache_res))
+$(call info_i,Build directory = '$(build)'\
+  $(nl)Module cache directory '$(mcache)')
+$(if $(or $(request_header_translation),$(verbose)),$(call info_i,Header cache directory '$(hcache)'))
 
-$(call info_i,Binay directory '$(bindir_res)'\
-  $(nl)Build directory = '$(builddir_res)'\
-  $(nl)Module cache directory '$(cache_res)')
-$(if $(request_header_tr),$(call info_i,Header cache directory '$(hcache_res)'))
+$(foreach type,build mcache hcache,\
+  $(if $(patsubst ..%,,$($(type))),,$(error ERROR: $(type) must be reside below CURDIR! $(type) = '$($(type))'))\
+)
 
-$(call info_d,binp = '$(binp)' buildp = '$(buildp)' cachep = '$(cachep)' hcachep = '$(hcachep)')
+build_p ::= $(call prefix_dir,$(build))
+mcache_p ::= $(call prefix_dir,$(mcache))
+hcache_p ::= $(call prefix_dir,$(hcache))
 
-bindir_ndot ::= $(if $(subst .,,$(bindir_res)),$(bindir_res))
-builddir_ndot ::= $(if $(subst .,,$(builddir_res)),$(builddir_res))
-cache_ndot ::= $(if $(subst .,,$(cache_res)),$(cache_res))
-hcache_ndot ::= $(if $(subst .,,$(hcache_res)),$(hcache_res))
-$(call info_d,bindir_ndot = '$(bindir_ndot)' builddir_ndot = '$(builddir_ndot)' cache_ndot = '$(cache_ndot)' hcache_ndot = '$(hcache_ndot)')
+$(call info_d,build_p = '$(build_p)' mcache_p = '$(mcache_p)' hcache_p = '$(hcache_p)')
 
-user_mapping ::= $(if $(subst gcm.cache,,$(cache_res)),1,$(if $(CXX_SIMPLE_MAPPING),1))
-ifneq ($(request_header_tr),)
-  ifneq ($(cache_res),$(hcache_res))
+build_ndot ::= $(filter-out .,$(build))
+mcache_ndot ::= $(filter-out .,$(mcache))
+hcache_ndot ::= $(filter-out .,$(hcache))
+$(call info_d,build_ndot = '$(build_ndot)' mcache_ndot = '$(mcache_ndot)' hcache_ndot = '$(hcache_ndot)')
+
+user_mapping ::= $(if $(subst gcm.cache,,$(mcache)),1,$(if $(CXX_SIMPLE_MAPPING),1))
+ifneq ($(request_header_translation),)
+  ifneq ($(mcache),$(hcache))
     user_mapping ::= 1
   endif
 endif
 
-ifeq ($(user_mapping),)
-  $(call info_i,Using default module mapping.)
-else
-  $(call info_i,Using user module mapping in cache directory '$(cache_res)')
-  $(call info_i,Using $(if $(CXX_SIMPLE_MAPPING),simple,standart) module mapping.)
+external_module_map ::=
+ifneq ($(CXX_EXTERNAL_MODMAP),)
+  external_module_map ::= $(wildcard $(CXX_EXTERNAL_MODMAP))
+  ifneq ($(external_module_map),)
+    user_mapping ::= 1
+    $(call info_i,Using external module cmi files in $(external_module_map))
+  else
+    $(warning $(yel)WARNING: External module map '$(CXX_EXTERNAL_MODMAP)' does not exist! (CXX_EXTERNAL_MODMAP)$(res))
+  endif
 endif
+
+# Non empty variable user_mapping indicates the need to use a user module mapper, not the default mapper.
+ifeq ($(user_mapping),)
+  $(call info_i,Using default module mapping. ('$(mcache)'))
+else
+  $(call info_i,Using user module mapping in cache directory '$(mcache)')
+  $(call info_i,Kind (standart/simple) of module mapping : $(if $(CXX_SIMPLE_MAPPING),simple,standart))
+endif
+
+ifeq ($(request_header_translation),)
+  $(call info_d,No header unit translation required.)
+else
+  $(call info_i,Header translation required.)
+endif
+
+$(call info_i,)
 
 segment-build-configuration = 1

@@ -69,7 +69,7 @@ $(foreach line,$(CXX_UNIT_SRC_LIST),\
 # files with module information
 depfiles ::= $(addsuffix .dep,$(CXX_$(KIND)_HEADER_UNITS))
 
-# depfiles include - rules to build theses files exist
+# depfiles include - rules to build these files exist
 CXX_UNIT_OBJ_SRC_MOD_IF_REQ_LIST ::=
 ifeq ($(filter clean purge,$(MAKECMDGOALS)),)
   include $(depfiles)

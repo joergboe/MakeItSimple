@@ -49,13 +49,13 @@ $(depfiles) : %.dep: %.cpp
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map module name or source file name to the cmi file name for project modules
+# get_cmi_name - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
 else
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
 endif
 
 # Do we use a non default module mapping?
@@ -70,7 +70,7 @@ mapper_opt = $(if $(user_mapping),-fmodule-mapper=module-map.txt)
 .SECONDEXPANSION :
 
 # include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
-# depfiles require cmi_mapper function
+# depfiles require get_cmi_name function
 # CXX_MOD_require1_CMI variables are resolved during secondary expansion
 CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
 include $(depfiles)
@@ -111,7 +111,7 @@ modulemap ::=
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi obj dep,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)) $(src:.cpp=.o) $(src:.cpp=.dep),\
+      $(let modi cmi obj dep,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(src:.cpp=.o) $(src:.cpp=.dep),\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\

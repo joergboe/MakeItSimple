@@ -1,5 +1,4 @@
-import \
-"header2.h";
+import "header2.h";
 
 import <iostream>;
 import <cstdio>;

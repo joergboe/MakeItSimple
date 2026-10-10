@@ -37,7 +37,7 @@ myhelp() {
 	the form:
 	        object : \$(CXX_MOD_require1_CMI) \$(CXX_MOD_require2_CMI)...
 	If the translation unit provides a module:
-	        object \$(call cmi_mapper,module,source) : \$(CXX_MOD_require1_CMI) \$(CXX_MOD_require2_CMI)...
+	        object \$(call get_cmi_name,module,source) : \$(CXX_MOD_require1_CMI) \$(CXX_MOD_require2_CMI)...
 	Dollar symbols in names are replaced by two dollar symbols.
 	In variables CXX_MOD_require1_CMI a colon in the required module name (module partitions) is replaced
 	by a dash and dollar symbols are replaced by two dollar symbols.
@@ -136,7 +136,7 @@ if [[ -n ${requires} ]]; then
 	{
 		echo -n "${obj_escaped//#/\\#}" # in rule context hash mark must be quoted
 		if [[ -n ${provides} ]]; then
-			echo -n " \$(call cmi_mapper,${provides},${src_escaped})"
+			echo -n " \$(call get_cmi_name,${provides},${src_escaped})"
 		fi
 		echo -n " :"
 		for module in ${requires}; do

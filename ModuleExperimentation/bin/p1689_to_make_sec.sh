@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-#some setup to be save
-IFS=$' \t\n'
-#some recomended security settings
+# some recommended security settings
 unset -f unalias
 \unalias -a
 unset -f command
-#more setting to be save
+# setting to be save
+IFS=$' \t\n'
 set -o posix;
+set -f  # disable pathname expansion
 set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
-shopt -s nullglob
 
 command=${0##*/}
 usage="usage: ${command} input depfile object source
@@ -36,12 +35,14 @@ myhelp() {
 	the form:
 	        object : \$\$(CXX_MOD_require1_CMI) \$\$(CXX_MOD_require2_CMI)...
 	If the translation unit provides a module:
-	        object \$(call cmi_mapper,module,source) : \$\$(CXX_MOD_require1_CMI) \$\$(CXX_MOD_require2_CMI)...
+	        object \$(call get_cmi_name,module,source) : \$\$(CXX_MOD_require1_CMI) \$\$(CXX_MOD_require2_CMI)...
 	Dollar symbols in names are replaced by four dollar symbols.
 	In variables CXX_MOD_require1_CMI a colon in the required module name (module partitions) is replaced
 	by a dash.
+	Header unit requirements in 'input' are ignored! These dependencies must be reported in the first rule
+	in 'depfile as file.
 
-	3) Dump the module dependency database in makefile format from all input files to 'mdbfile'
+	3) Append the module dependency database in makefile format from all input files to 'depfile'
 	For each translation unit that provides a module, a triple of the following
 	form is emitted:
 	        CXX_SRC_MOD_IF_LIST += source;provides;is_interface(0/1)
@@ -64,6 +65,7 @@ errexit() {
 	exit "$2"
 }
 
+# getting command line parameters
 if [[  $# -ge 1 && ( $1 == '-h' || $1 == '--help' ) ]]; then
 	myhelp
 	exit 0
@@ -73,13 +75,16 @@ fi
 
 readonly inp="$1" dep="$2" obj="$3" src="$4"
 
+# checking parameters
 [[ -z "${inp}" || -z "${src}" || -z "${obj}" || -z "${dep}" ]] \
 	&& errexit "None of the parameters must be empty!" 2
 [ -r "${inp}" ] || errexit "Input file ${inp} is not readable!" 1
 
+# select the matching section in 'input'
 my_unit=$(jq -cj ".rules[] | select(.[\"primary-output\"] == \"${obj}\")" "${inp}")
 [[ -z "${my_unit}" ]] && errexit "No primary-output : ${obj} found" 1
 
+# determine provides and is_interface
 provides=
 is_interface=
 number_provides=$(echo "${my_unit}" | jq -r "if .provides then .provides | length else empty end")
@@ -94,14 +99,24 @@ if [[ -n ${number_provides} ]]; then
 	fi
 fi
 
+# determine required modules
 requires=$(echo "${my_unit}" | jq -r 'if .requires then .requires[].["logical-name"] else empty end')
 
-# Read existing dep-file and escape dependencies for secondary expansion
-# Comment lines and escaped backslashes at the end of the line are not considered
+# filtering out header unit requirements
+required_modules=
+for x in ${requires}; do # Globbing is globally disabled.
+  if [[ "${x}" != /* && "${x}" != .* ]]; then
+    required_modules+="${x} "
+  fi
+done
+
+# preparing the new 'depfile'
 readonly deptemp="${dep}~"
 mv "${dep}" "${deptemp}"
 touch "${dep}" # ensure at least an empty file
 
+# Read in existing dep-file and escape dependencies for secondary expansion.
+# Comment lines and escaped backslashes at the end of the line are not considered!
 cont=
 declare -i pos_colon no_backslash length x
 while read -r; do
@@ -151,6 +166,7 @@ done < "${deptemp}"
 [[ -n $REPLY ]] && errexit "Missing trailing newline" 1
 rm "${deptemp}"
 
+# preparing variable is_if
 is_if=0
 if [[ -n ${provides} ]]; then
 	if [[ ${is_interface} = 'null' ]]; then
@@ -161,17 +177,17 @@ if [[ -n ${provides} ]]; then
 	provides=${provides//\$/\$\$} # escape $ in make style
 fi
 
-# Append variables for required module interfaces
-src_escaped="${src//\$/\$\$}"
-obj_escaped="${obj//\$/\$\$}"
-if [[ -n ${requires} ]]; then
+# append variables for required module interfaces
+src_escaped="${src//\$/\$\$}" # escape $ in make style
+obj_escaped="${obj//\$/\$\$}" # escape $ in make style
+if [[ -n ${required_modules} ]]; then
 	{
 		echo -n "${obj_escaped//#/\\#}" # in rule context hash mark must be quoted
 		if [[ -n ${provides} ]]; then
-			echo -n " \$(call cmi_mapper,${provides},${src_escaped})"
+			echo -n " \$(call get_cmi_name,${provides},${src_escaped})"
 		fi
 		echo -n " :"
-		for module in ${requires}; do
+		for module in ${required_modules}; do
 			module_subst="${module//:/"-"}" # Make prohibits colons in variable names.
 			echo -n " \$\$(CXX_MOD_${module_subst//\$/\$\$\$\$}_CMI)" # secondary expansion is enabled
 		done

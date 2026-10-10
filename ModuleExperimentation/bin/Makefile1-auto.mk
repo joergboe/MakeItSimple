@@ -43,19 +43,19 @@ CXXFLAGS ?= -std=c++20 -fmodules
 	$(due_to)
 	$(CXX) '$<' -MM -MF '$*.dep' -MQ '$*.dep' -MQ '$*.depm' -MQ '$*.o' -fdeps-format=p1689r5 -fdeps-file='$*.ddi'\
  -fdeps-target='$*.o' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	$(my_bin_dir)p1689_to_make.sh '$*.ddi' '$*.dep' '$*.depm' '$*.o' '$<' '$$(call cmi_mapper,$$(mod),$$(src))'
+	$(my_bin_dir)p1689_to_make.sh '$*.ddi' '$*.dep' '$*.depm' '$*.o' '$<' '$$(call get_cmi_name,$$(mod),$$(src))'
 	@echo
 
 # module cache directory
 CXX_MODULE_CACHE ?= gcm.cache
 
-# cmi_mapper - map module name or source file name to the cmi file name for project modules
+# get_cmi_name - map module name or source file name to the cmi file name for project modules
 # input: 1 - module name
 #        2 - source file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
 else
-  cmi_mapper = $(CXX_MODULE_CACHE)/$(2:.cpp=).gcm
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(2:.cpp=).gcm
 endif
 
 # include the provided modules database: CXX_SRC_MOD_IF_LIST
@@ -97,7 +97,7 @@ modulemap ::=
 $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
   $(let src mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi obj,$(subst :,-,$(mod)) $(call cmi_mapper,$(mod),$(src)) $(src:.cpp=.o),\
+      $(let modi cmi obj,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(src:.cpp=.o),\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\
@@ -136,7 +136,7 @@ endif
 # TODO: write empty modulemap
 
 # include all depfiles after definition of all CXX_MOD_module_CMI variables
-# depfiles also require cmi_mapper function
+# depfiles also require get_cmi_name function
 depfiles ::= $(sources:.cpp=.dep)
 include $(depfiles)
 
