@@ -4,3 +4,4 @@ BUILDDIR = .
 BINDIR = .
 CPPFLAGS = -fdollars-in-identifiers -fextended-identifiers
 CXXFLAGS = -std=c++20 -fmodules
+CXX_MODULE_CACHE = cache

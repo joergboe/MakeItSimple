@@ -1,23 +1,23 @@
-SOURCES ::= main.cpp src1.cpp src2.cpp
+SOURCES = main.cpp src1.cpp src2.cpp
 #SRCDIRS = . ./src/
-CXX_SYSTEM_HEADER_UNITS ::= cstdio cstddef iostream
+CXX_SYSTEM_HEADER_UNITS = cstdio cstddef iostream
 #CXX_SYSTEM_HEADER_UNITS += bits/stdc++.h
-CXX_USER_HEADER_UNITS ::= header2.h
+CXX_USER_HEADER_UNITS = header2.h
 
 CXXFLAGS = -std=c++20 -fmodules
 
-BUILDDIR = .
-#CXX_MODULE_CACHE = .
+#BUILDDIR = .
+CXX_MODULE_CACHE = mcache
 CXX_HEADER_CACHE = gcm.cache
 #CXX_SIMPLE_MAPPING = 1
 
-#CXX_SYSTEM_HEADER_UNITS ::= algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat charconv chrono cinttypes climits clocale cmath codecvt compare complex complex.h concepts condition_variable coroutine csetjmp csignal cstdarg cstddef cstdint cstdio cstdlib cstring ctime cuchar cwchar cwctype cxxabi.h deque exception execution expected fenv.h filesystem flat_map flat_set format forward_list fstream functional future generator initializer_list iomanip ios iosfwd iostream istream iterator latch limits list locale map math.h memory memory_resource mutex new numbers numeric optional ostream print queue random ranges ratio regex scoped_allocator semaphore set shared_mutex source_location span spanstream sstream stack stacktrace stdatomic.h stdbit.h stdckdint.h stdexcept stdfloat stdlib.h stop_token streambuf string string_view syncstream system_error text_encoding tgmath.h thread tuple typeindex typeinfo type_traits unordered_map unordered_set utility valarray variant vector version
+#CXX_SYSTEM_HEADER_UNITS = algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat charconv chrono cinttypes climits clocale cmath codecvt compare complex complex.h concepts condition_variable coroutine csetjmp csignal cstdarg cstddef cstdint cstdio cstdlib cstring ctime cuchar cwchar cwctype cxxabi.h deque exception execution expected fenv.h filesystem flat_map flat_set format forward_list fstream functional future generator initializer_list iomanip ios iosfwd iostream istream iterator latch limits list locale map math.h memory memory_resource mutex new numbers numeric optional ostream print queue random ranges ratio regex scoped_allocator semaphore set shared_mutex source_location span spanstream sstream stack stacktrace stdatomic.h stdbit.h stdckdint.h stdexcept stdfloat stdlib.h stop_token streambuf string string_view syncstream system_error text_encoding tgmath.h thread tuple typeindex typeinfo type_traits unordered_map unordered_set utility valarray variant vector version
 
 # Headers error free for clang++-22 and -std=c++20
-#CXX_SYSTEM_HEADER_UNITS ::= algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat charconv chrono cinttypes ciso646 climits clocale codecvt compare complex complex.h concepts condition_variable coroutine csetjmp csignal cstdalign cstdarg cstdbool cstddef cstdint cstdio cstdlib cstring ctgmath ctime cuchar cwchar cwctype cxxabi.h deque exception execution expected filesystem flat_map flat_set format forward_list fstream functional future generator initializer_list iomanip ios iosfwd iostream istream iterator latch limits list locale map math.h memory memory_resource mutex new numbers numeric optional ostream print queue random ranges ratio regex scoped_allocator semaphore set shared_mutex source_location span spanstream sstream stack stacktrace stdatomic.h stdbit.h stdckdint.h stdexcept stdfloat stdlib.h stop_token streambuf string string_view syncstream system_error text_encoding tgmath.h thread tuple typeindex typeinfo type_traits unordered_map unordered_set utility valarray variant vector version
+#CXX_SYSTEM_HEADER_UNITS = algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat charconv chrono cinttypes ciso646 climits clocale codecvt compare complex complex.h concepts condition_variable coroutine csetjmp csignal cstdalign cstdarg cstdbool cstddef cstdint cstdio cstdlib cstring ctgmath ctime cuchar cwchar cwctype cxxabi.h deque exception execution expected filesystem flat_map flat_set format forward_list fstream functional future generator initializer_list iomanip ios iosfwd iostream istream iterator latch limits list locale map math.h memory memory_resource mutex new numbers numeric optional ostream print queue random ranges ratio regex scoped_allocator semaphore set shared_mutex source_location span spanstream sstream stack stacktrace stdatomic.h stdbit.h stdckdint.h stdexcept stdfloat stdlib.h stop_token streambuf string string_view syncstream system_error text_encoding tgmath.h thread tuple typeindex typeinfo type_traits unordered_map unordered_set utility valarray variant vector version
 
 #gcc 15 all
-#CXX_SYSTEM_HEADER_UNITS ::= algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat \
+#CXX_SYSTEM_HEADER_UNITS = algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat \
 charconv chrono cinttypes ciso646 climits clocale cmath codecvt compare complex complex.h concepts condition_variable \
 coroutine csetjmp csignal cstdalign cstdarg cstdbool cstddef cstdint cstdio cstdlib cstring ctgmath ctime cuchar \
 cwchar cwctype cxxabi.h deque exception execution expected fenv.h filesystem flat_map flat_set format forward_list \
@@ -29,7 +29,7 @@ text_encoding tgmath.h thread tuple typeindex typeinfo type_traits unordered_map
 variant vector version
 
 #gcc 16 all
-#CXX_SYSTEM_HEADER_UNITS ::= algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat \
+#CXX_SYSTEM_HEADER_UNITS = algorithm any array atomic barrier bit bitset cassert ccomplex cctype cerrno cfenv cfloat \
 charconv chrono cinttypes ciso646 climits clocale cmath codecvt compare complex complex.h concepts condition_variable \
 contracts coroutine csetjmp csignal cstdalign cstdarg cstdbool cstddef cstdint cstdio cstdlib cstring ctgmath ctime \
 cuchar cwchar cwctype cxxabi.h debugging deque exception execution expected fenv.h filesystem flat_map flat_set format \
@@ -41,4 +41,4 @@ string string_view syncstream system_error text_encoding tgmath.h thread tuple t
 unordered_map unordered_set utility valarray variant vector version
 
 # with gcc 15 the following fail
-#CXX_SYSTEM_HEADER_UNITS ::= $(filter-out contracts debugging inplace_vector mdspan meta simd,$(CXX_SYSTEM_HEADER_UNITS))
+#CXX_SYSTEM_HEADER_UNITS = $(filter-out contracts debugging inplace_vector mdspan meta simd,$(CXX_SYSTEM_HEADER_UNITS))

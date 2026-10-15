@@ -1,22 +1,26 @@
-# Segment includes the project configuration and figure out build directory and cache directory.
+# This makefile includes the project configuration and figures out build directory and cache directory.
 #
-# required functions: info_i, info_d
+# required functions: bin, info_i, info_d, resolve_path, prefix_dir
 #
 # provided variables:
-# build mcache hcache:
-# resolved relative path if below CURDIR, absolute otherwise; trailing / is removed
+#
+# build, mcache, hcache:
+# resolved relative path to CURDIR; trailing / is removed
 #
 # build_p and mcache_p hcache_p:
 # directory prefix ending with slash, empty if curdir
 #
 # build_ndot, mcache_ndot hcache_ndot:
-# empty if dot dir, dir otherwise
+# directory, empty if dot dir
 #
 # request_header_translation: 1 if header translation is requested, empty otherwise
 #
+# external_module_map: the name of the mapping file for external module CMI files
+#
 # user_mapping: 1 if we use a non default module mapping?
+#
 
-$(call info_d,Reading segment-build-configuration.mk)
+$(call info_d,Reading $(bin)build-configuration.mk)
 $(call info_i,)
 
 # read configuration from project file
@@ -106,4 +110,11 @@ endif
 
 $(call info_i,)
 
-segment-build-configuration = 1
+# checking cache directory
+ifneq ($(CXX_SIMPLE_MAPPING),)
+  $(if $(and $(mcache_p),$(build_p)),,$(error $(red)ERROR: If simple mapping is used, build directory and module cache\
+                                     directory must not be the dot directory!\
+                                     see: <https://savannah.gnu.org/bugs/?68714>$(res)))
+endif
+
+build-configuration = 1
