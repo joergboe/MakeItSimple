@@ -4,7 +4,7 @@
 # CXX_SYSTEM_HEADER_UNITS and CXX_USER_HEADER_UNITS.
 #
 # Stage 1 determines the header unit to source and cmi file mapping. This rule fires only once at start-up or after a
-# configuration change. (The infofiles '%.depn' contain the variable CXX_UNIT_SRC_MOD_CMI_KIND_LIST)
+# configuration change. (The infofiles '%.n.dep' contain the variable CXX_UNIT_SRC_MOD_CMI_KIND_LIST)
 #
 # Stage 2 generates a module mapper file for the header units. (header-map.modm)
 #
@@ -71,7 +71,8 @@ include $(bin)build-configuration.mk
 .PHONY : $(bin)build-configuration.mk
 $(if $(build-configuration),,$(error $(red)ERROR: build-configuration.mk not included$(res)))
 
-# checking header cache directory
+# A cleanup cleans all sub directories of the cache directory!
+# Checking the header cache directory differs from dot directory.
 ifeq ($(hcache),.)
   $(error $(red)ERROR: Header translation requires a header cache directory different from dot-directory!$(res))
 endif
@@ -153,22 +154,22 @@ $(build_p)header-units-config : | $(build_ndot)
 	mv $(verbose) '$(temp_header_units_config_name)' '$@'
 	$(spacer)
 
-# Stage 1: Generate infofiles (*.depn).
+# Stage 1: Generate infofiles (*.n.dep).
 # The source file name is figured out from script get-header-info-and-map.sh and the cmi file name is constructed.
 # Output : CXX_UNIT_SRC_MOD_CMI_KIND_LIST
 # Source file names may be relative to the current directory or absolute.
-infofiles_sys ::= $(addprefix $(build_p)system/,$(addsuffix .depn,$(CXX_SYSTEM_HEADER_UNITS)))
-$(infofiles_sys) : $(build_p)system/%.depn: $(build_p)header-units-list $(build_p)header-units-config
+infofiles_sys ::= $(addprefix $(build_p)system/,$(addsuffix .n.dep,$(CXX_SYSTEM_HEADER_UNITS)))
+$(infofiles_sys) : $(build_p)system/%.n.dep: $(build_p)header-units-list $(build_p)header-units-config
 	$(due_to)
-	$(CXX) -x c++-system-header $* -c -MM -MF $(build_p)system/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${bin}get-header-info-and-map.sh $(build_p)system/$*.dep.0 $@ $* $(hcache) gcm system
+	$(CXX) -x c++-system-header $* -c -MM -MF $(build_p)system/$*.0.dep $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${bin}get-header-info-and-map.sh $(build_p)system/$*.0.dep $@ $* $(hcache) gcm system
 	$(spacer)
 
-infofiles_user ::= $(addprefix $(build_p)user/,$(addsuffix .depn,$(CXX_USER_HEADER_UNITS)))
-$(infofiles_user) : $(build_p)user/%.depn: $(build_p)header-units-list $(build_p)header-units-config
+infofiles_user ::= $(addprefix $(build_p)user/,$(addsuffix .n.dep,$(CXX_USER_HEADER_UNITS)))
+$(infofiles_user) : $(build_p)user/%.n.dep: $(build_p)header-units-list $(build_p)header-units-config
 	$(due_to)
-	$(CXX) -x c++-user-header $* -c -MM -MF $(build_p)user/$*.dep.0 $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	${bin}get-header-info-and-map.sh $(build_p)user/$*.dep.0 $@ $* $(hcache) gcm user
+	$(CXX) -x c++-user-header $* -c -MM -MF $(build_p)user/$*.0.dep $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
+	${bin}get-header-info-and-map.sh $(build_p)user/$*.0.dep $@ $* $(hcache) gcm user
 	$(spacer)
 # The Order Only Prerequisites for the directories require secondary expansion and follow near makefile end.
 
@@ -193,17 +194,15 @@ endif
 depfiles_sys ::= $(addprefix $(build_p)system/,$(addsuffix .dep,$(CXX_SYSTEM_HEADER_UNITS)))
 $(depfiles_sys) : $(build_p)system/%.dep : $(build_p)header-map.modm
 	$(due_to)
-	$(CXX) -x c++-system-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$(build_p)system/$*.o \
- -fdeps-file=$(build_p)system/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
-	${bin}add-header-module-dep.sh $(build_p)header-map.modm $(CURDIR) $@.1 $@
+	$(CXX) -x c++-system-header $* -c -M -MF $(@:.dep=.1.dep) -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$(build_p)system/$*.o -fdeps-file=$(build_p)system/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
+	${bin}add-header-module-dep.sh $(build_p)header-map.modm $(CURDIR) $(@:.dep=.1.dep) $@
 	$(spacer)
 
 depfiles_user ::= $(addprefix $(build_p)user/,$(addsuffix .dep,$(CXX_USER_HEADER_UNITS)))
 $(depfiles_user) : $(build_p)user/%.dep : $(build_p)header-map.modm
 	$(due_to)
-	$(CXX) -x c++-user-header $* -c -M -MF $@.1 -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$(build_p)user/$*.o \
- -fdeps-file=$(build_p)user/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
-	${bin}add-header-module-dep.sh $(build_p)header-map.modm $(CURDIR) $@.1 $@
+	$(CXX) -x c++-user-header $* -c -M -MF $(@:.dep=.1.dep) -MQ $@ -MP -fdeps-format=p1689r5 -fdeps-target=$(build_p)user/$*.o -fdeps-file=$(build_p)user/$*.ddi $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
+	${bin}add-header-module-dep.sh $(build_p)header-map.modm $(CURDIR) $(@:.dep=.1.dep) $@
 	$(spacer)
 
 
@@ -308,7 +307,7 @@ $(call info_d,all_infofiles_dir_parts = '$(all_infofiles_dir_parts)')
 
 $(all_infofiles_dir_parts) : % : | $$(@D)
 	$(run_tgt)
-	$(MKDIR) $(verbose) '$@'
+	-$(MKDIR) $(verbose) '$@'
 	$(spacer)
 
 # cmi directory rules - dir function has always a trailing slash

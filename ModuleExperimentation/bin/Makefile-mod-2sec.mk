@@ -78,20 +78,22 @@ $(build_p)$(TARGET) : $(objects) | $(build_ndot)
 	$(call echo_i,All done.)
 	$(spacer)
 
-# trigger dependent targets
-FORCE :: ;
+# Double colon rules without prerequisites always trigger dependent targets.
+#FORCE :: ;
+
+#header_makefile ::= $(bin)Makefile-header-units-compact.mk
 
 # make header unit cmi files - must run once for productive goals at start up
-header_unit_target ::=
-ifndef MAKE_RESTARTS
-  ifneq ($(request_header_translation),)
-    header_unit_target ::= $(build_p)module-map-h.txt
-
-    $(header_unit_target) : FORCE | $(build_ndot)
-	@$(MAKE) -f $(bin)Makefile-header-units.mk '$@'
-	$(spacer)
-  endif
-endif
+#header_unit_target ::=
+#ifndef MAKE_RESTARTS
+#  ifneq ($(request_header_translation),)
+#    header_unit_target ::= $(build_p)module-map-h.txt
+#
+#    $(header_unit_target) : FORCE | $(build_ndot)
+#	@$(MAKE) -f $(header_makefile) '$@'
+#	$(spacer)
+#  endif
+#endif
 
 # required compiler options
 infoflags =
@@ -350,17 +352,17 @@ else
 endif
 	$(spacer)
 
-.PHONY : clean-header-units
-clean-header-units : clean
-	@$(MAKE) -f $(bin)Makefile-header-units.mk clean
-	$(spacer)
+#.PHONY : clean-header-units
+#clean-header-units : clean
+#	@$(MAKE) -f $(header_makefile) clean
+#	$(spacer)
 
 .PHONY : purge
 purge : clean
 	$(call echo_i,Purge...)
-ifneq ($(request_header_translation),)
-	@$(MAKE) -f $(bin)Makefile-header-units.mk purge
-endif
+#ifneq ($(request_header_translation),)
+#	@$(MAKE) -f $(header_makefile) purge
+#endif
 	$(RMDIR) $(verbose) $(build_ndot) $(mcache_ndot)
 	$(spacer)
 

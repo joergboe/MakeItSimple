@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-#some setup to be save
-IFS=$' \t\n'
+# some recommended security settings
 unset -f unalias
 \unalias -a
 unset -f command
+#some setup to be save
+IFS=$' \t\n'
 set -o posix;
+set -f  # disable pathname expansion
 set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
-shopt -s nullglob
 
 command=${0##*/}
 usage="usage: ${command} [-h|-v].. [--] mapper curdir depfile outfile"
@@ -79,11 +80,25 @@ readonly mapper="$1" curdir="$2" inp="$3" outp="$4"
 
 # read database: source->cmi
 declare -A map_arr=()
+cache_prefix=
+# NOTE: gcc does not strip trailing spaces in a line but read -a does.
 while read -r -a line_arr; do
 	[ -z ${verbose} ] || declare -p line_arr
 	if [[ ${#line_arr[*]} -eq 2 ]]; then
-		temp="${line_arr[0]/#.\//}" # revert change src -> logical name
-		map_arr["${temp}"]="${line_arr[1]}"
+		if [[ ${line_arr[0]} = \$root ]]; then
+			temp="${line_arr[1]}"
+			while [[ ${temp: -1} = / ]]; do
+				temp=${temp:0: -1};
+			done
+			if [[ ${temp} = '.' ]]; then
+				cache_prefix=
+			else
+				cache_prefix="${temp}/"
+			fi
+		else
+			temp2="${line_arr[0]/#.\//}" # revert change src -> logical name
+			map_arr["${temp2}"]="${cache_prefix}${line_arr[1]}"
+		fi
 	else
 		errexit "Ignore line ${line_arr[*]}" 1
 	fi
@@ -95,7 +110,7 @@ done < "${mapper}"
 prerequisites=
 logical_line=
 while read -r; do
-	[ -z ${verbose} ] || echo "REPL='${REPLY}'"
+	[ -z ${verbose} ] || echo "REPLY='${REPLY}'"
 	if [[ ${REPLY: -1} == "\\" ]]; then # Note the space after colon
 		logical_line+="${REPLY:0: -1}"
 	else

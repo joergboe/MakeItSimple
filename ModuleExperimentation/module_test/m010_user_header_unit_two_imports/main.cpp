@@ -7,6 +7,7 @@
 #define CONST1 55
 
 import "headers/module.h";
+//import <../module.h>;
 //#include "headers/module.h"
 
 int main(int, const char**) {
