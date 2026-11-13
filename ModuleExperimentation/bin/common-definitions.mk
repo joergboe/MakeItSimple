@@ -27,6 +27,12 @@
 # SHELL, .SHELLFLAGS, RMDIR, MKDIR, RM
 #
 
+SHELL = /bin/bash
+.SHELLFLAGS ::= -ec
+RMDIR = rm -rf
+MKDIR = mkdir
+RM = rm -f
+
 red =
 yel =
 res =
@@ -36,7 +42,7 @@ ifneq ($(MAKE_TERMERR),)
   res = [0m
 endif
 
-# checking gnu make version
+# Checking GNU make version.
 min_make_version = 4.4.1
 ifeq ($(origin MAKE_VERSION),undefined)
   $(warning $(yel)WARNING: This is not GNU Make.$(res))
@@ -44,7 +50,6 @@ else ifneq ($(min_make_version),$(firstword $(sort $(MAKE_VERSION) $(min_make_ve
   $(warning $(yel)WARNING: Required make version is $(min_make_version) or higher but version is $(MAKE_VERSION).$(res))
 endif
 
-# common variables
 define nl
 
 
@@ -52,6 +57,10 @@ endef
 empty =
 tab ::= $(empty)	$(empty)
 space ::= $(empty) $(empty)
+
+# Check whether we need to be quiet.
+single_make_options ::= $(firstword -$(MAKEFLAGS))
+silent ::=$(findstring s,$(single_make_options))
 
 # The output is verbose (debug level) if not -s and variable VERBOSE is not null.
 verbose =
@@ -78,7 +87,7 @@ echo_i = @echo '$1'
 # ec - control the echo in recipes
 ec =
 
-# justifying display macros
+# Adjustment of the display macros.
 ifeq ($(verbose),)
   info_d =
   ec = @
@@ -141,12 +150,5 @@ all_dirs = $(let dd,$(dir $1),$\
     $(dd) $(call all_dirs,$(patsubst %/,%,$(dd)))$\
   )$\
 )
-
-# global settings
-SHELL = /bin/bash
-.SHELLFLAGS ::= -ec
-RMDIR = rm -rf
-MKDIR = mkdir
-RM = rm -f
 
 common-definitions = 1

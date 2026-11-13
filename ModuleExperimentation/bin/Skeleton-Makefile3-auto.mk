@@ -1,42 +1,40 @@
 # Skeleton Makefile3-auto.mk
 
-# Difference to Skeleton Makefile1-auto.mk:
-# * The depfile substitutes all legacy header dependencies of the translation unit.
-# * The rules for module related dependencies are all generated from make. The depfiles contain the
-#   rule for the legacy header dependencies and the variable with the module dependencies in CSV style.
-#   The CXX_OBJ_SRC_MOD_IF_REQ_LIST list now contains:
-#       <primary output; source; module-provided; is-interface[; module-required[...]]>
-#
+# With automatic dependency generation based on structured dependency information.
+# The CXX_SRC_OBJ_MOD_IF_REQ_LIST lists:
+#    primary output; source; module-provided; is-interface[; mod-required[ ;mod-required..]]
+# The depfile substitutes all legacy header dependencies of an translation unit.
+# Grouped Target Rules for module units and non module units are generated with 'eval'.
+
 # --------------------------------------------------------------------------
 
-# rule to generate dependency files with legacy rule and module deps
+# Function 'get_cmi_name' expands to the CMI file name for project modules.
+# Input: 1 - module name
+#        2 - source file name
+ifeq ($(CXX_SIMPLE_MAPPING),)
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+else
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(2:.cpp=).gcm
+endif
+
+# The rule for the dependency scan generates depfiles.
 depfiles ::= $(sources:.cpp=.dep)
 $(depfiles) : %.dep: %.cpp
 	g++ $< -MM -MF $@ -MQ $@ -fdeps-format=p1689r5 -fdeps-file=$*.ddi ...
-	p1689_to_make_tab.sh ... # append the module dependencies as CSV record
-	..
+	p1689_to_make.sh ... # append the module dependencies as CSV record
+	...
 
-# include depfiles with header and module dependency
+# Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST and the dependency rules.
 include $(depfiles)
 
-# Variable get_cmi_name expands to the CMI file name.
-# input: 1 - module name
-#        2 - source file name
-ifeq ($(CXX_SIMPLE_MAPPING),)
-  get_cmi_name = modulecache/$(subst :,-,$1).gcm
-else
-  get_cmi_name = modulecache/$2.gcm
-endif
-
-# include the provided modules database: CXX_SRC_MOD_IF_LIST
-dbmfiles ::= $(sources:.cpp=.depm)
-include $(dbmfiles)
-
-# provide required module variables CXX_MOD_module_required_CMI
-# provide module map, modsources and nomodsources
-# let provides the local variables: obj, src, mod, is_if, modi and cmi
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
-  $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
+# Generating variables CXX_MOD_$(modi)_CMI for all project modules an module map and check for duplicate module.
+# Provided local variables:
+#    src - source file name
+#    mod - the module name
+#    modi - internal module name (colon is replaced with dash)
+#    cmi  - cmi name
+$(foreach line,$(CXX_SRC_OBJ_MOD_IF_REQ_LIST),\
+  $(let src obj mod is_if reqs,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
       $(let modi cmi,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)),\
         $(eval CXX_MOD_$(modi)_CMI ::= $(cmi))\
@@ -46,40 +44,51 @@ $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   )\
 )
 
-# write module map if necessary
-...
-ifne(...)
-  $(file > module-map.txt,...)
-endif
+# Writing the module-map.
+$(file > module-map.modm,...)
 
-# reqs2cmi - expand all prerequisite modules to cmi file name
-# input: reqs - list of prerequisite modules
-reqs2cmi = $(foreach mod,$(reqs),$(CXX_MOD_$(subst :,-,$(mod))_CMI))
+# Macro reqs2cmi expands to all required cmi file names.
+# Requires the local variable reqs with the list of all required modules.
+reqs2cmi = $(foreach m,$(reqs),$(CXX_MOD_$(subst :,-,$(m))_CMI))
 
+# Variable modul_rule_template expands to the grouped target rule for module units including recipe.
+# Using the following local variables as input.
+#    src - source file name
+#    obj - object name
+#    dep - depfile name
+#    cmi - cmi file name
+#    reqs - all required modules
 ifeq ($(CXX_SIMPLE_MAPPING),)
-define
-modul_rule_template =
-$(obj) $(cmi) &: $(src) $(dep) $(reqs2cmi) module-map.txt
-	g++ -o $(obj) $$< -c -fmodule-mapper=module-map.txt ...
-endef
-else
-  # provide the rule only, the recipe is added by a Pattern Rule
   define modul_rule_template
-$(obj) $(cmi) &: $(src) $(dep) $(reqs2cmi) module-map.txt
+  $(obj) $(cmi) &: $(src) $(dep) $(reqs2cmi)
+	g++ -o $(obj) $$< -c -fmodule-mapper=module-map.modm ...
+  endef
+else
+  # For simple mapping, the rule is generated without recipe.
+  define modul_rule_template
+  $(obj) $(cmi) : $(src) $(dep) $(reqs2cmi)
   endef
 endif
 
-# template rule fragment for non module sources, the recipe is added by a Pattern Rule
+# The template rule fragment for non module sources without recipe.
+# Using the following local variables as input.
+# input: src, obj, dep, reqs
 define no_modul_rule_fragment
-$(obj) : $(src) $(dep) $(reqs2cmi) module-map.txt
+$(obj) : $(src) $(dep) $(reqs2cmi)
 endef
 
-# generate rules for all translation units
-# provide modsources and nomodsources
-# let provides the local variables: obj, src, mod, is_if, dep, modreg and cmi
-$(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
-  $(let obj src mod is_if reqs,$(subst ;, ,$(line)),\
-    $(let dep modreq,$(src:.cpp=.dep) $(reqs2cmi),\
+# Generating rules for module units and non module units.
+# Provided local variables:
+#        src - source file name
+#        obj - object name
+#        mod - the module name
+#        is_if - is interface (0/1)
+#        dep - defile name
+#        modreq - the required cmi files list
+#        cmi  - cmi name (for modules only)
+$(foreach line,$(CXX_SRC_OBJ_MOD_IF_REQ_LIST),\
+  $(let src obj mod is_if reqs,$(subst ;, ,$(line)),\
+    $(let dep,$(src:.cpp=.dep),\
       $(if $(subst -,,$(mod)),\
         $(let cmi,$(call get_cmi_name,$(mod),$(src)),\
           $(eval $(modul_rule_template))\
@@ -93,18 +102,18 @@ $(foreach line,$(CXX_OBJ_SRC_MOD_IF_REQ_LIST),\
   )\
 )
 
-# rules for no module sources and simple module mapping
+# Completing the rules for non module units.
 nomodobjects = $(nomodsources:.cpp=.o)
 $(nomodobjects) : %.o : %.cpp %.dep
-	g++ -o $@ $< -c -fmodule-mapper=module-map.txt ...
+	g++ -o $@ $< -c -fmodule-mapper=module-map.modm ...
 
-# If simple module mapping is used the a Pattern Rule is used for translation units providing a module.
+# Generate 'Pattern Rules' for for module units if Simple Mapping is activated.
 ifneq ($(CXX_SIMPLE_MAPPING),)
-%.o modulecache/%.gcm :: %.cpp %.dep module-map.txt
-	g++ -o $(<:.cpp=.o) $< -c -fmodule-mapper=module-map.txt ...
+%.o modulecache/%.gcm :: %.cpp %.dep
+	g++ -o $(<:.cpp=.o) $< -c -fmodule-mapper=module-map.modm ...
 endif
 
-# link all together
+# Finally link all together.
 $(TARGET) : $(objects)
 	g++ -o $(TARGET) $^ ...
 
@@ -115,17 +124,17 @@ $(TARGET) : $(objects)
 # module in form of a variable with a CSV record. The CXX_OBJ_SRC_MOD_IF_REQ_LIST lists:
 #    primary output; source; module-provided; is-interface[; module-required[...]]
 
-# (1) The firs rule lists the (non module) prerequisites for the depfiles and dbmfies.
+# (1) The firs rule lists the non module prerequisites for the depfiles.
 # (2) A variable contains the information about provided module.
 
-# Module Units
+# Module Units:
 # (1)
 src.dep : src.cpp header.h ...
 # (2)
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;module-provided;1;module-required[; ...]
+CXX_SRC_OBJ_MOD_IF_REQ_LIST += src.cpp;src.o;module-provided;1;module-required[; ...]
 
-# Non Module Units
+# Non Module Units:
 # (1)
 src.dep : src.cpp header.h ...
 # (3)
-CXX_OBJ_SRC_MOD_IF_REQ_LIST += src.o;src.cpp;-;0;module-required[; ...]
+CXX_SRC_OBJ_MOD_IF_REQ_LIST += src.cpp;src.o;-;0;module-required[; ...]

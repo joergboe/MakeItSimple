@@ -1,13 +1,8 @@
-# The rules for projects with C++ modules using secondary expansion
-# Variables are used to express the module dependencies in prerequisites.
-# A variable like CXX_MOD_modulname_CMI substitutes the cmi file name by the module name.
-# Database variables and dependency rules are generated in dep files.
+# Makefile for a project with C++ modules and automatic dependency scanning.
 
-# With automatic dependency generation based on structured dependency information.
-# The CXX_SRC_MOD_IF_LIST lists:
-#    primary output; source; module-provided; is-interface
-# The depfile substitutes all legacy header dependencies of an translation unit.
-# Grouped Target Rules for module units are generated with 'eval'.
+# Difference to Makefile1-auto.mk:
+# Dependency rules and module dependency information are written into a single dependency file.
+# Make uses the Second Expansion to get the current cmi file dependencies.
 
 # The automatic variable $? is fixed because the grouped rule prerequisites are complete.
 
@@ -20,98 +15,108 @@
 
 $(info **** $(if $(MAKE_RESTARTS),Restart # $(MAKE_RESTARTS),Start) in directory $(CURDIR))
 
-# get path of this makefile
-my_bin_dir ::= $(dir $(lastword $(MAKEFILE_LIST)))
+SHELL = /bin/bash
+.SHELLFLAGS ::= -ec
 
-# collect source files
+# Getting path of this makefile.
+bin ::= $(dir $(lastword $(MAKEFILE_LIST)))
+
+# Collecting all source files in current directory.
 sources ::= $(wildcard *.cpp)
 $(info sources = $(sources))
 
-# macro to display information
+# Module Cache Directory
+CXX_MODULE_CACHE ?= gcm.cache
+
+# Defining required compiler options.
+CXXFLAGS ?= -std=c++20 -fmodules
+
+# Macros to display information about the running recipe.
 due_to = @echo 'Run target $@ - Due to $?'
 
-# default target
+# Module to CMI file mapper function - expands to the cmi file name or nothing.
+# Input: 1 - Module Name
+mmap = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+
+# Function 'get_cmi_name' expands to the CMI file name for project modules.
+# Input: 1 - module name
+#        2 - source file name
+ifeq ($(CXX_SIMPLE_MAPPING),)
+  get_cmi_name = $(call mmap,$1)
+else
+  get_cmi_name = $(CXX_MODULE_CACHE)/$(2:.cpp=).gcm
+endif
+
+# The default target must be the first target.
 TARGET ?= main
 $(TARGET) :
 
-# required compiler options
-CXXFLAGS ?= -std=c++20 -fmodules
-
-# rule to generate dependency files
+# The rule for the dependency scan generates depfiles.
 depfiles ::= $(sources:.cpp=.dep)
 $(depfiles) : %.dep: %.cpp
 	$(due_to)
-	$(CXX) '$<' -MM -MF '$@' -MQ '$@' -fdeps-format=p1689r5 -fdeps-file='$*.ddi' -fdeps-target='$*.o'\
- -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
-	$(my_bin_dir)p1689_to_make_sec.sh '$*.ddi' '$@' '$*.o' '$<' # rewrite dependencies for secondary exp. and append module deps
-	@echo
-
-# module cache directory
-CXX_MODULE_CACHE ?= gcm.cache
-
-# get_cmi_name - map module name or source file name to the cmi file name for project modules
-# input: 1 - module name
-#        2 - source file name
+	$(CXX) '$<' -MM -MF '$@' -MQ '$@' -fdeps-format=p1689r5 -fdeps-file='$*.ddi' -fdeps-target='$*.o' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 ifeq ($(CXX_SIMPLE_MAPPING),)
-  get_cmi_name = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+	$(bin)p1689_to_make.sh -s -u -y '$*.ddi' '$*.dep' '$*.o' '$<'
 else
-  get_cmi_name = $(CXX_MODULE_CACHE)/$(src:.cpp=).gcm
+	$(bin)p1689_to_make.sh -s -y -c '$(CXX_MODULE_CACHE)/$(<:.cpp=).gcm' '$*.ddi' '$*.dep' '$*.o' '$<'
 endif
+	@echo
 
 # Do we use a non default module mapping?
 user_mapping = $(if $(subst gcm.cache,,$(CXX_MODULE_CACHE)),1,$(if $(CXX_SIMPLE_MAPPING),1))
 
-# mapper file dependency
-mapper_dep = $(if $(user_mapping),module-map.txt)
-
 # mapper option
-mapper_opt = $(if $(user_mapping),-fmodule-mapper=module-map.txt)
+mapper_opt = $(if $(user_mapping),-fmodule-mapper=module-map.modm)
+# The content of the module map depends on the configuration of the build and does not change for one
+# configuration. So the module map is not a dependency for object files and cmi files.
 
 .SECONDEXPANSION :
 
-# include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
-# depfiles require get_cmi_name function
+# Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST
 # CXX_MOD_require1_CMI variables are resolved during secondary expansion
-CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
+CXX_SRC_OBJ_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
 include $(depfiles)
 
-# template rule for module sources
-# input: src - source file name
-#        obj - object name
-#        dep - depfile name
-#        cmi - cmi file name
+# Variable modul_rule_template expands to the grouped target rule for module units including recipe.
+# Using the following local variables as input.
+#    src - source file name
+#    obj - object name
+#    dep - depfile name
+#    cmi - cmi file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
   define modul_rule_template
-  $(info generate module rule $(obj) $(cmi) &: $(src) $(dep) $(mapper_dep))
+  $(info generate module rule $(obj) $(cmi) &: $(src) $(dep))
 
   $$(obj) $$(cmi) : my_obj ::= $$(obj)
-  $$(obj) $$(cmi) &: $$(subst $$$$,$$$$$$$$,$$(src) $$(dep)) $$$$(mapper_dep)
+  $$(obj) $$(cmi) &: $$(subst $$$$,$$$$$$$$,$$(src) $$(dep))
 	$$(due_to)
 	$$(CXX) -o '$$(my_obj)' '$$<' -c $$(mapper_opt) $$(CXXFLAGS) $$(CPPFLAGS) $$(TARGET_ARCH)
 	@echo
   endef
 else
-  modul_rule_template =
+  modul_rule_template = # Rules for module units are provided as 'Pattern Rule'.
 endif
 
-# TODO: generate variables and modulemap for imported cmi files
+# TODO: Generate variables and modulemap for imported cmi files.
+# TODO: Check missing module requirements.
 
-# generate rules for module sources, module variables and module map and check for duplicate module
-# provided variables:
-#        src - source file name
-#        mod - the module name
-#        is_if - is interface (0/1)
-#        modi - internal module name (colon is replaced with dash)
-#        cmi  - cmi name
-#        obj - object name
-#        dep - defile name
-modsources ::= # generate rules for module sources and module variables for the output variables
+# Generating rules for module sources, module variables and module map and check for duplicate module.
+# Provided local variables:
+#    src - source file name
+#    mod - the module name
+#    is_if - is interface (0/1)
+#    modi - internal module name (colon is replaced with dash)
+#    cmi  - cmi name
+#    obj - object name
+#    dep - depfile name
+modsources ::= # Ensure the simply expanded variable flavor for the output variables.
 nomodsources ::=
 modulemap ::=
-$(foreach line,$(CXX_SRC_MOD_IF_LIST),\
-  $(let src mod is_if,$(subst ;, ,$(line)),\
+$(foreach line,$(CXX_SRC_OBJ_MOD_IF_LIST),\
+  $(let src obj mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi obj dep,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(src:.cpp=.o) $(src:.cpp=.dep),\
+      $(let modi cmi dep,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(src:.cpp=.dep),\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(error Duplicate module $(mod) in source unit $(src))\
         )\
@@ -126,13 +131,11 @@ $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
     )\
   )\
 )
-# TODO: keep going for duplicate modules check
+# TODO: Check 'keep going' in duplicate modules check.
 $(info nomodsources = $(nomodsources))
 $(info )
 
-# TODO: generate variables and modulemap for imported cmi files
-
-# some variables to hide spacial chars
+# Defining some variables to hide spacial chars.
 define nl
 
 
@@ -140,37 +143,35 @@ endef
 empty ::=
 space ::= $(empty) $(empty)
 
-# write module-map - avoid unnecessary updates
-# NOTE: trailing spaces are not allowed
+# Writing the module-map.
+# NOTE: Trailing spaces are significant in module map format.
 modulemap_subst ::= $(subst ;, ,$(subst $(space),$(nl),$(modulemap)))
-modulemap_old ::= $(file < module-map.txt)
-ifneq ($(modulemap_old),$(modulemap_subst))
-  $(file > module-map.txt,$(modulemap_subst))
-endif
-# TODO: write empty modulemap
+$(file > module-map.modm,$(modulemap_subst))
 
-# generate rules for no module sources
+# Generating 'Static Pattern Rules' for non module units.
 nomodobjects ::= $(nomodsources:.cpp=.o)
-$(nomodobjects) : %.o : %.cpp %.dep $$(mapper_dep)
+$(nomodobjects) : %.o : %.cpp %.dep
 	$(due_to)
 	$(CXX) -o '$@' '$<' -c $(mapper_opt) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
 
-# generate rules for module sources
+# Generate 'Pattern Rules' for for module units if Simple Mapping is activated.
 ifneq ($(CXX_SIMPLE_MAPPING),)
-  %.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep $$(mapper_dep)
+  %.o $(CXX_MODULE_CACHE)/%.gcm :: %.cpp %.dep
 	$(due_to)
 	$(CXX) -o '$(<:.cpp=.o)' '$<' -c $(mapper_opt) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)
 	@echo
 endif
+# TODO: Is double colon rule appropriate?
 
-# link all together
+# Finally link all together.
 objects ::= $(sources:.cpp=.o)
 $(TARGET) : $$(objects)
 	$(due_to)
 	$(CXX) -o '$(TARGET)' $(foreach o,$(objects),'$(o)') $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH)
 	@echo
 
+# Cleanup rule:
 .PHONY : clean
 clean :
 	rm -fv '$(TARGET)'
@@ -178,5 +179,5 @@ clean :
 	rm -fv *.dep
 	rm -fv *.dep~
 	rm -fv *.ddi
-	rm -fv module-map.txt
-	LIST=; for x in $(CXX_MODULE_CACHE)/*; do if ! [[ -d $${x} ]]; then LIST+=" $${x}"; fi; done; rm -rfv $${LIST};
+	rm -fv module-map.modm
+	rm -rfv '$(CXX_MODULE_CACHE)'

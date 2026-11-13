@@ -26,6 +26,7 @@ $(call info_i,)
 # read configuration from project file
 MKTS_MAKEFILE_DEFS ?= project.mk
 -include $(MKTS_MAKEFILE_DEFS)
+.PHONY : $(MKTS_MAKEFILE_DEFS)
 $(if $(filter $(MKTS_MAKEFILE_DEFS),$(lastword $(MAKEFILE_LIST))),\
   $(call info_i,Using project configuration '$(MKTS_MAKEFILE_DEFS)')\
 ,\

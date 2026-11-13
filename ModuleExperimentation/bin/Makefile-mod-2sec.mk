@@ -31,6 +31,9 @@ $(if $(common-definitions),,$(error $(red)ERROR: $(bin)common-definitions.mk not
 # removing all the built-in pattern rules
 MAKEFLAGS += -r
 
+$(call info_d,MAKEFLAGS='$(MAKEFLAGS)')
+$(call info_d,MAKECMDGOALS='$(MAKECMDGOALS)')
+
 # Place the default target before any before including any user defined project files.
 .PHONY : all
 all : all_
@@ -84,16 +87,18 @@ $(build_p)$(TARGET) : $(objects) | $(build_ndot)
 #header_makefile ::= $(bin)Makefile-header-units-compact.mk
 
 # make header unit cmi files - must run once for productive goals at start up
-#header_unit_target ::=
+header_unit_target ::=
 #ifndef MAKE_RESTARTS
 #  ifneq ($(request_header_translation),)
 #    header_unit_target ::= $(build_p)module-map-h.txt
-#
+
 #    $(header_unit_target) : FORCE | $(build_ndot)
 #	@$(MAKE) -f $(header_makefile) '$@'
 #	$(spacer)
 #  endif
 #endif
+
+#.NOTPARALLEL : $(header_unit_target)
 
 # required compiler options
 infoflags =
