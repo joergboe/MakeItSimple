@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
-# some recommended security settings
+# Some recommended security settings
 unset -f unalias
 \unalias -a
 unset -f command
-#some setup to be save
 IFS=$' \t\n'
 #set -o posix;
-set -f  # disable pathname expansion
+set -f  # Disable path name expansion.
 set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
 
 command=${0##*/}
@@ -30,18 +29,21 @@ myhelp() {
 	        -h        : Help
 	        -v        : Verbose
 
-	1) The scrip reads the mapping file mapper-in.
+	1) The scrip reads the mapping file mapper-in. The first line may contain the \$root definition or not.
 
 	    \$root cache-dir
 	    src1 cmi1
 	    src2 cmi2
 	
 	6) The script scans the (header) dependencies of a header unit (the first rule). If a dependency exists in the
-	mapping  database, a rule with the dependend cmi file is added:
+	   mapping  database, a rule with the dependend cmi file is added:
 
-	    <my-cmi> : <dpendency-cmi1> <dpendency-cmi2>
+	        <my-cmi> : <dpendency-cmi1> <dpendency-cmi2>
 
-	Dollar symbols in names are replaced by two dollar symbols.
+	   The rule is escaped according to the make rules.
+	   Dollar signs are doubled.
+	   Special characters (space, tab, hash-mark and colon) are escaped by one backslash.
+	   Backslashes before special characters are doubled.
 
 	EOF
 }
@@ -97,24 +99,35 @@ declare -A src_cmi=() # The database [src]->cmi
 [[ -r "${mapper_in}" ]] || errexit "file '${mapper_in}' is not readable!" 2
 [ -z "${verbose}" ] || echo "Scanning mapfile '${mapper_in}'"
 
+# Reading the mapper file.
 first_line=1
 root=
 while read -r -a arr; do
+
 	if [[ -n ${first_line} ]]; then
 		first_line=
-		[[ ${#arr[*]} -lt 1 || ${arr[0]} != '$root' ]] && errexit "No root found in mapefile!" 1
-		if [[ ${#arr[*]} -gt 1 ]]; then
-			root="${arr[1]}"
+		if [[ ${#arr[*]} -gt 0 && ${arr[0]} = \$root ]]; then
+			if [[ ${#arr[*]} -gt 1 ]]; then
+				root="${arr[1]}"
+				if [[ "${root}" = '.' ]]; then
+					root=
+				fi
+			fi
+			[ -z "${verbose}" ] || echo "Using cache root '${root}'"
+			continue
 		fi
-		if [[ "${root}" = '.' ]]; then
-			root=
-		fi
-		[ -z "${verbose}" ] || echo "Using cache root '${root}'"
-	else
-		[[ ${#arr[*]} -ne 2 ]] && error "Ignored line in mapfile '${arr[*]}'"
-		src="${arr[0]/#.\//}"
-		src_cmi+=(["${src}"]="${root}/${arr[1]}")
+		[ -z "${verbose}" ] || echo "No cache root found."
 	fi
+
+	[[ ${#arr[*]} -ne 2 ]] && error "Ignored line in mapfile '${arr[*]}'"
+	src="${arr[0]/#.\//}"
+	if [ -n "${root}" ]; then
+		cmi="${root}/${arr[1]}"
+	else
+		cmi="${arr[1]}"
+	fi
+	src_cmi+=(["${src}"]="${cmi}")
+
 done < "${mapper_in}"
 [ -z "${verbose}" ] || { declare -p src_cmi; echo; }
 

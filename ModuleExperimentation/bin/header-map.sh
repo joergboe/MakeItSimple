@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
-# some recommended security settings
+# Some recommended security settings:
 unset -f unalias
 \unalias -a
 unset -f command
-#some setup to be save
 IFS=$' \t\n'
 #set -o posix;
-set -f  # disable pathname expansion
+set -f  # Disable path name expansion.
 set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
 
 command=${0##*/}
-usage="usage: ${command} [-h|-v].. [--] mapper-out depfile-out project-dir build-dir-sys build-dir-user depfile-suffix cache-dir cmi-suffix [depfile-in [depfile-in [...]]]"
+usage="usage: ${command} [OPTION]... [--] mapper-out depfile-out project-dir build-dir-sys build-dir-user
+	                                    depfile-suffix cache-dir cmi-suffix [depfile-in [depfile-in [...]]]"
 
 myhelp() {
 	cat <<-EOF
@@ -27,13 +27,14 @@ myhelp() {
 	        build-dir-sys : Prefix path for system header unit depfiles.
 	        build-dir-user: Prefix path for user header unit depfiles.
 	        depfile-suffix: Filename suffix for depfiles.
-	        cache-dir     : The cmi-cache directory.
-	        cmi-suffix    : Filename suffix for cmi-files.
+	        cache-dir     : The CMI-cache directory.
+	        cmi-suffix    : Filename suffix for CMI-files.
 	        depfile-in    : The input dependency information of one unit. The unit name
 
 	    Options:
 	        -h        : Help
 	        -v        : Verbose
+	        -r        : Root - use the \$root statement in the first line in 'mapper-out'
 
 	1) This script looks in depfile-in for the first prerequisite in the first rule which is the
 	source file name.
@@ -48,7 +49,7 @@ myhelp() {
 	        mod=./incl/../header2.h
 	        mod=./../header2.h
 
-	3) The cmi file name is constructed from the module name. Dot characters in the module name are
+	3) The CMI file name is constructed from the module name. Dot characters in the module name are
 	replaced by commas.
 	
 	    Absolute source file:
@@ -68,20 +69,27 @@ myhelp() {
 	        CXX_KIND_UNIT_SRC_MOD_CMI_LIST += <kind>;<unit name>;<source name>;<logical module>;<cmi name>
 
 	    kind           : The kind of the unit: system or user.
-	    unit name      : The unit name from command line
+	    unit name      : The unit name is the name of defile-in with depfile suffix removed.
 	    source name    : The source file name from the first prerequisite in depfile
 	    logical module : The logical module name. The source name if the source path is absolute. If the source path is
 	                     relative and does not begin with a dot, a ‘./’ directory is prepended.
 	    cmi            : The CMI file name: <cache>/<logical module>.<ext>. Internal ‘..’ or '.' components are
 	                     translated to ‘,,’ or '.' in logical module.
 
+	    The output is escaped according to the make rules.
+	    Dollar signs are doubled, and hash-mark is escaped by one backslash.
+	    Backslashes before hash-mark are doubled.
+
 	5) The scrip builds the mapping file mapper-out.
 
+	  With option -r:
 	    \$root cache-dir
+	    src1 cmi1_wo_cache_dir
+	    src2 cmi2_wo_cache_dir
+
+	  Without option -r:
 	    src1 cmi1
 	    src2 cmi2
-	
-	Dollar symbols in names are replaced by two dollar symbols.
 
 	EOF
 }
@@ -90,10 +98,12 @@ bin="${0%/*}"
 source -p "${bin}" header-common-definitions.sh
 
 verbose=
-while getopts 'hv' arg; do
+root_line=
+while getopts 'hvr' arg; do
 	case ${arg} in
 		h) myhelp; exit 0;;
 		v) verbose=1;;
+		r) root_line=1;;
 		\? | *) echo "$usage"; exit 2;;
 	esac
 done
@@ -114,6 +124,7 @@ readonly cmi_suffix="$8"
 shift 8
 
 if [ -n "${verbose}" ]; then
+	echo "root_line=${root_line}"
 	for x in mapper_out depfile_out project_dir build_dir_sys build_dir_user depfile_suffix cache_dir cmi_suffix; do
 		echo "${x}=${!x}"
 	done
@@ -170,10 +181,14 @@ fi
 echo "# This is a generated file. Do not edit!" > "${depfile_out}"
 
 # The database over all header files to translate.
-# Key is the source/header file; Value is the cmi file to generate.
+# Key is the (source) header file; Value is the CMI file to generate.
 declare -A src_cmi=() # The database [src]->cmi
 
-mapper="\$root ${cache_dir}"$'\n'
+if [[ -n ${root_line} ]]; then
+	mapper="\$root ${cache_dir}"$'\n'
+else
+	mapper=
+fi
 
 for ((findex=1; findex<=$#; findex++)); do
 	inp="${!findex}"
@@ -200,34 +215,38 @@ for ((findex=1; findex<=$#; findex++)); do
 		break
 	fi
 
-	if [[ ${src} == /* || ${src} == .* ]]; then
+	if [[ ${src} == /* || ${src} == ./* || ${src} == ../* ]]; then
 		logname="${src}"
 	else
 		logname="./${src}"
 	fi
 	[ -z "${verbose}" ] || echo "logname='${logname}'"
-	# replace /../ with /,,/ in cmi file component
+	# Replacing /../ with /,,/ in CMI file component.
 	temp="${logname//\/..\//\/,,\/}"
 	[ -z "${verbose}" ] || echo "temp='${temp}'"
-	# replace /./ with /,/ in cmi file component
+	# Replacing /./ with /,/ in cmi file component.
 	temp2="${temp//\/.\//\/,\/}"
 	[ -z "${verbose}" ] || echo "temp2='${temp2}'"
-	# replace ./ with ,/ at beginning
+	# Replacing ./ with ,/ at beginning.
 	temp3="${temp2/#.\//,\/}"
 	[ -z "${verbose}" ] || echo "temp3='${temp3}'"
 	# complete cmi name
 	if [[ ${temp3} == /* ]]; then
-		cmi="${cache_dir_p}.${temp3}${cmi_suffix}" # emulate the default gcc mapper
+		wo_cache=".${temp3}${cmi_suffix}" # Emulate the default gcc mapper.
 	else
-		cmi="${cache_dir_p}${temp3}${cmi_suffix}"
+		wo_cache="${temp3}${cmi_suffix}"
 	fi
+	cmi="${cache_dir_p}${wo_cache}"
 	[ -z "${verbose}" ] || echo "cmi='${cmi}'"
 
 	src_cmi[$src]="${cmi}"
-	temp4="${cmi#"${cache_dir}/"}"
-	mapper+="${logname//\$\$/\$} ${temp4//\$\$/\$}"$'\n'
+	if [[ -n ${root_line} ]]; then
+		mapper+="${logname} ${wo_cache}"$'\n'
+	else
+		mapper+="${logname} ${cmi}"$'\n'
+	fi
 
-	# Get the unit name and kind from input parameters.
+	# Get the unit name and kind from depfile-in.
 	if [[ ${inp} = ${build_dir_sys_p}?* ]]; then
 		kind=system
 		tmp="${inp#"${build_dir_sys_p}"}"

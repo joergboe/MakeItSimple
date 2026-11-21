@@ -59,7 +59,7 @@ $(depfiles) : %.dep: %.cpp
 	@echo
 
 # Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST and the dependency rules.
-CXX_SRC_OBJ_MOD_IF_REQ_LIST ::= # prefer simple variable flavor for the list with provided modules
+CXX_SRC_OBJ_MOD_IF_REQ_LIST ::= # Prefer simple variable flavor for the list with provided modules.
 include $(depfiles)
 
 # Generating variables CXX_MOD_$(modi)_CMI for all project modules an module map and check for duplicate module.

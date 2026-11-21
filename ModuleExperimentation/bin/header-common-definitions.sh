@@ -19,8 +19,8 @@ error() {
 	echo -e "${red}${command} : ERROR: $1${end}" >&2
 }
 
-# Reading the complete first rule and get the prerequisites.
-# Read existing dep-file and get the first prerequisite. These files are generated from gcc.
+# Read existing dep-file and get the prerequisites.
+# These files are generated from gcc.
 # Currently gcc inserts a space and a backslash to continue a long line. So we do not expect escaped newline
 # directly after a word.
 # We also do not expect comments in such gcc generated files.
@@ -125,6 +125,10 @@ scan_prerequisites() {
 	fi
 }
 
+# Escape the rhs of an assignment according to the make rules.
+# Dollar signs are doubled, and hash-mark is escaped by one backslash.
+# Backslashes before hash-mark are doubled.
+# Parameters: $1 - Input string
 result=
 escape_for_assign() {
 	result=
@@ -150,7 +154,10 @@ escape_for_assign() {
 	done
 }
 
-# Escape for rule.
+# Escape a string to be used as target or prerequisite according to make rules.
+# Dollar signs are doubled.
+# Special characters (space, tab, hash-mark and colon) are escaped by one backslash.
+# Backslashes before special characters are doubled.
 # Parameters: $1 - Input string
 #             $2 - A space follows if this parameter is non empty.
 escape_for_rule() {

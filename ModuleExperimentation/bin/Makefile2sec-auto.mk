@@ -29,7 +29,7 @@ $(info sources = $(sources))
 CXX_MODULE_CACHE ?= gcm.cache
 
 # Defining required compiler options.
-CXXFLAGS ?= -std=c++20 -fmodules
+CXXFLAGS ?= -std=c++20 -fmodules -flang-info-include-translate -flang-info-module-cmi
 
 # Macros to display information about the running recipe.
 due_to = @echo 'Run target $@ - Due to $?'
@@ -73,9 +73,9 @@ mapper_opt = $(if $(user_mapping),-fmodule-mapper=module-map.modm)
 
 .SECONDEXPANSION :
 
-# Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST
-# CXX_MOD_require1_CMI variables are resolved during secondary expansion
-CXX_SRC_OBJ_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
+# Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST.
+# CXX_MOD_require1_CMI variables are resolved during secondary expansion.
+CXX_SRC_OBJ_MOD_IF_LIST ::= # Prefer simple variable flavor for the list with provided modules.
 include $(depfiles)
 
 # Variable modul_rule_template expands to the grouped target rule for module units including recipe.
@@ -112,7 +112,8 @@ endif
 #    dep - depfile name
 modsources ::= # Ensure the simply expanded variable flavor for the output variables.
 nomodsources ::=
-modulemap ::=
+modulemap ::= $$root;$(CXX_MODULE_CACHE)/
+#modulemap ::= 
 $(foreach line,$(CXX_SRC_OBJ_MOD_IF_LIST),\
   $(let src obj mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
@@ -123,7 +124,7 @@ $(foreach line,$(CXX_SRC_OBJ_MOD_IF_LIST),\
         $(info CXX_MOD_$(modi)_CMI ::= $(cmi))\
         $(eval CXX_MOD_$$(modi)_CMI ::= $$(cmi))\
         $(eval modsources += $$(src))\
-        $(eval modulemap += $$(mod);$$(cmi))\
+        $(eval modulemap += $$(mod);$$(patsubst $$(CXX_MODULE_CACHE)/%,%,$$(cmi)))\
         $(eval $(modul_rule_template))\
       )\
     ,\

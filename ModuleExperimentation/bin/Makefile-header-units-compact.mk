@@ -5,25 +5,24 @@
 #
 # Stage 0 checks for changes in the configuration and triggers a complete recompilation if necessary.
 #
-# Stage 1 determines the dependency tree for each Header Unit. A Dependency File ('%.dep') contains
-# the legacy header dependency tree for a Header Unit. Target of the dependency tree is the
-# Dependency File itself.
+# Stage 1 determines the dependency tree for each header unit. A dependency file (depfile) contains
+# the (conventional) header dependency tree for a header unit. Target of the dependency tree is the
+# dependency file itself. The dependency file for a header unit is generated with disabled auto inclusion.
 #
 # Stage 2a determines the original header file for each header unit based on the dependency tree (the first rule).
 # Furthermore, the logical source name and the CIM filename are identified.
 #
-# Stage 2b generates a mapping database and the header map file (header-map.modm) using the data obtained in
-# this way. The mappung database is exported to make in form of a variable ('header-unit.dep'):
-#        CXX_KIND_UNIT_SRC_MOD_CMI_LIST += <kind>;<unit name>;<source name>;<logical module>;<cmi name>
+# Stage 2b generates the header map file (header-map.modm) with the structure that GCC requires.
 #
-# Stage 2c scans the (header) dependencies of a header unit (the first rule). If a dependency exists in the
-# mapping database, a rule with the dependend cmi file is added to file 'header-unit.dep'.
-#        <my-cmi> : <dpendency-cmi1> <dpendency-cmi2>
+# Stage 3 scans the header dependencies of a header unit (the first rule in the dependency file). If one dependency
+# is a known target to in the header unit database, a rule with the dependend cmi file is added to the
+# header module dependency file (%.m.dep).
 #
-# Stage 3 translates header unit source files to cmi files. The Dependency File ('%.dep') substitutes all header
-# dependencies of the cmi file.
+# Stage 4 translates the header units to header CMI files. The Dependency File ('%.dep') substitutes all header
+# dependencies of the CMI file.
 #
-# Stage 4 makes the final header part of the module map 'module-map-h.txt' to be used by the main script.
+# Stage 5 contributes the header module map to the module map of the main makefile.
+# The first line in header-map.modm is removed.
 #
 # Relative header file locations are considered relative to the current directory.
 #
@@ -48,7 +47,7 @@ MAKEFLAGS += -r
 $(call info_d,MAKEFLAGS='$(MAKEFLAGS)')
 $(call info_d,MAKECMDGOALS='$(MAKECMDGOALS)')
 
-# # Place the default target before any before including any user defined project files.
+# Place the default target before any before including any user defined project files.
 .PHONY : all
 all : all_
 
@@ -60,7 +59,7 @@ all : all_
 # Checking the command line goals.
 cleanup_goals = clean purge
 goals ::= $(MAKECMDGOALS)
-# The variable cleanup is also used to prevent inclusion of dependent makefiles.
+# The variable cleanup is also used to prevent re-starts in cleanup case.
 cleanup ::= $(filter $(cleanup_goals),$(goals))
 ifneq ($(cleanup),)
   ifneq (,$(filter-out $(cleanup_goals),$(goals)))
@@ -165,10 +164,7 @@ $(build_p)header-config-change-done : $(build_p)header-units-list $(build_p)head
 	$(spacer)
 
 # This compiler options make the cmi inclusion verbose.
-infoflags =
-ifneq ($(verbose),)
-  infoflags = -flang-info-include-translate -flang-info-module-cmi
-endif
+infoflags ::= $(if $(verbose),-flang-info-include-translate -flang-info-module-cmi)
 
 # Stage 1: Generate the depfiles (*.dep).
 # The depfile generation uses the default module mapper.
@@ -181,9 +177,10 @@ $(call info_d,depfiles_user='$(depfiles_user)')
 
 # Macro to move away the default cache directory.
 hide_cache = if [ -d 'gcm.cache' ]; then \
-  $(RMDIR) 'gcm.cache.hidden'; \
   mv -T $(verbose) 'gcm.cache' 'gcm.cache.hidden' || :; \
 fi
+# The move may fail for some jobs if parallel execution is enabled. Move is an atomic operation if source
+# and destination are in the same file system.
 
 # Macro to restore the default cache directory.
 restore_cache =	if [ -d 'gcm.cache.hidden' ]; then \
@@ -194,30 +191,30 @@ restore_cache =	if [ -d 'gcm.cache.hidden' ]; then \
   fi \
 fi
 
+# depfile rules -The Order Only Prerequisites for the directories require secondary expansion
+# and follow near makefile end.
 $(depfiles_sys) : $(build_p)system/%.dep : $(build_p)header-config-change-done
 	$(due_to)
-# The move may fail for some jobs if parallel execution is enabled. Move is an atomic operation.
+# Move away the default cache.
 	$(if $(hcache_is_default),$(ec)$(hide_cache))
 	$(CXX) -x c++-system-header '$*' -c -M -MF '$@' -MQ '$@' -MP -Mno-modules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
 	$(spacer)
 
 $(depfiles_user) : $(build_p)user/%.dep : $(build_p)header-config-change-done
 	$(due_to)
-# The move may fail for some jobs if parallel execution is enabled. Move is an atomic operation.
 	$(if $(hcache_is_default),$(ec)$(hide_cache))
 	$(CXX) -x c++-user-header '$*' -c -M -MF '$@' -MQ '$@' -MP -Mno-modules $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
 	$(spacer)
-# The Order Only Prerequisites for the directories require secondary expansion and follow near makefile end.
 
-# Stage 2abc: Generate header unit database (header-unit.dep) and the map file (header-map.modm).
+# Stage 2a & 2b: Generate header unit database (header-unit.dep) and the map file (header-map.modm).
 $(build_p)header-unit.dep $(build_p)header-map.modm &: $(depfiles_sys) $(depfiles_user)
 	$(due_to)
-	$(bin)header-map.sh '$(build_p)header-map.modm' '$(build_p)header-unit.dep' $(CURDIR) '$(build_p)system' '$(build_p)user' '.dep' '$(hcache)' '.gcm' $^
+	$(bin)header-map.sh '$(build_p)header-map.modm' '$(build_p)header-unit.dep' $(CURDIR) '$(build_p)system' '$(build_p)user' '.dep' '$(hcache)' '.gcm' $(foreach x,$^,'$(x)')
 # Restore the cache directory.
 	$(if $(hcache_is_default),$(ec)$(restore_cache))
 	$(spacer)
 
-# Stage 2d: Generate the module depfiles (%.m.dep).
+# Stage 3: Generate the module depfiles (%.m.dep).
 # The content of the mapper file only changes if the configuration has changed. So
 # we can make the mapper file a order only prerequisite.
 depfiles_m_sys ::= $(addprefix $(build_p)system/,$(addsuffix .m.dep,$(CXX_SYSTEM_HEADER_UNITS)))
@@ -235,7 +232,7 @@ $(depfiles_m_user) : $(build_p)user/%.m.dep : $(build_p)user/%.dep | $(build_p)h
 	$(bin)header-dep.sh $(build_p)header-map.modm '$<' $(CURDIR) '$@'
 	$(spacer)
 
-# Stage 3: CMI file generation:
+# Stage 4: CMI file generation:
 # Automatic header inclusion is effective since make maintains the the order of depended builds.
 
 # Including information about source names and module database.
@@ -247,8 +244,10 @@ ifeq ($(cleanup),)
 endif
 
 # Macro pp_list pretty prints the content of CXX_KIND_UNIT_SRC_MOD_CMI_LIST.
-pp_list = $(foreach var,$1,$(tab)$(var)$(nl))
-$(call info_d,$(nl)CXX_KIND_UNIT_SRC_MOD_CMI_LIST =$(nl)$(call pp_list,$(CXX_KIND_UNIT_SRC_MOD_CMI_LIST)))
+ifneq ($(verbose),)
+  pp_list = $(foreach var,$1,$(tab)$(var)$(nl))
+  $(call info_d,$(nl)CXX_KIND_UNIT_SRC_MOD_CMI_LIST =$(nl)$(call pp_list,$(CXX_KIND_UNIT_SRC_MOD_CMI_LIST)))
+endif
 
 # The mapper option for cmi file generation.
 hmapper_opt ::= $(if $(hcache_is_default),,-fmodule-mapper=$(build_p)header-map.modm)
@@ -283,7 +282,7 @@ $(call info_d,$(nl)cmifiles = '$(cmifiles)')
 # Stage 5: Make the final header part of module map to be used by the main script.
 $(build_p)module-map-h.txt : $(cmifiles) | $(build_ndot)
 	$(due_to)
-	$(ec)grep --invert-match '$$root' '$(build_p)header-map.modm' > '$@'
+	cp $(verbose) '$(build_p)header-map.modm' '$@'
 	$(call echo_i,Header Units translation complete.)
 	$(spacer)
 

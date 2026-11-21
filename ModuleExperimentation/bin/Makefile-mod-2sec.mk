@@ -8,29 +8,20 @@
 # With CXX_SIMPLE_MAPPING=1:
 # Problem with grouped pattern rule dependency propagation. (delete src1.o src2.o)
 
-# getting path of this makefile
+# Getting the path of this makefile.
 this_makefile ::= $(lastword $(MAKEFILE_LIST))
 bin ::= $(dir $(this_makefile))
 
-# checking command-line option -s
-single_make_options ::= $(firstword -$(MAKEFLAGS))
-silent =
-ifeq (s,$(findstring s,$(single_make_options)))
-  silent = 1
-endif
+# Include common functions and variables.
+inclfile ::= $(bin)common-definitions.mk
+include $(inclfile)
+.PHONY : $(inclfile) # Prevent `make` from searching for an implicit rule for this file.
+$(if $(common-definitions),,$(error $(red)ERROR: $(inclfile) not included$(res)))
 
-# intro
-$(if $(silent),,$(info )$(info **** $(if $(MAKE_RESTARTS),RESTART # $(MAKE_RESTARTS),START) $(this_makefile) in $(CURDIR).))
+$(if $(silent),,$(nl)$(info **** $(if $(MAKE_RESTARTS),RESTART # $(MAKE_RESTARTS),START) $(this_makefile).))
 
-# include functions and variables
-include $(bin)common-definitions.mk
-# do not try update common-definitions.mk
-.PHONY : $(bin)common-definitions.mk
-$(if $(common-definitions),,$(error $(red)ERROR: $(bin)common-definitions.mk not included$(res)))
-
-# removing all the built-in pattern rules
+# Removing all the built-in pattern rules.
 MAKEFLAGS += -r
-
 $(call info_d,MAKEFLAGS='$(MAKEFLAGS)')
 $(call info_d,MAKECMDGOALS='$(MAKECMDGOALS)')
 
@@ -40,13 +31,13 @@ all : all_
 
 .DELETE_ON_ERROR:
 
-# a dummy rule to update this makefile
-$(bin)Makefile-mod-2sec.mk : ;
+# Prevent `make` from searching for an implicit rule for this file.
+.PHONY : $(this_makefile)
 
-# checking goals
-cleanup_goals = clean purge clean-header-units info
+# Checking the command line goals.
+cleanup_goals = clean purge info
 goals ::= $(MAKECMDGOALS)
-# The variable cleanup is also used to prevent inclusion of dependent makefiles.
+# The variable cleanup is also used to prevent re-starts in cleanup case.
 cleanup ::= $(filter $(cleanup_goals),$(goals))
 ifneq ($(cleanup),)
   ifneq (,$(filter-out $(cleanup_goals),$(goals)))
@@ -54,17 +45,32 @@ ifneq ($(cleanup),)
   endif
 endif
 
-# reading configuration from project file and figuring out bin directory, build directory and cache directory
-include $(bin)build-configuration.mk
-.PHONY : $(bin)build-configuration.mk
-$(if $(build-configuration),,$(error $(red)ERROR: build-configuration.mk not included$(res)))
+# Reading configuration from project file and figure out bin directory, build directory and cache directory.
+inclfile ::= $(bin)build-configuration.mk
+include $(inclfile)
+.PHONY : $(inclfile)
+$(if $(build-configuration),,$(error $(red)ERROR: $(inclfile) not included$(res)))
 
-# figuring out source files and directories
-include $(bin)source-configuration.mk
-.PHONY : $(bin)source-configuration.mk
+# Figuring out source files and directories.
+inclfile ::= $(bin)source-configuration.mk
+include $(inclfile)
+.PHONY : $(inclfile)
 $(if $(source-configuration),,$(error $(red)ERROR: source-configuration not included$(res)))
 
-# If no target is given, the target name is last path component from the current project directory.
+# Module to CMI file mapper function - expands to the cmi file name or nothing.
+# Input: 1 - Module Name
+mmap = $(CXX_MODULE_CACHE)/$(subst :,-,$1).gcm
+
+# Function 'get_cmi_name' expands to the CMI file name for project modules.
+# Input: 1 - module name
+#        2 - source file name
+ifeq ($(CXX_SIMPLE_MAPPING),)
+  get_cmi_name = $(call mmap,$1)
+else
+  get_cmi_name = $(CXX_MODULE_CACHE)/$2.gcm
+endif
+
+# If the final target name is not given, the target name is last path component from the current project directory.
 TARGET ?= $(lastword $(subst /, ,$(CURDIR)))
 $(call info_i,Build target '$(build_p)$(TARGET)'$(nl))
 
@@ -72,7 +78,7 @@ $(call info_i,Build target '$(build_p)$(TARGET)'$(nl))
 .PHONY : all_
 all_ : $(build_p)$(TARGET)
 
-# linking all together
+# Finally link all together. Placing this rule before .SECONDEXPANSION
 objects ::= $(addprefix $(bbd_p),$(addsuffix .o,$(sources)))
 $(call info_d,objects = '$(objects)')
 $(build_p)$(TARGET) : $(objects) | $(build_ndot)
@@ -81,98 +87,75 @@ $(build_p)$(TARGET) : $(objects) | $(build_ndot)
 	$(call echo_i,All done.)
 	$(spacer)
 
-# Double colon rules without prerequisites always trigger dependent targets.
-#FORCE :: ;
+# This compiler options make the cmi inclusion verbose.
+infoflags ::= $(if $(verbose),-flang-info-include-translate -flang-info-module-cmi)
 
-#header_makefile ::= $(bin)Makefile-header-units-compact.mk
-
-# make header unit cmi files - must run once for productive goals at start up
-header_unit_target ::=
-#ifndef MAKE_RESTARTS
-#  ifneq ($(request_header_translation),)
-#    header_unit_target ::= $(build_p)module-map-h.txt
-
-#    $(header_unit_target) : FORCE | $(build_ndot)
-#	@$(MAKE) -f $(header_makefile) '$@'
-#	$(spacer)
-#  endif
-#endif
-
-#.NOTPARALLEL : $(header_unit_target)
-
-# required compiler options
-infoflags =
-ifneq ($(verbose),)
-  infoflags = -flang-info-include-translate -flang-info-module-cmi
-endif
-
-# header mapper option for depfiles
+# The header mapper option for depfile generation.
 ifneq ($(hcache),gcm.cache)
-  hmap_opt ::= $(if $(and $(user_mapping),$(request_header_translation)),-fmodule-mapper=$(build_p)module-map-h.txt)
+  hmap_opt ::= $(if $(and $(user_mapping),$(request_header_translation)),-fmodule-mapper=$(build_p)header-map.modm)
 else
   hmap_opt ::=
 endif
 
-# rule to generate dependency files
-# The defile rules have direct dependencies to imported module unit files,thus a update of the module-map-h.txt
-# timestamp should not trigger the depfile rule. So there is no dependency to the module-map-h.txt required.
+# Stage 1: Generate dependency files (%.dep)
+# The depfile rules have direct dependencies to imported module unit files,thus a update of the header-map.modm
+# timestamp should not trigger the depfile rule. So there is no dependency to the header-map.modm required.
 depfiles ::= $(addprefix $(bbd_p),$(addsuffix .dep,$(sources)))
 $(call info_d,depfiles = '$(depfiles)')
-$(depfiles) : $(bbd_p)%.dep : % | $(header_unit_target)
+$(depfiles) : $(bbd_p)%.dep : %
 	$(due_to)
 	$(CXX) '$<' -MM -MF '$@' -MQ '$@' $(hmap_opt) -fdeps-format=p1689r5 -fdeps-file='$(bbd_p)$*.ddi' -fdeps-target='$(bbd_p)$*.o' -c $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
-	$(bin)p1689_to_make_sec.sh '$(bbd_p)$*.ddi' '$@' '$(bbd_p)$*.o' '$<'
-	$(spacer)
-
-.PHONY : depend
-depend : $(depfiles)
-	$(call echo_i,Dependency files are up to date.)
+ifeq ($(CXX_SIMPLE_MAPPING),)
+	$(bin)p1689_to_make.sh -s -u -y '$(bbd_p)$*.ddi' '$(bbd_p)$*.dep' '$(bbd_p)$*.o' '$<'
+else
+	$(bin)p1689_to_make.sh -s -y -c '$(CXX_MODULE_CACHE)/$<.gcm' '$(bbd_p)$*.ddi' '$(bbd_p)$*.dep' '$(bbd_p)$*.o' '$<'
+endif
 	$(spacer)
 
 .SECONDEXPANSION :
 
-# appending directory prerequisites to depfile rules
+# Appending directory prerequisites to depfile rules.
 $(depfiles) : $(bbd_p)%.dep : | $$(if $$(call neq,$$(@D),.),$$(@D))
 
-# get_cmi_name - map module name or source file name to the cmi file name for project modules
-# input: 1 - module name
-#        2 - source file name
-ifeq ($(CXX_SIMPLE_MAPPING),)
-  get_cmi_name = $(mcbd_p)$(subst :,-,$1).gcm
-else
-  get_cmi_name = $(mcbd_p)$2.gcm
-endif
+# The target 'depend' updates all dependency files.
+.PHONY : depend
+depend : $$(depfiles)
+	$(call echo_i,Dependency files are up to date.)
+	$(spacer)
 
-# mapper file dependency
+# Mapper File Dependency:
 # The object file rules have direct dependencies to imported module unit files and module cmi files,thus a
 # update of the 'module-map-h.txt' timestamp should not trigger the this rules.
 # However if the external module mapper file has changed, total different cmi files may come into play.
 # So there is dependency to the 'module-map-ext.modm' required.
 map_dep ::= $(external_module_map)
 
-# mapper option
+# Module Mapper Option:
 map_opt ::= $(if $(user_mapping),-fmodule-mapper=$(build_p)module-map.modm)
+# The content of the module map depends on the configuration of the build and does not change for one
+# configuration. So the module map is not a dependency for object files and cmi files.
 
 # All object files have the map_target as Order Only Prerequisite.
 map_target ::= $(if $(user_mapping),$(build_p)module-map.modm)
 
-# include all depfiles with provided modules database: CXX_SRC_MOD_IF_LIST
-# depfiles require get_cmi_name function
-# CXX_MOD_require1_CMI variables are resolved during secondary expansion
-CXX_SRC_MOD_IF_LIST ::= # prefer simple variable favor for the list with provided modules
+# Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST.
+# CXX_MOD_require1_CMI variables are resolved during secondary expansion.
+# Rules require mmap function.
+CXX_SRC_OBJ_MOD_IF_LIST ::= # Prefer simple variable favor for the list with provided modules.
 ifeq ($(cleanup),)
   include $(depfiles)
 endif
 ifneq ($(verbose),)
-  $(info CXX_SRC_MOD_IF_LIST ::=)
-  $(foreach var,$(CXX_SRC_MOD_IF_LIST),$(info $(tab)$(var)))
+  $(info CXX_SRC_OBJ_MOD_IF_LIST ::=)
+  $(foreach var,$(CXX_SRC_OBJ_MOD_IF_LIST),$(info $(tab)$(var)))
 endif
 
-# template rule for module sources
-# input: src - source file name
-#        obj - object name
-#        dep - depfile name
-#        cmi - cmi file name
+# Variable modul_rule_template expands to the grouped target rule for module units including recipe.
+# Using the following local variables as input.
+#    src - source file name
+#    obj - object name
+#    dep - depfile name
+#    cmi - cmi file name
 ifeq ($(CXX_SIMPLE_MAPPING),)
   define modul_rule_template
   $(call info_d,generate module rule $(obj) $(cmi) &: $(src) $(dep) $(map_dep) | $(map_target) $(mcbd_ndot))
@@ -184,30 +167,31 @@ ifeq ($(CXX_SIMPLE_MAPPING),)
 	$(spacer)
   endef
 else
-  modul_rule_template =
+  modul_rule_template = # Rules for module units are provided as 'Pattern Rule'.
 endif
 
-# TODO: generate variables and modulemap for imported cmi files
+# TODO: Generate variables and modulemap for imported cmi files.
+# TODO: Check missing module requirements.
 
-# generate rules for module sources, module variables and module map and check for duplicate module
-# provided variables:
-#        src - source file name
-#        mod - the module name
-#        is_if - is interface (0/1)
-#        modi - internal module name (colon is replaced with dash)
-#        cmi  - cmi name
-#        obj - object name
-#        dep - defile name
-modsources ::=
+# Generating rules for module sources, module variables and module map and check for duplicate module.
+# Provided local variables:
+#    src - source file name
+#    mod - the module name
+#    is_if - is interface (0/1)
+#    modi - internal module name (colon is replaced with dash)
+#    cmi  - cmi name
+#    obj - object name
+#    dep - depfile name
+modsources ::= # Ensure the simply expanded variable flavor for the output variables.
 nomodsources ::=
 modulemap ::=
-ifeq ($(strip $(CXX_SRC_MOD_IF_LIST)),)
+ifeq ($(strip $(CXX_SRC_OBJ_MOD_IF_LIST)),)
   $(call info_d,No module database!)
 endif
-$(foreach line,$(CXX_SRC_MOD_IF_LIST),\
-  $(let src mod is_if,$(subst ;, ,$(line)),\
+$(foreach line,$(CXX_SRC_OBJ_MOD_IF_LIST),\
+  $(let src obj mod is_if,$(subst ;, ,$(line)),\
     $(if $(subst -,,$(mod)),\
-      $(let modi cmi obj dep,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(bbd_p)$(src).o $(bbd_p)$(src).dep,\
+      $(let modi cmi dep,$(subst :,-,$(mod)) $(call get_cmi_name,$(mod),$(src)) $(bbd_p)$(src).dep,\
         $(if $(CXX_MOD_$(modi)_CMI),\
           $(if $(keep_going),\
             $(warning $(yel)WARNING: Duplicate module $(mod) in source unit $(src)$(res))\
@@ -229,27 +213,53 @@ $(foreach line,$(CXX_SRC_MOD_IF_LIST),\
 $(call info_i,modsources = '$(modsources)')
 $(call info_i,nomodsources = '$(nomodsources)')
 
-# generate rules for no module sources
+# Generating 'Static Pattern Rules' for non module units.
 nomodobjects ::= $(addprefix $(bbd_p),$(addsuffix .o,$(nomodsources)))
 $(call info_d,nomodobjects = '$(nomodobjects)')
-$(nomodobjects) : $(bbd_p)%.o : % $(subst $$,$$$$,$(bbd_p))%.dep $$(map_dep) | $(map_target)
+$(nomodobjects) : $(bbd_p)%.o : % $(subst $$,$$$$,$(bbd_p))%.dep $$(map_dep) | $$(map_target)
 	$(due_to)
 	$(CXX) -o '$@' '$<' -c $(map_opt) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
 	$(spacer)
 
-# Simple Mapping - generate rules for module sources
+# Generate 'Pattern Rules' for for module units if Simple Mapping is activated.
 ifneq ($(CXX_SIMPLE_MAPPING),)
-  $(bbd_p)%.o $(mcbd_p)%.gcm : % $(subst $$,$$$$,$(bbd_p))%.dep $$(map_dep) | $(map_target) $$(call cat_dir,$$(mcbd),$$(*D))
+  $(bbd_p)%.o $(mcbd_p)%.gcm : % $(subst $$,$$$$,$(bbd_p))%.dep $$(map_dep) | $$(map_target) $$(call cat_dir,$$(mcbd),$$(*D))
 	$(due_to)
 	$(CXX) -o '$(bbd_p)$*.o' '$<' -c $(map_opt) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(infoflags)
 	$(spacer)
 endif
 
-# writing the module map files
-# module-map-m.txt: map named modules in this project
-# module-map-h.txt: map for header units (generated from header translation script)
-# $(external_module_map): map for modules from external sources
-# module-map.mod: global module map
+# Generate the makefile from an external module map.
+external.m.dep : $(CXX_EXTERNAL_MODMAP) | $(build_ndot)
+	$(due_to)
+	touch '$@' # TODO: 
+	$(spacer)
+
+CXX_MOD_CMI_LIST ::=
+ifeq ($(cleanup),)
+  include external.m.dep
+endif
+
+$(foreach line,$(CXX_MOD_CMI_LIST),\
+  $(let mod cmi,$(subst ;, ,$(line)),\
+    $(let modi,$(subst :,-,$(mod)),\
+      $(call info_d,CXX_MOD_$(modi)_CMI ::= $(cmi))\
+      $(eval CXX_MOD_$$(modi)_CMI ::= $$(cmi))\
+      $(eval modulemap += $$(mod);$$(cmi))\
+    )\
+  )\
+)
+
+
+# This rules makes sure that the build runs even if the external module map does not exists.
+# But ittriggers a complete build of all object- and CMI-files.
+$(CXX_EXTERNAL_MODMAP) :
+
+# Writing the module map files:
+# module-map-m.txt - map named modules in this project
+# module-map-h.txt - map for header units (generated from header translation script)
+# $(external_module_map) - map for modules from external sources
+# module-map.mod - final global module map
 
 # Re-write named modules map only if the content has changed.
 ifeq ($(cleanup),)

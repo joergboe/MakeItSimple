@@ -60,7 +60,7 @@ endif
 
 # Including the provided modules database: CXX_SRC_OBJ_MOD_IF_LIST
 dbmfiles ::= $(sources:.cpp=.m.dep)
-CXX_SRC_OBJ_MOD_IF_LIST ::= # prefer simple variable flavor for the list with provided modules
+CXX_SRC_OBJ_MOD_IF_LIST ::= # Prefer simple variable flavor for the list with provided modules.
 include $(dbmfiles)
 
 # Do we use a non default module mapping?

@@ -6,11 +6,11 @@ unset -f unalias
 unset -f command
 IFS=$' \t\n'
 #set -o posix;
-set -f  # Disable pathname expansion.
+set -f  # Disable path name expansion.
 set -o errexit; set -o errtrace; set -o nounset; set -o pipefail
 
 command=${0##*/}
-usage="usage: ${command} [-h|-v].. [--] input depfile object source"
+usage="usage: ${command} [OPTION]... [--] input depfile object source"
 
 myhelp() {
 	cat <<-EOF
